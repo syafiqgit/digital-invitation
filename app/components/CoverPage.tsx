@@ -7,6 +7,7 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
+  type Variants,
 } from "framer-motion";
 import { useDeviceCapability } from "../hooks/useDeviceCapability";
 import FloralBouquetBand from "./FloralBouquetBand";
@@ -42,12 +43,12 @@ const petals = [
   { left: "45%", size: 10, duration: 9.5, delay: 4.5, color: "#c9dcc0" },
 ];
 
-const textContainer = {
+const textContainer: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.18, delayChildren: 0.2 } },
 };
 
-const textItem = {
+const textItem: Variants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } },
 };
@@ -225,7 +226,7 @@ export default function CoverPage({
               : {}
           }
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl sm:h-96 sm:w-96 lg:h-[28rem] lg:w-[28rem]"
+          className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl sm:h-96 sm:w-96 lg:h-112 lg:w-md"
         />
 
         {/* Konten tengah - staggered reveal */}
