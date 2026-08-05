@@ -1,19 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
-  const guest = searchParams.get("to");
+  const guest = request.nextUrl.searchParams.get("to");
+  const response = NextResponse.next();
 
-  const requestHeaders = new Headers(request.headers);
   if (guest) {
-    requestHeaders.set("x-guest-name", guest);
+    response.headers.set("x-guest-name", guest);
   }
 
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  return response;
 }
 
 export const config = {
