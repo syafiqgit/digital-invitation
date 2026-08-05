@@ -1,5 +1,5 @@
-// components/HomeClient.tsx
 "use client";
+
 import { useRef, useState } from "react";
 import { useGuestName } from "../hooks/useGuestName";
 import CoupleSection from "./CoupleSection";
@@ -20,7 +20,7 @@ export default function HomeClient() {
   };
 
   return (
-    <main className="relative bg-ivory">
+    <main className="relative bg-ivory min-h-screen">
       <MusicPlayer ref={musicRef} src="/audio/wedding-song.mp3" />
 
       {!opened && <CoverPage guestName={guestName} onOpen={handleOpen} />}
@@ -28,11 +28,14 @@ export default function HomeClient() {
       {opened && (
         <>
           <FloatingPetals count={16} />
+
           <div className="relative z-20">
             <Hero3D />
+
             <RevealSection>
               <CoupleSection />
             </RevealSection>
+
             <RevealSection delay={0.15}>
               <section className="bg-ivory py-20 text-center">
                 <p className="font-serif text-[11px] font-semibold tracking-[0.35em] text-ink/80">

@@ -1,75 +1,73 @@
 // components/FloralVine.tsx
 import { memo } from "react";
-import { motion } from "framer-motion";
 
-function FloralVine({
-  className = "",
-  animate = true,
-}: {
+type Props = {
   className?: string;
   animate?: boolean;
-}) {
+};
+
+function FloralVine({ className = "", animate = false }: Props) {
   return (
     <svg
-      viewBox="0 0 60 800"
-      preserveAspectRatio="none"
+      viewBox="0 0 80 400"
       className={className}
       fill="none"
+      preserveAspectRatio="xMidYMid slice"
     >
-      <motion.path
-        d="M30 0 C10 60 50 120 30 180 C10 240 50 300 30 360 C10 420 50 480 30 540 C10 600 50 660 30 720 C15 750 30 780 30 800"
-        stroke="#8a9a7e"
-        strokeWidth="1.4"
-        fill="none"
-        initial={animate ? { pathLength: 0, opacity: 0 } : undefined}
-        animate={animate ? { pathLength: 1, opacity: 1 } : undefined}
-        transition={{ duration: 2.5, ease: "easeInOut", delay: 0.3 }}
+      {/* batang utama */}
+      <path
+        d="M40 0 C36 40 46 80 34 120 C24 160 46 200 36 240 C28 280 44 320 32 360"
+        stroke="#8fa28a"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
-      {[70, 190, 310, 430, 550, 670].map((y, i) => (
-        <motion.g
+
+      {/* daun */}
+      {[
+        { x: 30, y: 40, rot: -40 },
+        { x: 48, y: 70, rot: 20 },
+        { x: 26, y: 110, rot: -30 },
+        { x: 50, y: 150, rot: 18 },
+        { x: 28, y: 190, rot: -22 },
+        { x: 52, y: 230, rot: 26 },
+        { x: 30, y: 270, rot: -30 },
+        { x: 50, y: 310, rot: 20 },
+      ].map((leaf, i) => (
+        <ellipse
           key={i}
-          transform={`translate(30, ${y})`}
-          initial={animate ? { opacity: 0, scale: 0.5 } : undefined}
-          animate={animate ? { opacity: 1, scale: 1 } : undefined}
-          transition={{ duration: 0.6, delay: 0.8 + i * 0.25 }}
-        >
-          <ellipse
-            cx="14"
-            cy="-4"
-            rx="8"
-            ry="13"
-            fill="#e8ede2"
-            stroke="#8a9a7e"
-            strokeWidth="1"
-            transform="rotate(25)"
-          />
-          <ellipse
-            cx="-14"
-            cy="4"
-            rx="8"
-            ry="13"
-            fill="#e8ede2"
-            stroke="#8a9a7e"
-            strokeWidth="1"
-            transform="rotate(-25)"
-          />
-          {i % 2 === 0 && (
-            <g transform="translate(0,-20)">
-              {[0, 72, 144, 216, 288].map((deg) => (
-                <ellipse
-                  key={deg}
-                  cx="0"
-                  cy="-5"
-                  rx="3.5"
-                  ry="6"
-                  fill="#f0d9d4"
-                  transform={`rotate(${deg})`}
-                />
-              ))}
-              <circle r="2.5" fill="#d9a5a0" />
-            </g>
-          )}
-        </motion.g>
+          cx={leaf.x}
+          cy={leaf.y}
+          rx="7"
+          ry="14"
+          fill="#e8ede2"
+          stroke="#8fa28a"
+          strokeWidth="0.8"
+          transform={`rotate(${leaf.rot} ${leaf.x} ${leaf.y})`}
+        />
+      ))}
+
+      {/* bunga kecil di sepanjang akar */}
+      {[
+        { x: 24, y: 90, color: "#a13d3d" },
+        { x: 54, y: 160, color: "#e08a6b" },
+        { x: 26, y: 220, color: "#d9a5a0" },
+        { x: 52, y: 300, color: "#a13d3d" },
+      ].map((f, i) => (
+        <g key={i} transform={`translate(${f.x}, ${f.y})`}>
+          {[0, 72, 144, 216, 288].map((deg) => (
+            <ellipse
+              key={deg}
+              cx="0"
+              cy="-5"
+              rx="3.2"
+              ry="6.2"
+              fill={f.color}
+              opacity="0.96"
+              transform={`rotate(${deg})`}
+            />
+          ))}
+          <circle r="2.4" fill="#f0d9d4" />
+        </g>
       ))}
     </svg>
   );

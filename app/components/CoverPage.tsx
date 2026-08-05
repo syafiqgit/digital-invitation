@@ -1,6 +1,6 @@
-// components/CoverPage.tsx
 "use client";
-import { useState, useRef } from "react";
+
+import { useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
@@ -146,33 +146,8 @@ export default function CoverPage({
   onOpen,
 }: CoverPageProps) {
   const [isOpening, setIsOpening] = useState(false);
-  const { isDesktop, isTouch, reduceMotion } = useDeviceCapability();
+  const { reduceMotion } = useDeviceCapability();
   const enableAnim = !reduceMotion;
-
-  const sceneRef = useRef<HTMLDivElement>(null);
-  const gx = useMotionValue(0);
-  const gy = useMotionValue(0);
-  const gSpringX = useSpring(gx, { stiffness: 60, damping: 20 });
-  const gSpringY = useSpring(gy, { stiffness: 60, damping: 20 });
-
-  const layerFarX = useTransform(gSpringX, [-0.5, 0.5], [-14, 14]);
-  const layerFarY = useTransform(gSpringY, [-0.5, 0.5], [-10, 10]);
-  const layerMidX = useTransform(gSpringX, [-0.5, 0.5], [-26, 26]);
-  const layerMidY = useTransform(gSpringY, [-0.5, 0.5], [-18, 18]);
-  const sceneRotateX = useTransform(gSpringY, [-0.5, 0.5], [3, -3]);
-  const sceneRotateY = useTransform(gSpringX, [-0.5, 0.5], [-3, 3]);
-
-  const handleSceneMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDesktop || isTouch) return;
-    const rect = sceneRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    gx.set((e.clientX - rect.left) / rect.width - 0.5);
-    gy.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-  const handleSceneLeave = () => {
-    gx.set(0);
-    gy.set(0);
-  };
 
   const boxRef = useRef<HTMLDivElement>(null);
   const mx = useMotionValue(0);
@@ -187,13 +162,12 @@ export default function CoverPage({
   });
 
   const handleBoxMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDesktop || isTouch) return;
-    e.stopPropagation();
     const rect = boxRef.current?.getBoundingClientRect();
     if (!rect) return;
     mx.set((e.clientX - rect.left) / rect.width - 0.5);
     my.set((e.clientY - rect.top) / rect.height - 0.5);
   };
+
   const handleBoxLeave = () => {
     mx.set(0);
     my.set(0);
@@ -204,43 +178,30 @@ export default function CoverPage({
     setTimeout(() => onOpen(), 1200);
   };
 
-  const isMobile = !isDesktop;
-
   return (
     <AnimatePresence>
       <motion.div
-        ref={sceneRef}
-        onMouseMove={handleSceneMove}
-        onMouseLeave={handleSceneLeave}
         exit={{ opacity: 0, transition: { duration: 0.6 } }}
-        style={{ perspective: 1200 }}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-ivory"
       >
         <FloralSilhouettePattern className="pointer-events-none absolute inset-0 z-0 opacity-[0.14]" />
 
-        <motion.div
-          style={{ x: isDesktop ? layerFarX : 0, y: isDesktop ? layerFarY : 0 }}
-          className="contents"
-        >
-          <FloralBouquetBand className="pointer-events-none absolute top-0 left-0 z-10 h-24 w-full sm:h-32 lg:h-40" />
-          <FloralBouquetBand
-            flip
-            className="pointer-events-none absolute bottom-0 left-0 z-10 h-24 w-full sm:h-32 lg:h-40"
-          />
-        </motion.div>
+        <FloralBouquetBand className="pointer-events-none absolute top-0 left-0 z-10 h-24 w-full sm:h-32 lg:h-40" />
+        <FloralBouquetBand
+          flip
+          className="pointer-events-none absolute bottom-0 left-0 z-10 h-24 w-full sm:h-32 lg:h-40"
+        />
 
         <motion.div
-          style={{ x: isDesktop ? layerFarX : 0, y: isDesktop ? layerFarY : 0 }}
           animate={
             enableAnim ? { rotate: [-6, 6, -6], scale: [1, 1.05, 1] } : {}
           }
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="pointer-events-none absolute left-0 top-0 z-10 h-16 w-16 origin-top-left opacity-70 sm:h-28 sm:w-28 lg:h-36 lg:w-36"
+          className="pointer-events-none absolute left-0 top-0 z-10 h-24 w-24 origin-top-left opacity-90 sm:h-40 sm:w-40 lg:h-56 lg:w-56"
         >
           <FloralCorner className="h-full w-full" />
         </motion.div>
         <motion.div
-          style={{ x: isDesktop ? layerFarX : 0, y: isDesktop ? layerFarY : 0 }}
           animate={
             enableAnim ? { rotate: [6, -6, 6], scale: [1, 1.05, 1] } : {}
           }
@@ -250,12 +211,11 @@ export default function CoverPage({
             ease: "easeInOut",
             delay: 0.4,
           }}
-          className="pointer-events-none absolute right-0 top-0 z-10 h-16 w-16 origin-top-right opacity-70 sm:h-28 sm:w-28 lg:h-36 lg:w-36"
+          className="pointer-events-none absolute right-0 top-0 z-10 h-24 w-24 origin-top-right opacity-90 sm:h-40 sm:w-40 lg:h-56 lg:w-56"
         >
           <FloralCorner className="h-full w-full -scale-x-100" />
         </motion.div>
         <motion.div
-          style={{ x: isDesktop ? layerFarX : 0, y: isDesktop ? layerFarY : 0 }}
           animate={
             enableAnim ? { rotate: [6, -6, 6], scale: [1, 1.05, 1] } : {}
           }
@@ -265,12 +225,11 @@ export default function CoverPage({
             ease: "easeInOut",
             delay: 0.8,
           }}
-          className="pointer-events-none absolute bottom-0 left-0 z-10 h-16 w-16 origin-bottom-left opacity-70 sm:h-28 sm:w-28 lg:h-36 lg:w-36"
+          className="pointer-events-none absolute bottom-0 left-0 z-10 h-24 w-24 origin-bottom-left opacity-90 sm:h-40 sm:w-40 lg:h-56 lg:w-56"
         >
-          <FloralCorner className="h-full w-full rotate-180" />
+          <FloralCorner className="h-full w-full -scale-y-100" />
         </motion.div>
         <motion.div
-          style={{ x: isDesktop ? layerFarX : 0, y: isDesktop ? layerFarY : 0 }}
           animate={
             enableAnim ? { rotate: [-6, 6, -6], scale: [1, 1.05, 1] } : {}
           }
@@ -280,101 +239,56 @@ export default function CoverPage({
             ease: "easeInOut",
             delay: 1.2,
           }}
-          className="pointer-events-none absolute bottom-0 right-0 z-10 h-16 w-16 origin-bottom-right opacity-70 sm:h-28 sm:w-28 lg:h-36 lg:w-36"
+          className="pointer-events-none absolute bottom-0 right-0 z-10 h-24 w-24 origin-bottom-right opacity-90 sm:h-40 sm:w-40 lg:h-56 lg:w-56"
         >
-          <FloralCorner className="h-full w-full rotate-90" />
+          <FloralCorner className="h-full w-full -scale-x-100 -scale-y-100" />
         </motion.div>
 
-        {isDesktop && (
-          <>
-            <FloralVine
-              animate={enableAnim}
-              className="pointer-events-none absolute left-[6%] top-0 z-10 h-full w-10 opacity-60"
+        <FloralVine
+          animate={enableAnim}
+          className="pointer-events-none absolute left-[6%] top-0 z-10 h-full w-10 opacity-60"
+        />
+        <FloralVine
+          animate={enableAnim}
+          className="pointer-events-none absolute right-[6%] top-0 z-10 h-full w-10 -scale-x-100 opacity-60"
+        />
+        <FloralVine
+          animate={enableAnim}
+          className="pointer-events-none absolute top-[4%] left-0 z-10 h-10 w-full rotate-90 origin-left opacity-45"
+        />
+        <FloralVine
+          animate={enableAnim}
+          className="pointer-events-none absolute bottom-[4%] left-0 z-10 h-10 w-full -rotate-90 origin-left opacity-45"
+        />
+
+        {mobileFlowerSpots.map((f, i) => (
+          <motion.div
+            key={i}
+            animate={
+              enableAnim
+                ? { y: [0, -8, 0], rotate: f.flip ? [4, -4, 4] : [-4, 4, -4] }
+                : {}
+            }
+            transition={{
+              duration: 3.5 + (i % 3),
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: f.delay,
+            }}
+            className="pointer-events-none absolute z-10 opacity-80"
+            style={{
+              top: f.top,
+              left: f.left,
+              right: f.right,
+              width: f.size * 4,
+              height: f.size * 4,
+            }}
+          >
+            <FloralClusterAccent
+              className={`h-full w-full ${f.flip ? "-scale-x-100" : ""}`}
             />
-            <FloralVine
-              animate={enableAnim}
-              className="pointer-events-none absolute right-[6%] top-0 z-10 h-full w-10 -scale-x-100 opacity-60"
-            />
-          </>
-        )}
-
-        <motion.div
-          style={{ x: isDesktop ? layerMidX : 0, y: isDesktop ? layerMidY : 0 }}
-          animate={enableAnim ? { y: [0, -12, 0], rotate: [-4, 4, -4] } : {}}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="pointer-events-none absolute left-[4%] top-[16%] z-10 h-12 w-12 opacity-90 sm:left-[18%] sm:top-[22%] sm:h-20 sm:w-20 lg:h-28 lg:w-28"
-        >
-          <FloralClusterAccent className="h-full w-full" />
-        </motion.div>
-        <motion.div
-          style={{ x: isDesktop ? layerMidX : 0, y: isDesktop ? layerMidY : 0 }}
-          animate={enableAnim ? { y: [0, -12, 0], rotate: [4, -4, 4] } : {}}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.8,
-          }}
-          className="pointer-events-none absolute right-[4%] top-[16%] z-10 h-12 w-12 -scale-x-100 opacity-90 sm:right-[18%] sm:top-[22%] sm:h-20 sm:w-20 lg:h-28 lg:w-28"
-        >
-          <FloralClusterAccent className="h-full w-full" />
-        </motion.div>
-        <motion.div
-          style={{ x: isDesktop ? layerMidX : 0, y: isDesktop ? layerMidY : 0 }}
-          animate={enableAnim ? { y: [0, -10, 0], rotate: [-5, 5, -5] } : {}}
-          transition={{
-            duration: 4.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1.6,
-          }}
-          className="pointer-events-none absolute left-[6%] bottom-[24%] z-10 h-10 w-10 opacity-80 sm:left-[22%] sm:bottom-[18%] sm:h-16 sm:w-16 lg:h-20 lg:w-20"
-        >
-          <FloralClusterAccent className="h-full w-full" />
-        </motion.div>
-        <motion.div
-          style={{ x: isDesktop ? layerMidX : 0, y: isDesktop ? layerMidY : 0 }}
-          animate={enableAnim ? { y: [0, -10, 0], rotate: [5, -5, 5] } : {}}
-          transition={{
-            duration: 4.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2.4,
-          }}
-          className="pointer-events-none absolute right-[6%] bottom-[24%] z-10 h-10 w-10 -scale-x-100 opacity-80 sm:right-[22%] sm:bottom-[18%] sm:h-16 sm:w-16 lg:h-20 lg:w-20"
-        >
-          <FloralClusterAccent className="h-full w-full" />
-        </motion.div>
-
-        {isMobile &&
-          mobileFlowerSpots.map((f, i) => (
-            <motion.div
-              key={i}
-              animate={
-                enableAnim
-                  ? { y: [0, -8, 0], rotate: f.flip ? [4, -4, 4] : [-4, 4, -4] }
-                  : {}
-              }
-              transition={{
-                duration: 3.5 + (i % 3),
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: f.delay,
-              }}
-              className="pointer-events-none absolute z-10 opacity-70"
-              style={{
-                top: f.top,
-                left: f.left,
-                right: f.right,
-                width: f.size * 4,
-                height: f.size * 4,
-              }}
-            >
-              <FloralClusterAccent
-                className={`h-full w-full ${f.flip ? "-scale-x-100" : ""}`}
-              />
-            </motion.div>
-          ))}
+          </motion.div>
+        ))}
 
         {enableAnim &&
           petalsMobile.map((p, i) => (
@@ -411,10 +325,6 @@ export default function CoverPage({
         {stars.map((s, i) => (
           <motion.div
             key={i}
-            style={{
-              x: isDesktop ? layerMidX : 0,
-              y: isDesktop ? layerMidY : 0,
-            }}
             className="pointer-events-none absolute z-10 text-blush-dark"
             initial={s}
           >
@@ -457,7 +367,7 @@ export default function CoverPage({
 
         <motion.div
           animate={
-            isMobile && enableAnim
+            enableAnim
               ? { rotateX: [3, -3, 3], rotateY: [-3, 3, -3] }
               : undefined
           }
@@ -466,18 +376,11 @@ export default function CoverPage({
           className="relative z-20"
         >
           <motion.div
-            style={{
-              rotateX: isDesktop ? sceneRotateX : 0,
-              rotateY: isDesktop ? sceneRotateY : 0,
-              transformStyle: "preserve-3d",
-              transformPerspective: 1200,
-            }}
             variants={textContainer}
             initial="hidden"
             animate="show"
-            className="flex flex-col items-center px-8 text-center"
+            className="relative z-20 flex flex-col items-center px-8 text-center"
           >
-            {/* Label - fade turun + scale */}
             <motion.p
               variants={labelVariant}
               className="font-serif text-[11px] font-semibold tracking-[0.35em] text-ink/80 sm:text-xs"
@@ -485,7 +388,6 @@ export default function CoverPage({
               UNDANGAN PERNIKAHAN
             </motion.p>
 
-            {/* Nama kiri - slide dari kiri + miring, lalu float terus-menerus */}
             <motion.div variants={nameLeftVariant} className="mt-3">
               <motion.p
                 animate={enableAnim ? { y: [0, -6, 0] } : {}}
@@ -500,7 +402,6 @@ export default function CoverPage({
               </motion.p>
             </motion.div>
 
-            {/* Ampersand - pop spring dari tengah */}
             <motion.p
               variants={ampersandVariant}
               className="font-script my-2 text-4xl text-blush-dark sm:text-5xl lg:text-6xl"
@@ -508,7 +409,6 @@ export default function CoverPage({
               &amp;
             </motion.p>
 
-            {/* Nama kanan - slide dari kanan + miring, lalu float terus-menerus */}
             <motion.div variants={nameRightVariant}>
               <motion.p
                 animate={enableAnim ? { y: [0, -6, 0] } : {}}
@@ -524,37 +424,29 @@ export default function CoverPage({
               </motion.p>
             </motion.div>
 
-            {/* Date box - flip 3D masuk dari samping, lalu tilt interaktif/auto */}
             <motion.div variants={dateBoxVariant} className="mt-8">
               <motion.div
                 ref={boxRef}
                 onMouseMove={handleBoxMove}
                 onMouseLeave={handleBoxLeave}
                 animate={
-                  isMobile && enableAnim
+                  enableAnim
                     ? { rotateX: [6, -6, 6], rotateY: [-6, 6, -6] }
                     : undefined
                 }
-                transition={
-                  isMobile
-                    ? { duration: 5, repeat: Infinity, ease: "easeInOut" }
-                    : undefined
-                }
-                style={
-                  isDesktop
-                    ? {
-                        rotateX: boxRotateX,
-                        rotateY: boxRotateY,
-                        transformStyle: "preserve-3d",
-                        transformPerspective: 500,
-                      }
-                    : {
-                        transformStyle: "preserve-3d",
-                        transformPerspective: 500,
-                      }
-                }
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                style={{
+                  rotateX: boxRotateX,
+                  rotateY: boxRotateY,
+                  transformStyle: "preserve-3d",
+                  transformPerspective: 500,
+                }}
                 whileHover={{ scale: 1.03 }}
-                className="flex items-center gap-3 rounded-lg border border-sage/50 bg-white/70 px-6 py-3 shadow-sm backdrop-blur-sm"
+                className="relative z-30 flex items-center gap-3 rounded-lg border border-sage/50 bg-white/70 px-6 py-3 shadow-sm backdrop-blur-sm"
               >
                 <span className="font-serif text-sm font-medium tracking-wide text-ink">
                   Sabtu
@@ -572,7 +464,6 @@ export default function CoverPage({
               </motion.div>
             </motion.div>
 
-            {/* Subtitle - blur in */}
             <motion.p
               variants={subtitleVariant}
               className="mt-8 font-serif text-xs font-medium tracking-[0.15em] text-ink/70"
@@ -580,7 +471,6 @@ export default function CoverPage({
               Kepada Yth. Bapak/Ibu/Saudara/i
             </motion.p>
 
-            {/* Nama tamu - spring pop */}
             <motion.p
               variants={guestNameVariant}
               className="mt-1 font-serif text-lg font-semibold text-ink"
@@ -588,10 +478,13 @@ export default function CoverPage({
               {guestName}
             </motion.p>
 
-            {/* Tombol - jatuh dari atas dengan bounce */}
             {!isOpening && (
-              <motion.div variants={buttonVariant} className="mt-10">
+              <motion.div
+                variants={buttonVariant}
+                className="relative z-30 mt-10"
+              >
                 <motion.button
+                  type="button"
                   onClick={handleOpen}
                   whileHover={{ scale: 1.06, y: -3 }}
                   whileTap={{ scale: 0.94 }}
@@ -608,7 +501,7 @@ export default function CoverPage({
                   transition={{
                     boxShadow: { repeat: Infinity, duration: 1.8 },
                   }}
-                  className="rounded-full bg-blush-dark px-10 py-3 font-serif text-[11px] font-semibold tracking-[0.25em] text-white shadow-md sm:px-12 sm:text-xs"
+                  className="relative z-30 rounded-full bg-blush-dark px-10 py-3 font-serif text-[11px] font-semibold tracking-[0.25em] text-white shadow-md sm:px-12 sm:text-xs"
                 >
                   BUKA UNDANGAN
                 </motion.button>
