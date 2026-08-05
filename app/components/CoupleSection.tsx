@@ -63,7 +63,7 @@ export default function CoupleSection() {
 
       <div className="relative z-10 mx-auto mt-12 flex max-w-4xl flex-col items-center justify-center gap-14 sm:flex-row sm:gap-10">
         <PersonCard
-          name="Amelia"
+          name="Talitha"
           parents="Bapak Sudirman & Ibu Ratna"
           role="MEMPELAI WANITA"
           align="left"
@@ -80,7 +80,7 @@ export default function CoupleSection() {
         </motion.p>
 
         <PersonCard
-          name="Alexander"
+          name="Regga"
           parents="Bapak Hermawan & Ibu Sari"
           role="MEMPELAI PRIA"
           align="right"

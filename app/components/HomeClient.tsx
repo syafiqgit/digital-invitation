@@ -1,35 +1,38 @@
 // components/HomeClient.tsx
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useGuestName } from "../hooks/useGuestName";
 import CoupleSection from "./CoupleSection";
 import CoverPage from "./CoverPage";
 import FloatingPetals from "./FloatingPetals";
 import Hero3D from "./Hero3D";
+import MusicPlayer, { MusicPlayerHandle } from "./MusicPlayer";
 import RevealSection from "./RevealSection";
-import { useGuestName } from "../hooks/useGuestName";
 
 export default function HomeClient() {
   const guestName = useGuestName();
   const [opened, setOpened] = useState(false);
+  const musicRef = useRef<MusicPlayerHandle>(null);
+
+  const handleOpen = () => {
+    setOpened(true);
+    musicRef.current?.play();
+  };
 
   return (
     <main className="relative bg-ivory">
-      {!opened && (
-        <CoverPage guestName={guestName} onOpen={() => setOpened(true)} />
-      )}
+      <MusicPlayer ref={musicRef} src="/audio/wedding-song.mp3" />
+
+      {!opened && <CoverPage guestName={guestName} onOpen={handleOpen} />}
 
       {opened && (
         <>
-          {/* Petal melayang - warna disesuaikan tema botanical (blush/sage), pengganti sparkle gold */}
           <FloatingPetals count={16} />
-
           <div className="relative z-20">
             <Hero3D />
-
             <RevealSection>
               <CoupleSection />
             </RevealSection>
-
             <RevealSection delay={0.15}>
               <section className="bg-ivory py-20 text-center">
                 <p className="font-serif text-[11px] font-semibold tracking-[0.35em] text-ink/80">

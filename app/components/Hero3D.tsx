@@ -37,7 +37,7 @@ export default function Hero3D() {
         </p>
 
         <p className="font-script mt-3 text-5xl leading-tight text-ink sm:text-6xl lg:text-7xl">
-          Amelia &amp; Alexander
+          Talitha &amp; Regga
         </p>
 
         <span className="mx-auto mt-6 block h-px w-16 bg-sage/50" />
