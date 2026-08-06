@@ -30,7 +30,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const COUPLE = "Talitha & Regga";
+const COUPLE = "Amelia & Alexander";
 const WEDDING_DATE = "12 Desember 2026";
 const LOCATION = "Jakarta";
 
