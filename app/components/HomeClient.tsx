@@ -3,35 +3,20 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import CoverPage from "./CoverPage";
+import MainContent from "./MainContent";
 
-function formatGuestName(raw: string) {
-  return decodeURIComponent(raw)
-    .replace(/[-+]/g, " ")
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-export default function HomeClient() {
+export default function Home() {
   const searchParams = useSearchParams();
-  const rawGuest = searchParams.get("to");
-  const guestName = rawGuest ? formatGuestName(rawGuest) : "Tamu Undangan";
+  const guestName = searchParams.get("to") || "Tamu Undangan";
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpened, setIsOpened] = useState(false);
 
   return (
-    <main className="relative min-h-screen bg-ivory">
-      {!isOpen && (
-        <CoverPage guestName={guestName} onOpen={() => setIsOpen(true)} />
+    <>
+      {!isOpened && (
+        <CoverPage guestName={guestName} onOpen={() => setIsOpened(true)} />
       )}
-
-      {isOpen && (
-        <div className="flex min-h-screen items-center justify-center">
-          <p className="text-ink">
-            Konten undangan setelah dibuka akan ditempatkan di sini.
-          </p>
-        </div>
-      )}
-    </main>
+      {isOpened && <MainContent guestName={guestName} />}
+    </>
   );
 }

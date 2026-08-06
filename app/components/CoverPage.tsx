@@ -168,8 +168,7 @@ export default function CoverPage({
   const [isOpening, setIsOpening] = useState(false);
 
   const handleOpen = () => {
-    setIsOpening(true);
-    setTimeout(() => onOpen(), 1000);
+    onOpen();
   };
 
   return (
