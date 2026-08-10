@@ -63,11 +63,6 @@ const popIn: Variants = {
   },
 };
 
-const cornerFade: Variants = {
-  hidden: { opacity: 0, scale: 0.85 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 1, ease: EASE } },
-};
-
 const textLift = {
   strong: {
     textShadow:
@@ -192,6 +187,60 @@ const grassBlades = [
   { x: 372, h: 22, rot: -3 },
   { x: 390, h: 30, rot: 9 },
 ] as const;
+
+// Matches the Cover page's `vines` layout: left, right, top, bottom
+// so the couple section gets the same full floral-vine border.
+const vines = [
+  {
+    key: "left",
+    orientation: "vertical" as const,
+    className: "absolute left-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
+    flip: "",
+  },
+  {
+    key: "right",
+    orientation: "vertical" as const,
+    className: "absolute right-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
+    flip: "-scale-x-100",
+  },
+  {
+    key: "top",
+    orientation: "horizontal" as const,
+    className: "absolute left-0 top-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
+    flip: "",
+  },
+  {
+    key: "bottom",
+    orientation: "horizontal" as const,
+    className: "absolute bottom-0 left-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
+    flip: "-scale-y-100",
+  },
+];
+
+// Matches the Cover page's `corners` layout: uses FloralCorner's own
+// `flip` prop instead of Tailwind scale utilities.
+const corners = [
+  {
+    key: "top-left",
+    position: "top-2 left-2 sm:top-4 sm:left-4",
+    flip: "",
+  },
+  {
+    key: "top-right",
+    position: "top-2 right-2 sm:top-4 sm:right-4",
+    flip: "-scale-x-100",
+  },
+  {
+    key: "bottom-left",
+    position: "bottom-2 left-2 sm:bottom-4 sm:left-4",
+    flip: "-scale-y-100",
+  },
+  {
+    key: "bottom-right",
+    position: "bottom-2 right-2 sm:bottom-4 sm:right-4",
+    flip: "-scale-x-100 -scale-y-100",
+  },
+];
 
 const Monogram = memo(function Monogram({ name }: { name: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || "?";
@@ -584,54 +633,37 @@ export default function CoupleSection({
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14]" />
 
-      <motion.svg
-        className="pointer-events-none absolute inset-0 z-[1] h-full w-full opacity-70"
-        viewBox="0 0 400 800"
-        preserveAspectRatio="none"
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={fadeOnly}
-      >
-        <path
-          d="M20 40 Q 120 10, 200 40 Q 280 10, 380 40"
-          stroke="var(--sage)"
-          strokeWidth="1"
-          fill="none"
-          opacity="0.5"
-        />
-        <path
-          d="M20 760 Q 120 790, 200 760 Q 280 790, 380 760"
-          stroke="var(--sage)"
-          strokeWidth="1"
-          fill="none"
-          opacity="0.5"
-        />
-        {fairyLights.map((f, i) => (
-          <g key={`fl-${i}`}>
-            <circle
-              cx={f.cx}
-              cy={f.cy}
-              r="5.5"
-              fill="var(--mustard)"
-              opacity="0.18"
-            />
-            <motion.circle
-              cx={f.cx}
-              cy={f.cy}
-              r="2.6"
-              fill="var(--mustard)"
-              animate={{ opacity: [0.35, 1, 0.35] }}
-              transition={{
-                duration: 2.4 + (i % 3) * 0.4,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.3,
-              }}
-            />
-          </g>
-        ))}
-      </motion.svg>
+      {/* FIX: static, non-animated floral vines on all 4 sides
+          (left, right, top, bottom) — matches Cover page's `vines` layout. */}
+      {vines.map((v) => (
+        <div
+          key={v.key}
+          className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
+        >
+          <FloralVine orientation={v.orientation} className="h-full w-full" />
+        </div>
+      ))}
+
+      {/* FIX: static, non-animated floral corners on all 4 corners,
+          using FloralCorner's own `flip` prop like the Cover page. */}
+      {corners.map((c) => (
+        <div
+          key={c.key}
+          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+        >
+          <FloralCorner className="h-full w-full" flip={c.flip} />
+        </div>
+      ))}
+
+      {/* Small compass-style corner ornaments, now static (no wiggle/fade). */}
+      {cornerOrnaments.map((c, i) => (
+        <div
+          key={`cf-${i}`}
+          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
+        >
+          <CornerFlourish className="h-full w-full" />
+        </div>
+      ))}
 
       <div className="hidden sm:contents">
         {scatterItems.map((item, i) => (
@@ -760,115 +792,50 @@ export default function CoupleSection({
       <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
       <div className="pointer-events-none absolute inset-6 z-[1] hidden rounded-[2.5rem] border border-dashed border-mustard/25 sm:block sm:inset-8 lg:inset-12" />
 
-      <motion.div
-        className="pointer-events-none absolute left-0 top-0 z-0 hidden h-full w-8 opacity-60 sm:block sm:w-10 lg:w-14 lg:opacity-70"
-        style={{ willChange: "opacity" }}
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={cornerFade}
+      <svg
+        className="pointer-events-none absolute inset-0 z-[1] h-full w-full opacity-70"
+        viewBox="0 0 400 800"
+        preserveAspectRatio="none"
       >
-        <motion.div
-          animate={{ rotate: [0, 1.5, 0, -1.5, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          style={{ transformOrigin: "top center" }}
-          className="h-full w-full"
-        >
-          <FloralVine orientation="vertical" className="h-full w-full" />
-        </motion.div>
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute right-0 top-0 z-0 hidden h-full w-8 -scale-x-100 opacity-50 sm:block sm:w-10 lg:w-14 lg:opacity-60"
-        style={{ willChange: "opacity" }}
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={cornerFade}
-        transition={{ delay: 0.1 }}
-      >
-        <motion.div
-          animate={{ rotate: [0, -1.5, 0, 1.5, 0] }}
-          transition={{
-            duration: 6.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.3,
-          }}
-          style={{ transformOrigin: "top center" }}
-          className="h-full w-full"
-        >
-          <FloralVine orientation="vertical" className="h-full w-full" />
-        </motion.div>
-      </motion.div>
-
-      {cornerOrnaments.map((c, i) => (
-        <motion.div
-          key={`cf-${i}`}
-          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
-          style={{ willChange: "transform, opacity" }}
-          initial={initialState}
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={cornerFade}
-          transition={{ delay: 0.15 + i * 0.06 }}
-        >
-          <motion.div
-            animate={{ rotate: [0, 4, 0, -4, 0] }}
-            transition={{
-              duration: 5 + i * 0.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.2,
-            }}
-            className="h-full w-full"
-          >
-            <CornerFlourish className="h-full w-full" />
-          </motion.div>
-        </motion.div>
-      ))}
-
-      <motion.div
-        className="pointer-events-none absolute -bottom-6 -right-6 z-0 hidden h-28 w-28 opacity-75 sm:block lg:h-40 lg:w-40"
-        style={{ willChange: "opacity" }}
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={fadeOnly}
-      >
-        <FloralCorner className="h-full w-full -scale-x-100 -scale-y-100" />
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute -top-6 -left-6 z-0 hidden h-28 w-28 opacity-70 sm:block lg:h-40 lg:w-40"
-        style={{ willChange: "opacity" }}
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={fadeOnly}
-      >
-        <FloralCorner className="h-full w-full" />
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute -bottom-6 -left-6 z-0 hidden h-24 w-24 opacity-55 sm:block lg:h-32 lg:w-32"
-        style={{ willChange: "opacity" }}
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={fadeOnly}
-        transition={{ delay: 0.2 }}
-      >
-        <FloralCorner className="h-full w-full -scale-y-100" />
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute -top-6 -right-6 z-0 hidden h-24 w-24 opacity-55 sm:block lg:h-32 lg:w-32"
-        style={{ willChange: "opacity" }}
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={fadeOnly}
-        transition={{ delay: 0.25 }}
-      >
-        <FloralCorner className="h-full w-full -scale-x-100" />
-      </motion.div>
+        <path
+          d="M20 40 Q 120 10, 200 40 Q 280 10, 380 40"
+          stroke="var(--sage)"
+          strokeWidth="1"
+          fill="none"
+          opacity="0.5"
+        />
+        <path
+          d="M20 760 Q 120 790, 200 760 Q 280 790, 380 760"
+          stroke="var(--sage)"
+          strokeWidth="1"
+          fill="none"
+          opacity="0.5"
+        />
+        {fairyLights.map((f, i) => (
+          <g key={`fl-${i}`}>
+            <circle
+              cx={f.cx}
+              cy={f.cy}
+              r="5.5"
+              fill="var(--mustard)"
+              opacity="0.18"
+            />
+            <motion.circle
+              cx={f.cx}
+              cy={f.cy}
+              r="2.6"
+              fill="var(--mustard)"
+              animate={{ opacity: [0.35, 1, 0.35] }}
+              transition={{
+                duration: 2.4 + (i % 3) * 0.4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.3,
+              }}
+            />
+          </g>
+        ))}
+      </svg>
 
       <motion.div
         className="pointer-events-none absolute bottom-0 left-0 z-[1] h-6 w-full opacity-90 sm:h-8 lg:h-10"

@@ -1,12 +1,35 @@
 "use client";
 
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import CoverPage from "./CoverPage";
 import MainContent from "./MainContent";
 
 const MUSIC_SRC = "/assets/alex-morgan-wedding-garden-ceremony-glow-578500.mp3";
+
+const BLOOM_ORIGIN = { xPct: 50, yPct: 40 };
+
+const TIMELINE = {
+  irisDuration: 950,
+  contentFadeDelay: 620,
+  contentFadeDuration: 600,
+  particleTail: 1150,
+  overlayExitDuration: 300,
+} as const;
+
+const TOTAL_MS =
+  Math.max(
+    TIMELINE.irisDuration,
+    TIMELINE.contentFadeDelay + TIMELINE.contentFadeDuration,
+    TIMELINE.particleTail,
+  ) + TIMELINE.overlayExitDuration;
+
+const gpuLayer: React.CSSProperties = {
+  willChange: "transform, opacity",
+  transform: "translateZ(0)",
+  backfaceVisibility: "hidden",
+};
 
 const NoteIcon = memo(function NoteIcon({
   className = "",
@@ -58,22 +81,143 @@ const MutedNoteIcon = memo(function MutedNoteIcon({
   );
 });
 
+type Particle = {
+  id: string;
+  kind: "petal" | "leaf";
+  tx: number;
+  ty: number;
+  rot: number;
+  delay: number;
+  duration: number;
+  color: string;
+  size: number;
+};
+
+const PARTICLES_PER_WAVE = 26;
+const WAVE_COUNT = 2;
+
+function buildWave(waveIndex: number): Particle[] {
+  return Array.from({ length: PARTICLES_PER_WAVE }, (_, i) => {
+    const angle =
+      (i / PARTICLES_PER_WAVE) * Math.PI * 2 +
+      (i % 2 ? 0.12 : -0.08) +
+      waveIndex * 0.18;
+    const distance = 120 + (i % 5) * 60 + waveIndex * 40;
+    const isLeaf = i % 3 !== 1;
+    return {
+      id: `${waveIndex}-${i}`,
+      kind: isLeaf ? "leaf" : "petal",
+      tx: Math.cos(angle) * distance,
+      ty: Math.sin(angle) * distance,
+      rot: (isLeaf ? 480 : 220) + ((i * 41 + waveIndex * 30) % 120),
+      delay: waveIndex * 0.16 + (i % 7) * 0.018,
+      duration: 0.95 + (i % 3) * 0.08,
+      color:
+        i % 4 === 0
+          ? "var(--blush-dark)"
+          : i % 4 === 1
+            ? "var(--coral)"
+            : i % 4 === 2
+              ? "var(--sage-light)"
+              : "var(--burgundy)",
+      size: isLeaf ? 11 + (i % 3) * 4 : 8 + (i % 4) * 4,
+    };
+  });
+}
+
+function buildParticles(): Particle[] {
+  return Array.from({ length: WAVE_COUNT }, (_, w) => buildWave(w)).flat();
+}
+
+const BloomParticles = memo(function BloomParticles() {
+  const particles = useMemo(buildParticles, []);
+  return (
+    <>
+      <style>{`
+        @keyframes bloomFly {
+          0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.3); }
+          30% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.6), calc(var(--ty) * 0.6), 0) rotate(calc(var(--rot) * 0.5)) scale(1.05); }
+          70% { opacity: 1; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.85)) scale(1); }
+          100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.08), calc(var(--ty) * 1.08), 0) rotate(var(--rot)) scale(0.7); }
+        }
+        .bloom-particle {
+          position: absolute;
+          left: 0;
+          top: 0;
+          transform: translate3d(0,0,0);
+          animation-name: bloomFly;
+          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+          animation-fill-mode: both;
+          will-change: transform, opacity;
+        }
+      `}</style>
+
+      <div
+        className="pointer-events-none absolute z-70"
+        style={{ left: `${BLOOM_ORIGIN.xPct}%`, top: `${BLOOM_ORIGIN.yPct}%` }}
+      >
+        {particles.map((p) => (
+          <svg
+            key={p.id}
+            viewBox="0 0 20 20"
+            width={p.size}
+            height={p.size}
+            className="bloom-particle -translate-x-1/2 -translate-y-1/2"
+            style={
+              {
+                "--tx": `${p.tx}px`,
+                "--ty": `${p.ty}px`,
+                "--rot": `${p.rot}deg`,
+                animationDelay: `${p.delay}s`,
+                animationDuration: `${p.duration}s`,
+              } as React.CSSProperties
+            }
+          >
+            {p.kind === "leaf" ? (
+              <path
+                d="M10 0 C 16 4, 18 12, 10 20 C 2 12, 4 4, 10 0 Z"
+                fill={p.color}
+                opacity="0.85"
+              />
+            ) : (
+              <ellipse
+                cx="10"
+                cy="10"
+                rx="6"
+                ry="9"
+                fill={p.color}
+                opacity="0.9"
+              />
+            )}
+          </svg>
+        ))}
+      </div>
+    </>
+  );
+});
+
+type Phase = "cover" | "opening" | "content";
+
 export default function Home() {
   const searchParams = useSearchParams();
   const guestName = searchParams.get("to") || "Tamu Undangan";
 
-  const [isOpened, setIsOpened] = useState(false);
+  const [phase, setPhase] = useState<Phase>("cover");
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const handleOpen = useCallback(() => {
-    setIsOpened(true);
+    setPhase("opening");
+
     const audio = audioRef.current;
-    if (!audio) return;
-    audio
-      .play()
-      .then(() => setIsMusicPlaying(true))
-      .catch(() => setIsMusicPlaying(false));
+    if (audio) {
+      audio
+        .play()
+        .then(() => setIsMusicPlaying(true))
+        .catch(() => setIsMusicPlaying(false));
+    }
+
+    window.setTimeout(() => setPhase("content"), TOTAL_MS);
   }, []);
 
   const toggleMusic = useCallback(() => {
@@ -89,6 +233,9 @@ export default function Home() {
       setIsMusicPlaying(false);
     }
   }, []);
+
+  const isOpened = phase !== "cover";
+  const isBlooming = phase === "opening" || phase === "content";
 
   return (
     <>
@@ -125,8 +272,72 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {!isOpened && <CoverPage guestName={guestName} onOpen={handleOpen} />}
-      {isOpened && <MainContent guestName={guestName} />}
+      <motion.div
+        initial={{
+          clipPath: `circle(0% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`,
+        }}
+        animate={{
+          clipPath: isBlooming
+            ? `circle(150% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`
+            : `circle(0% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`,
+        }}
+        transition={{
+          duration: TIMELINE.irisDuration / 1000,
+          ease: [0.16, 1.35, 0.3, 1],
+        }}
+        style={{ contain: "paint", ...gpuLayer }}
+        className="relative z-0"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={isBlooming ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+          transition={{
+            duration: TIMELINE.contentFadeDuration / 1000,
+            delay: TIMELINE.contentFadeDelay / 1000,
+            ease: "easeOut",
+          }}
+        >
+          <MainContent guestName={guestName} />
+        </motion.div>
+      </motion.div>
+
+      <AnimatePresence>
+        {phase === "cover" && (
+          <CoverPage key="cover" guestName={guestName} onOpen={handleOpen} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {phase === "opening" && (
+          <motion.div
+            key="bloom-fx"
+            className="pointer-events-none fixed inset-0 z-68"
+            style={gpuLayer}
+            exit={{
+              opacity: 0,
+              transition: { duration: TIMELINE.overlayExitDuration / 1000 },
+            }}
+          >
+            <div
+              style={{
+                left: `${BLOOM_ORIGIN.xPct}%`,
+                top: `${BLOOM_ORIGIN.yPct}%`,
+                animation: "gardenGlowPulse 1s ease-out forwards",
+              }}
+              className="absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/70 blur-3xl"
+            />
+            <style>{`
+              @keyframes gardenGlowPulse {
+                0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.4); }
+                45% { opacity: 0.6; transform: translate3d(-50%,-50%,0) scale(2.3); }
+                100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(3.1); }
+              }
+            `}</style>
+
+            <BloomParticles />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
