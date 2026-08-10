@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import CoverPage from "./CoverPage";
 import MainContent from "./MainContent";
 
@@ -25,11 +25,48 @@ const TOTAL_MS =
     TIMELINE.particleTail,
   ) + TIMELINE.overlayExitDuration;
 
+// Perf: hint transform/opacity (compositor-only) plus clip-path, since the
+// iris-bloom transition animates clip-path directly — without this hint the
+// browser may not promote the layer ahead of time, causing a dropped frame
+// right as the animation starts.
 const gpuLayer: React.CSSProperties = {
-  willChange: "transform, opacity",
+  willChange: "transform, opacity, clip-path",
   transform: "translateZ(0)",
   backfaceVisibility: "hidden",
 };
+
+// Perf: both @keyframes blocks used to live inside components that only
+// mount once the user taps "buka undangan" — meaning the browser had to
+// parse fresh CSS at the exact moment the bloom transition needed to run
+// smoothly. Mounting them once, unconditionally, at the root lets the
+// browser parse & cache them well ahead of time.
+const GlobalStyles = memo(function GlobalStyles() {
+  return (
+    <style>{`
+      @keyframes bloomFly {
+        0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.3); }
+        30% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.6), calc(var(--ty) * 0.6), 0) rotate(calc(var(--rot) * 0.5)) scale(1.05); }
+        70% { opacity: 1; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.85)) scale(1); }
+        100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.08), calc(var(--ty) * 1.08), 0) rotate(var(--rot)) scale(0.7); }
+      }
+      .bloom-particle {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform: translate3d(0,0,0);
+        animation-name: bloomFly;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        animation-fill-mode: both;
+        will-change: transform, opacity;
+      }
+      @keyframes gardenGlowPulse {
+        0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.4); }
+        45% { opacity: 0.6; transform: translate3d(-50%,-50%,0) scale(2.3); }
+        100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(3.1); }
+      }
+    `}</style>
+  );
+});
 
 const NoteIcon = memo(function NoteIcon({
   className = "",
@@ -96,6 +133,13 @@ type Particle = {
 const PARTICLES_PER_WAVE = 26;
 const WAVE_COUNT = 2;
 
+const PARTICLE_COLORS = [
+  "var(--blush-dark)",
+  "var(--coral)",
+  "var(--sage-light)",
+  "var(--burgundy)",
+] as const;
+
 function buildWave(waveIndex: number): Particle[] {
   return Array.from({ length: PARTICLES_PER_WAVE }, (_, i) => {
     const angle =
@@ -112,14 +156,7 @@ function buildWave(waveIndex: number): Particle[] {
       rot: (isLeaf ? 480 : 220) + ((i * 41 + waveIndex * 30) % 120),
       delay: waveIndex * 0.16 + (i % 7) * 0.018,
       duration: 0.95 + (i % 3) * 0.08,
-      color:
-        i % 4 === 0
-          ? "var(--blush-dark)"
-          : i % 4 === 1
-            ? "var(--coral)"
-            : i % 4 === 2
-              ? "var(--sage-light)"
-              : "var(--burgundy)",
+      color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
       size: isLeaf ? 11 + (i % 3) * 4 : 8 + (i % 4) * 4,
     };
   });
@@ -132,73 +169,52 @@ function buildParticles(): Particle[] {
 const BloomParticles = memo(function BloomParticles() {
   const particles = useMemo(buildParticles, []);
   return (
-    <>
-      <style>{`
-        @keyframes bloomFly {
-          0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.3); }
-          30% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.6), calc(var(--ty) * 0.6), 0) rotate(calc(var(--rot) * 0.5)) scale(1.05); }
-          70% { opacity: 1; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.85)) scale(1); }
-          100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.08), calc(var(--ty) * 1.08), 0) rotate(var(--rot)) scale(0.7); }
-        }
-        .bloom-particle {
-          position: absolute;
-          left: 0;
-          top: 0;
-          transform: translate3d(0,0,0);
-          animation-name: bloomFly;
-          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-          animation-fill-mode: both;
-          will-change: transform, opacity;
-        }
-      `}</style>
-
-      <div
-        className="pointer-events-none absolute z-70"
-        style={{ left: `${BLOOM_ORIGIN.xPct}%`, top: `${BLOOM_ORIGIN.yPct}%` }}
-      >
-        {particles.map((p) => (
-          <svg
-            key={p.id}
-            viewBox="0 0 20 20"
-            width={p.size}
-            height={p.size}
-            className="bloom-particle -translate-x-1/2 -translate-y-1/2"
-            style={
-              {
-                "--tx": `${p.tx}px`,
-                "--ty": `${p.ty}px`,
-                "--rot": `${p.rot}deg`,
-                animationDelay: `${p.delay}s`,
-                animationDuration: `${p.duration}s`,
-              } as React.CSSProperties
-            }
-          >
-            {p.kind === "leaf" ? (
-              <path
-                d="M10 0 C 16 4, 18 12, 10 20 C 2 12, 4 4, 10 0 Z"
-                fill={p.color}
-                opacity="0.85"
-              />
-            ) : (
-              <ellipse
-                cx="10"
-                cy="10"
-                rx="6"
-                ry="9"
-                fill={p.color}
-                opacity="0.9"
-              />
-            )}
-          </svg>
-        ))}
-      </div>
-    </>
+    <div
+      className="pointer-events-none absolute z-70"
+      style={{ left: `${BLOOM_ORIGIN.xPct}%`, top: `${BLOOM_ORIGIN.yPct}%` }}
+    >
+      {particles.map((p) => (
+        <svg
+          key={p.id}
+          viewBox="0 0 20 20"
+          width={p.size}
+          height={p.size}
+          className="bloom-particle -translate-x-1/2 -translate-y-1/2"
+          style={
+            {
+              "--tx": `${p.tx}px`,
+              "--ty": `${p.ty}px`,
+              "--rot": `${p.rot}deg`,
+              animationDelay: `${p.delay}s`,
+              animationDuration: `${p.duration}s`,
+            } as React.CSSProperties
+          }
+        >
+          {p.kind === "leaf" ? (
+            <path
+              d="M10 0 C 16 4, 18 12, 10 20 C 2 12, 4 4, 10 0 Z"
+              fill={p.color}
+              opacity="0.85"
+            />
+          ) : (
+            <ellipse
+              cx="10"
+              cy="10"
+              rx="6"
+              ry="9"
+              fill={p.color}
+              opacity="0.9"
+            />
+          )}
+        </svg>
+      ))}
+    </div>
   );
 });
 
 type Phase = "cover" | "opening" | "content";
 
-export default function Home() {
+function HomeInner() {
   const searchParams = useSearchParams();
   const guestName = searchParams.get("to") || "Tamu Undangan";
 
@@ -237,13 +253,18 @@ export default function Home() {
   const isOpened = phase !== "cover";
   const isBlooming = phase === "opening" || phase === "content";
 
+  const clipPathVisible = `circle(150% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
+  const clipPathHidden = `circle(0% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
+
   return (
     <>
+      <GlobalStyles />
+
       <audio ref={audioRef} src={MUSIC_SRC} loop preload="auto" />
 
       <AnimatePresence>
         {isOpened && (
-          <motion.button
+          <m.button
             type="button"
             onClick={toggleMusic}
             initial={{ opacity: 0, scale: 0.7 }}
@@ -252,14 +273,16 @@ export default function Home() {
             transition={{ duration: 0.4 }}
             aria-label={isMusicPlaying ? "Matikan musik" : "Putar musik"}
             className="fixed bottom-4 right-4 z-70 flex h-11 w-11 items-center justify-center rounded-full border border-mustard/60 bg-ivory shadow-md sm:h-12 sm:w-12"
+            style={gpuLayer}
           >
-            <motion.span
+            <m.span
               animate={isMusicPlaying ? { rotate: 360 } : { rotate: 0 }}
               transition={{
                 duration: 6,
                 repeat: isMusicPlaying ? Infinity : 0,
                 ease: "linear",
               }}
+              style={{ willChange: "transform" }}
               className="flex h-5 w-5 items-center justify-center sm:h-6 sm:w-6"
             >
               {isMusicPlaying ? (
@@ -267,20 +290,14 @@ export default function Home() {
               ) : (
                 <MutedNoteIcon className="h-full w-full" />
               )}
-            </motion.span>
-          </motion.button>
+            </m.span>
+          </m.button>
         )}
       </AnimatePresence>
 
-      <motion.div
-        initial={{
-          clipPath: `circle(0% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`,
-        }}
-        animate={{
-          clipPath: isBlooming
-            ? `circle(150% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`
-            : `circle(0% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`,
-        }}
+      <m.div
+        initial={{ clipPath: clipPathHidden }}
+        animate={{ clipPath: isBlooming ? clipPathVisible : clipPathHidden }}
         transition={{
           duration: TIMELINE.irisDuration / 1000,
           ease: [0.16, 1.35, 0.3, 1],
@@ -288,7 +305,7 @@ export default function Home() {
         style={{ contain: "paint", ...gpuLayer }}
         className="relative z-0"
       >
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 18 }}
           animate={isBlooming ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
           transition={{
@@ -296,10 +313,11 @@ export default function Home() {
             delay: TIMELINE.contentFadeDelay / 1000,
             ease: "easeOut",
           }}
+          style={{ willChange: "transform, opacity" }}
         >
           <MainContent guestName={guestName} />
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
 
       <AnimatePresence>
         {phase === "cover" && (
@@ -309,7 +327,7 @@ export default function Home() {
 
       <AnimatePresence>
         {phase === "opening" && (
-          <motion.div
+          <m.div
             key="bloom-fx"
             className="pointer-events-none fixed inset-0 z-68"
             style={gpuLayer}
@@ -326,18 +344,19 @@ export default function Home() {
               }}
               className="absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/70 blur-3xl"
             />
-            <style>{`
-              @keyframes gardenGlowPulse {
-                0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.4); }
-                45% { opacity: 0.6; transform: translate3d(-50%,-50%,0) scale(2.3); }
-                100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(3.1); }
-              }
-            `}</style>
 
             <BloomParticles />
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <LazyMotion features={domAnimation}>
+      <HomeInner />
+    </LazyMotion>
   );
 }

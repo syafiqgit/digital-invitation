@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { memo } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 export const WREATH_ASPECT_RATIO = 1300 / 1249;
 
@@ -17,15 +17,16 @@ type Props = { className?: string };
 
 function WreathFrame({ className = "" }: Props) {
   return (
-    <motion.div
+    <m.div
       className={`relative ${className}`}
       style={{
         aspectRatio: WREATH_ASPECT_RATIO,
         transformOrigin: "top center",
+        willChange: "transform",
       }}
-      // FIX: animasi ayunan halus & "napas" tak berhenti, dijalankan
-      // setelah animasi entrance selesai (delay 1s) supaya tidak
-      // bertabrakan dengan spring entrance di wreathVariant milik parent.
+      // Ayunan halus & "napas" tak berhenti, transform-only (rotate+scale)
+      // sehingga sepenuhnya ditangani compositor/GPU — mulai setelah
+      // animasi entrance (wreathVariant di parent) selesai.
       animate={{
         rotate: [0, 0.8, 0, -0.8, 0],
         scale: [1, 1.012, 1, 1.008, 1],
@@ -46,7 +47,7 @@ function WreathFrame({ className = "" }: Props) {
         draggable={false}
         priority
       />
-    </motion.div>
+    </m.div>
   );
 }
 

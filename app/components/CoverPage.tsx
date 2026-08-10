@@ -1,7 +1,14 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { memo, useCallback, useMemo, useState } from "react";
+import {
+  AnimatePresence,
+  LazyMotion,
+  domAnimation,
+  m,
+  type Transition,
+  type Variants,
+} from "framer-motion";
 import Image from "next/image";
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
@@ -12,6 +19,40 @@ interface CoverPageProps {
   guestName?: string;
   onOpen: () => void;
 }
+
+// Perf: style hint reused on every element that animates forever, so the
+// browser promotes it to its own compositor layer up front instead of
+// doing it mid-animation (a common cause of a "jump"/stutter on first loop).
+const GPU_HINT = { willChange: "transform, opacity" } as const;
+
+// Perf: single helper for "loop forever" transitions instead of repeating
+// { repeat: Infinity, ease: "easeInOut", ... } literals everywhere.
+const loop = (
+  duration: number,
+  delay = 0,
+  ease: Transition["ease"] = "easeInOut",
+): Transition => ({
+  duration,
+  delay,
+  repeat: Infinity,
+  ease,
+});
+
+// Perf/DX: generates a symmetric sway (rotate back-and-forth) config so
+// vine/corner entries stay declarative instead of hand-typing each keyframe
+// array.
+const makeSway = (
+  magnitude: number,
+  duration: number,
+  origin: string,
+  reverse = false,
+) => ({
+  rotate: reverse
+    ? [0, -magnitude, 0, magnitude, 0]
+    : [0, magnitude, 0, -magnitude, 0],
+  origin,
+  duration,
+});
 
 const container: Variants = {
   hidden: {},
@@ -149,9 +190,8 @@ const stars = [
   { top: "88%", left: "82%" },
 ] as const;
 
-// FIX: definisikan tipe eksplisit dengan path/yPath sebagai number[]
-// (bukan readonly tuple) supaya kompatibel dengan tipe animate.x / animate.y
-// milik Framer Motion (ValueKeyframesDefinition membutuhkan array mutable).
+// Path/yPath tetap number[] (bukan readonly tuple) supaya kompatibel dengan
+// tipe animate.x / animate.y milik Framer Motion.
 interface ButterflyConfig {
   top: string;
   left: string;
@@ -196,10 +236,8 @@ const butterflies: ButterflyConfig[] = [
   },
 ];
 
-// FIX: tambahkan `sway` per vine — arah & titik tumpu (transformOrigin)
-// disesuaikan supaya ayunan terlihat natural (vine vertikal berayun dari
-// ujung atas, vine horizontal berayun dari ujung kiri), bukan berputar
-// di tengah elemen.
+// Vine vertikal berayun dari ujung atas, vine horizontal dari ujung kiri —
+// bukan berputar di tengah elemen. Dibuat lewat makeSway() supaya ringkas.
 const vines = [
   {
     key: "left",
@@ -207,7 +245,7 @@ const vines = [
     className: "absolute left-0 top-0 h-full w-8 opacity-90 sm:w-12 lg:w-14",
     flip: "",
     delay: 0,
-    sway: { rotate: [0, 1.4, 0, -1.4, 0], origin: "top center", duration: 7 },
+    sway: makeSway(1.4, 7, "top center"),
   },
   {
     key: "right",
@@ -215,11 +253,7 @@ const vines = [
     className: "absolute right-0 top-0 h-full w-8 opacity-90 sm:w-12 lg:w-14",
     flip: "-scale-x-100",
     delay: 0.1,
-    sway: {
-      rotate: [0, -1.4, 0, 1.4, 0],
-      origin: "top center",
-      duration: 7.6,
-    },
+    sway: makeSway(1.4, 7.6, "top center", true),
   },
   {
     key: "top",
@@ -227,11 +261,7 @@ const vines = [
     className: "absolute left-0 top-0 h-8 w-full opacity-90 sm:h-12 lg:h-14",
     flip: "",
     delay: 0.2,
-    sway: {
-      rotate: [0, 0.9, 0, -0.9, 0],
-      origin: "left center",
-      duration: 8.2,
-    },
+    sway: makeSway(0.9, 8.2, "left center"),
   },
   {
     key: "bottom",
@@ -239,57 +269,40 @@ const vines = [
     className: "absolute bottom-0 left-0 h-8 w-full opacity-90 sm:h-12 lg:h-14",
     flip: "-scale-y-100",
     delay: 0.3,
-    sway: {
-      rotate: [0, -0.9, 0, 0.9, 0],
-      origin: "left center",
-      duration: 8.8,
-    },
+    sway: makeSway(0.9, 8.8, "left center", true),
   },
 ];
 
-// FIX: tambahkan `sway` per corner — titik tumpu diarahkan ke sudut
-// masing-masing (mis. top-left berayun dari titik "top left") supaya
-// motif floral seolah melambai dari akar/pangkalnya di pojok.
+// Corner berayun dari titik sudutnya sendiri (mis. top-left dari "top left")
+// supaya motif floral terasa melambai dari pangkalnya di pojok.
 const corners = [
   {
     key: "bottom-left",
     position: "bottom-2 left-2 sm:bottom-4 sm:left-4",
     flip: "",
     fadeDelay: 0,
-    sway: {
-      rotate: [0, 2.2, 0, -2.2, 0],
-      origin: "bottom left",
-      duration: 6.5,
-    },
+    sway: makeSway(2.2, 6.5, "bottom left"),
   },
   {
     key: "bottom-right",
     position: "bottom-2 right-2 sm:bottom-4 sm:right-4",
     flip: "-scale-x-100",
     fadeDelay: 0.1,
-    sway: {
-      rotate: [0, -2.2, 0, 2.2, 0],
-      origin: "bottom right",
-      duration: 7,
-    },
+    sway: makeSway(2.2, 7, "bottom right", true),
   },
   {
     key: "top-left",
     position: "top-2 left-2 sm:top-4 sm:left-4",
     flip: "-scale-y-100",
     fadeDelay: 0.2,
-    sway: { rotate: [0, 2.2, 0, -2.2, 0], origin: "top left", duration: 6.8 },
+    sway: makeSway(2.2, 6.8, "top left"),
   },
   {
     key: "top-right",
     position: "top-2 right-2 sm:top-4 sm:right-4",
     flip: "-scale-x-100 -scale-y-100",
     fadeDelay: 0.3,
-    sway: {
-      rotate: [0, -2.2, 0, 2.2, 0],
-      origin: "top right",
-      duration: 7.3,
-    },
+    sway: makeSway(2.2, 7.3, "top right", true),
   },
 ];
 
@@ -371,7 +384,7 @@ const Butterfly = memo(function Butterfly({
   color: string;
 }) {
   return (
-    <motion.svg
+    <m.svg
       viewBox="0 0 32 32"
       width={size}
       height={size}
@@ -383,7 +396,7 @@ const Butterfly = memo(function Butterfly({
         repeatType: "reverse",
         ease: "easeInOut",
       }}
-      style={{ transformOrigin: "center" }}
+      style={{ transformOrigin: "center", ...GPU_HINT }}
     >
       <path
         d="M16 16 C 10 4, 0 6, 2 14 C 3 20, 10 20, 16 16 Z"
@@ -414,11 +427,11 @@ const Butterfly = memo(function Butterfly({
         strokeWidth="1.2"
         opacity="0.6"
       />
-    </motion.svg>
+    </m.svg>
   );
 });
 
-export default function CoverPage({
+function CoverPageInner({
   guestName = "Tamu Undangan",
   onOpen,
 }: CoverPageProps) {
@@ -429,9 +442,20 @@ export default function CoverPage({
     onOpen();
   }, [onOpen]);
 
+  // Perf: transition objects untuk sway loop dibuat sekali (memoized),
+  // bukan dialokasikan ulang setiap render.
+  const vineTransitions = useMemo(
+    () => vines.map((v) => loop(v.sway.duration, v.delay + 0.6)),
+    [],
+  );
+  const cornerTransitions = useMemo(
+    () => corners.map((c) => loop(c.sway.duration, c.fadeDelay + 0.6)),
+    [],
+  );
+
   return (
     <AnimatePresence>
-      <motion.div
+      <m.div
         exit={{ opacity: 0, transition: { duration: 0.5 } }}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-ivory"
         style={{
@@ -443,12 +467,13 @@ export default function CoverPage({
       >
         <BackgroundPattern className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.12]" />
 
-        {/* FIX: efek Ken Burns — background perlahan zoom in/out tanpa
-            henti supaya suasana taman terasa hidup, bukan foto statis. */}
-        <motion.div
+        {/* Ken Burns: background zoom halus tanpa henti, transform-only
+            (scale) sehingga sepenuhnya digambar oleh compositor/GPU. */}
+        <m.div
           className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
           animate={{ scale: [1, 1.06, 1] }}
-          transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+          transition={loop(24)}
+          style={GPU_HINT}
         >
           <Image
             src="/assets/garden-scatter-bg.webp"
@@ -462,22 +487,20 @@ export default function CoverPage({
               filter: "saturate(1.35) contrast(1.15) brightness(1.05)",
             }}
           />
-        </motion.div>
+        </m.div>
 
-        <motion.div
+        <m.div
           variants={borderFade}
           initial="hidden"
           animate="show"
           className="pointer-events-none absolute inset-3 z-[2] rounded-sm border border-sage/30 sm:inset-6"
         />
 
-        {/* FIX: setiap vine sekarang punya motion.div bertingkat —
-            wrapper luar tetap menjalankan fade-in masuk (vineFade),
-            wrapper dalam menjalankan ayunan halus tak berhenti
-            (rotate kecil bolak-balik) dengan transformOrigin di
-            pangkal vine supaya efeknya seperti tertiup angin. */}
-        {vines.map((v) => (
-          <motion.div
+        {/* Setiap vine: wrapper luar mengurus fade-in masuk (vineFade),
+            wrapper dalam menjalankan ayunan halus tak berhenti (rotate
+            kecil bolak-balik) dengan transformOrigin di pangkal vine. */}
+        {vines.map((v, i) => (
+          <m.div
             key={v.key}
             variants={vineFade}
             initial="hidden"
@@ -485,15 +508,10 @@ export default function CoverPage({
             transition={{ delay: v.delay }}
             className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
           >
-            <motion.div
+            <m.div
               animate={{ rotate: v.sway.rotate }}
-              transition={{
-                duration: v.sway.duration,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: v.delay + 0.6,
-              }}
-              style={{ transformOrigin: v.sway.origin }}
+              transition={vineTransitions[i]}
+              style={{ transformOrigin: v.sway.origin, ...GPU_HINT }}
               className="h-full w-full"
             >
               <FloralVine
@@ -501,47 +519,43 @@ export default function CoverPage({
                 className="h-full w-full"
                 tileSize={360}
               />
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         ))}
 
-        {/* FIX: glow di belakang wreath sekarang "bernapas" — pulsing
-            opacity & scale tak berhenti, mulai setelah entrance selesai. */}
-        <motion.div
+        {/* Glow di belakang wreath "bernapas" — pulsing opacity & scale
+            tak berhenti, mulai setelah entrance selesai. */}
+        <m.div
           variants={glowVariant}
           initial="hidden"
           animate="show"
           className="pointer-events-none absolute left-1/2 top-1/2 z-[2] h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl sm:h-72 sm:w-72 lg:h-[28rem] lg:w-[28rem]"
         >
-          <motion.div
+          <m.div
             className="h-full w-full rounded-full bg-blush/40 blur-3xl"
             animate={{ opacity: [0.5, 1, 0.5], scale: [0.92, 1.05, 0.92] }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1.7,
-            }}
+            transition={loop(5, 1.7)}
+            style={GPU_HINT}
           />
-        </motion.div>
+        </m.div>
 
         {petals.map((p, i) => (
-          <motion.div
+          <m.div
             key={i}
             className="pointer-events-none absolute top-[-5%] z-10"
-            style={{ left: p.left, width: p.size, height: p.size }}
+            style={{
+              left: p.left,
+              width: p.size,
+              height: p.size,
+              ...GPU_HINT,
+            }}
             animate={{
               y: ["0vh", "105vh"],
               x: [0, 20, -12, 0],
               rotate: [0, 180, 360],
               opacity: [0, 0.6, 0.6, 0],
             }}
-            transition={{
-              duration: p.duration,
-              delay: p.delay,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            transition={loop(p.duration, p.delay, "linear")}
           >
             <svg viewBox="0 0 20 20" fill="none">
               <ellipse
@@ -553,23 +567,19 @@ export default function CoverPage({
                 opacity="0.75"
               />
             </svg>
-          </motion.div>
+          </m.div>
         ))}
 
         {stars.map((s, i) => (
-          <motion.div
+          <div
             key={i}
             className="pointer-events-none absolute z-10"
             style={{ top: s.top, left: s.left }}
           >
-            <motion.div
+            <m.div
               animate={{ opacity: [0.2, 0.9, 0.2], scale: [0.6, 1.15, 0.6] }}
-              transition={{
-                duration: 2.8 + (i % 3),
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.35,
-              }}
+              transition={loop(2.8 + (i % 3), i * 0.35)}
+              style={GPU_HINT}
             >
               <svg
                 width="11"
@@ -579,15 +589,15 @@ export default function CoverPage({
               >
                 <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z" />
               </svg>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </div>
         ))}
 
         {butterflies.map((b, i) => (
-          <motion.div
+          <m.div
             key={i}
             className="pointer-events-none absolute z-10"
-            style={{ top: b.top, left: b.left }}
+            style={{ top: b.top, left: b.left, ...GPU_HINT }}
             animate={{ x: b.path, y: b.yPath, opacity: [0, 0.9, 0.9, 0.9, 0] }}
             transition={{
               duration: b.duration,
@@ -598,16 +608,14 @@ export default function CoverPage({
             }}
           >
             <Butterfly size={b.size} color={b.color} />
-          </motion.div>
+          </m.div>
         ))}
 
-        {/* FIX: setiap corner sekarang punya motion.div bertingkat —
-            wrapper luar tetap menjalankan fade-in masuk (cornerFade),
+        {/* Setiap corner: wrapper luar mengurus fade-in masuk (cornerFade),
             wrapper dalam menjalankan ayunan halus dengan transformOrigin
-            diarahkan ke titik sudutnya sendiri supaya terlihat seperti
-            melambai dari pangkalnya, bukan berputar di tengah kotak. */}
-        {corners.map((c) => (
-          <motion.div
+            diarahkan ke titik sudutnya sendiri. */}
+        {corners.map((c, i) => (
+          <m.div
             key={c.key}
             variants={cornerFade}
             initial="hidden"
@@ -615,37 +623,32 @@ export default function CoverPage({
             transition={{ delay: c.fadeDelay }}
             className={`pointer-events-none absolute z-20 h-24 w-24 sm:h-36 sm:w-36 lg:h-48 lg:w-48 ${c.position}`}
           >
-            <motion.div
+            <m.div
               animate={{ rotate: c.sway.rotate }}
-              transition={{
-                duration: c.sway.duration,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: c.fadeDelay + 0.6,
-              }}
-              style={{ transformOrigin: c.sway.origin }}
+              transition={cornerTransitions[i]}
+              style={{ transformOrigin: c.sway.origin, ...GPU_HINT }}
               className="h-full w-full"
             >
               <FloralCorner className="h-full w-full" flip={c.flip} />
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         ))}
 
-        <motion.div
+        <m.div
           variants={container}
           initial="hidden"
           animate="show"
           style={containerQueryStyle}
           className="relative z-20 flex w-full max-w-sm flex-col items-center px-6 text-center sm:max-w-md sm:px-8 lg:max-w-[640px]"
         >
-          <motion.span
+          <m.span
             variants={fadeUp}
             className="inline-block rounded-full border border-mustard/60 bg-ivory px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.25em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em]"
           >
             UNDANGAN PERNIKAHAN
-          </motion.span>
+          </m.span>
 
-          <motion.div
+          <m.div
             variants={wreathVariant}
             className="relative mt-4 w-[clamp(270px,92cqw,610px)] sm:mt-5"
           >
@@ -670,24 +673,20 @@ export default function CoverPage({
                 Amelia
               </p>
 
-              {/* FIX: ampersand diberi heartbeat pulse halus tak
-                  berhenti supaya jadi titik fokus yang terasa hidup. */}
-              <motion.p
+              {/* Ampersand: heartbeat pulse halus tak berhenti,
+                  transform (scale) saja supaya ringan. */}
+              <m.p
                 className="my-1 font-script font-semibold leading-none text-burgundy"
                 style={{
                   ...textLift,
                   fontSize: "clamp(0.8rem, 2.7cqw, 1.25rem)",
+                  ...GPU_HINT,
                 }}
                 animate={{ scale: [1, 1.15, 1] }}
-                transition={{
-                  duration: 2.6,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1.5,
-                }}
+                transition={loop(2.6, 1.5)}
               >
                 &amp;
-              </motion.p>
+              </m.p>
 
               <p
                 className="w-full font-script font-semibold leading-[0.9] text-ink"
@@ -700,27 +699,22 @@ export default function CoverPage({
                 Alexander
               </p>
             </div>
-          </motion.div>
+          </m.div>
 
-          <motion.div
+          <m.div
             variants={fadeUp}
             className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory px-4 py-3 shadow-sm sm:mt-4 sm:gap-x-3 sm:px-5"
           >
-            {/* FIX: MiniFlower kiri & kanan diberi mekar-berdenyut halus
-                (scale + rotate kecil) dengan durasi & delay berbeda
-                supaya terasa organik, bukan seragam. */}
-            <motion.div
+            {/* MiniFlower kiri & kanan: mekar-berdenyut halus (scale +
+                rotate kecil), durasi & delay berbeda supaya organik. */}
+            <m.div
               animate={{ scale: [1, 1.12, 1], rotate: [0, 6, 0] }}
-              transition={{
-                duration: 3.4,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1.2,
-              }}
+              transition={loop(3.4, 1.2)}
+              style={GPU_HINT}
               className="shrink-0"
             >
               <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
-            </motion.div>
+            </m.div>
             <span className="text-[0.65rem] font-bold tracking-[0.12em] text-ink sm:text-xs sm:tracking-[0.15em]">
               SABTU
             </span>
@@ -730,25 +724,21 @@ export default function CoverPage({
             <span className="text-[0.65rem] font-bold tracking-[0.12em] text-ink sm:text-xs sm:tracking-[0.15em]">
               DESEMBER 2026
             </span>
-            <motion.div
+            <m.div
               animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
-              transition={{
-                duration: 3.7,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1.6,
-              }}
+              transition={loop(3.7, 1.6)}
+              style={GPU_HINT}
               className="shrink-0"
             >
               <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
 
-          <motion.div variants={fadeUp} className="mt-5 w-32 sm:mt-6 sm:w-40">
+          <m.div variants={fadeUp} className="mt-5 w-32 sm:mt-6 sm:w-40">
             <FlourishDivider className="h-4 w-full" />
-          </motion.div>
+          </m.div>
 
-          <motion.div
+          <m.div
             variants={fadeUp}
             className="mt-5 w-full rounded-2xl border border-sage/30 bg-ivory px-4 py-4 shadow-sm sm:mt-6 sm:px-5"
           >
@@ -758,39 +748,51 @@ export default function CoverPage({
             <p className="mt-1.5 wrap-break-word text-lg font-bold leading-snug text-ink sm:text-xl">
               {guestName}
             </p>
-          </motion.div>
+          </m.div>
 
           {!isOpening && (
-            <motion.div variants={fadeUp} className="mt-6 sm:mt-8">
-              {/* FIX: tombol CTA diberi pulsing glow halus tak berhenti
-                  untuk mengundang tamu menekan, hover scale tetap ada. */}
-              <motion.button
+            <m.div
+              variants={fadeUp}
+              className="relative mt-6 inline-block sm:mt-8"
+            >
+              {/* Glow tombol dipisah jadi layer sendiri (blur + opacity/
+                  scale) — full compositor/GPU, jauh lebih mulus daripada
+                  animasi boxShadow (yang memicu repaint tiap frame). */}
+              <m.div
+                className="pointer-events-none absolute inset-0 rounded-full bg-blush-dark/60 blur-lg"
+                animate={{
+                  opacity: [0.35, 0.75, 0.35],
+                  scale: [0.94, 1.08, 0.94],
+                }}
+                transition={loop(2.4, 1)}
+                style={GPU_HINT}
+              />
+              <m.button
                 type="button"
                 onClick={handleOpen}
-                className="min-h-11 rounded-full bg-blush-dark px-8 py-3.5 text-[0.65rem] font-bold tracking-[0.2em] text-white sm:px-10 sm:text-xs sm:tracking-[0.25em]"
-                animate={{
-                  boxShadow: [
-                    "0 4px 14px rgba(150,60,70,0.25)",
-                    "0 4px 22px rgba(150,60,70,0.5)",
-                    "0 4px 14px rgba(150,60,70,0.25)",
-                  ],
-                  scale: [1, 1.03, 1],
-                }}
-                transition={{
-                  duration: 2.4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1,
-                }}
+                className="relative min-h-11 rounded-full bg-blush-dark px-8 py-3.5 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-md sm:px-10 sm:text-xs sm:tracking-[0.25em]"
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={loop(2.4, 1)}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.96 }}
+                style={GPU_HINT}
               >
                 BUKA UNDANGAN
-              </motion.button>
-            </motion.div>
+              </m.button>
+            </m.div>
           )}
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
     </AnimatePresence>
   );
 }
+
+function CoverPage(props: CoverPageProps) {
+  return (
+    <LazyMotion features={domAnimation}>
+      <CoverPageInner {...props} />
+    </LazyMotion>
+  );
+}
+
+export default memo(CoverPage);
