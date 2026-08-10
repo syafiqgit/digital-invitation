@@ -196,6 +196,10 @@ const butterflies: ButterflyConfig[] = [
   },
 ];
 
+// FIX: tambahkan `sway` per vine — arah & titik tumpu (transformOrigin)
+// disesuaikan supaya ayunan terlihat natural (vine vertikal berayun dari
+// ujung atas, vine horizontal berayun dari ujung kiri), bukan berputar
+// di tengah elemen.
 const vines = [
   {
     key: "left",
@@ -203,6 +207,7 @@ const vines = [
     className: "absolute left-0 top-0 h-full w-8 opacity-90 sm:w-12 lg:w-14",
     flip: "",
     delay: 0,
+    sway: { rotate: [0, 1.4, 0, -1.4, 0], origin: "top center", duration: 7 },
   },
   {
     key: "right",
@@ -210,6 +215,11 @@ const vines = [
     className: "absolute right-0 top-0 h-full w-8 opacity-90 sm:w-12 lg:w-14",
     flip: "-scale-x-100",
     delay: 0.1,
+    sway: {
+      rotate: [0, -1.4, 0, 1.4, 0],
+      origin: "top center",
+      duration: 7.6,
+    },
   },
   {
     key: "top",
@@ -217,6 +227,11 @@ const vines = [
     className: "absolute left-0 top-0 h-8 w-full opacity-90 sm:h-12 lg:h-14",
     flip: "",
     delay: 0.2,
+    sway: {
+      rotate: [0, 0.9, 0, -0.9, 0],
+      origin: "left center",
+      duration: 8.2,
+    },
   },
   {
     key: "bottom",
@@ -224,33 +239,57 @@ const vines = [
     className: "absolute bottom-0 left-0 h-8 w-full opacity-90 sm:h-12 lg:h-14",
     flip: "-scale-y-100",
     delay: 0.3,
+    sway: {
+      rotate: [0, -0.9, 0, 0.9, 0],
+      origin: "left center",
+      duration: 8.8,
+    },
   },
 ];
 
+// FIX: tambahkan `sway` per corner — titik tumpu diarahkan ke sudut
+// masing-masing (mis. top-left berayun dari titik "top left") supaya
+// motif floral seolah melambai dari akar/pangkalnya di pojok.
 const corners = [
   {
     key: "bottom-left",
     position: "bottom-2 left-2 sm:bottom-4 sm:left-4",
     flip: "",
     fadeDelay: 0,
+    sway: {
+      rotate: [0, 2.2, 0, -2.2, 0],
+      origin: "bottom left",
+      duration: 6.5,
+    },
   },
   {
     key: "bottom-right",
     position: "bottom-2 right-2 sm:bottom-4 sm:right-4",
     flip: "-scale-x-100",
     fadeDelay: 0.1,
+    sway: {
+      rotate: [0, -2.2, 0, 2.2, 0],
+      origin: "bottom right",
+      duration: 7,
+    },
   },
   {
     key: "top-left",
     position: "top-2 left-2 sm:top-4 sm:left-4",
     flip: "-scale-y-100",
     fadeDelay: 0.2,
+    sway: { rotate: [0, 2.2, 0, -2.2, 0], origin: "top left", duration: 6.8 },
   },
   {
     key: "top-right",
     position: "top-2 right-2 sm:top-4 sm:right-4",
     flip: "-scale-x-100 -scale-y-100",
     fadeDelay: 0.3,
+    sway: {
+      rotate: [0, -2.2, 0, 2.2, 0],
+      origin: "top right",
+      duration: 7.3,
+    },
   },
 ];
 
@@ -404,18 +443,26 @@ export default function CoverPage({
       >
         <BackgroundPattern className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.12]" />
 
-        <Image
-          src="/assets/garden-scatter-bg.webp"
-          alt=""
-          fill
-          priority
-          quality={100}
-          sizes="100vw"
-          className="pointer-events-none absolute inset-0 z-[1] object-cover opacity-100"
-          style={{
-            filter: "saturate(1.35) contrast(1.15) brightness(1.05)",
-          }}
-        />
+        {/* FIX: efek Ken Burns — background perlahan zoom in/out tanpa
+            henti supaya suasana taman terasa hidup, bukan foto statis. */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+          animate={{ scale: [1, 1.06, 1] }}
+          transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Image
+            src="/assets/garden-scatter-bg.webp"
+            alt=""
+            fill
+            priority
+            quality={100}
+            sizes="100vw"
+            className="pointer-events-none object-cover opacity-100"
+            style={{
+              filter: "saturate(1.35) contrast(1.15) brightness(1.05)",
+            }}
+          />
+        </motion.div>
 
         <motion.div
           variants={borderFade}
@@ -424,6 +471,11 @@ export default function CoverPage({
           className="pointer-events-none absolute inset-3 z-[2] rounded-sm border border-sage/30 sm:inset-6"
         />
 
+        {/* FIX: setiap vine sekarang punya motion.div bertingkat —
+            wrapper luar tetap menjalankan fade-in masuk (vineFade),
+            wrapper dalam menjalankan ayunan halus tak berhenti
+            (rotate kecil bolak-balik) dengan transformOrigin di
+            pangkal vine supaya efeknya seperti tertiup angin. */}
         {vines.map((v) => (
           <motion.div
             key={v.key}
@@ -433,20 +485,45 @@ export default function CoverPage({
             transition={{ delay: v.delay }}
             className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
           >
-            <FloralVine
-              orientation={v.orientation}
+            <motion.div
+              animate={{ rotate: v.sway.rotate }}
+              transition={{
+                duration: v.sway.duration,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: v.delay + 0.6,
+              }}
+              style={{ transformOrigin: v.sway.origin }}
               className="h-full w-full"
-              tileSize={360}
-            />
+            >
+              <FloralVine
+                orientation={v.orientation}
+                className="h-full w-full"
+                tileSize={360}
+              />
+            </motion.div>
           </motion.div>
         ))}
 
+        {/* FIX: glow di belakang wreath sekarang "bernapas" — pulsing
+            opacity & scale tak berhenti, mulai setelah entrance selesai. */}
         <motion.div
           variants={glowVariant}
           initial="hidden"
           animate="show"
           className="pointer-events-none absolute left-1/2 top-1/2 z-[2] h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl sm:h-72 sm:w-72 lg:h-[28rem] lg:w-[28rem]"
-        />
+        >
+          <motion.div
+            className="h-full w-full rounded-full bg-blush/40 blur-3xl"
+            animate={{ opacity: [0.5, 1, 0.5], scale: [0.92, 1.05, 0.92] }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1.7,
+            }}
+          />
+        </motion.div>
 
         {petals.map((p, i) => (
           <motion.div
@@ -524,6 +601,11 @@ export default function CoverPage({
           </motion.div>
         ))}
 
+        {/* FIX: setiap corner sekarang punya motion.div bertingkat —
+            wrapper luar tetap menjalankan fade-in masuk (cornerFade),
+            wrapper dalam menjalankan ayunan halus dengan transformOrigin
+            diarahkan ke titik sudutnya sendiri supaya terlihat seperti
+            melambai dari pangkalnya, bukan berputar di tengah kotak. */}
         {corners.map((c) => (
           <motion.div
             key={c.key}
@@ -533,7 +615,19 @@ export default function CoverPage({
             transition={{ delay: c.fadeDelay }}
             className={`pointer-events-none absolute z-20 h-24 w-24 sm:h-36 sm:w-36 lg:h-48 lg:w-48 ${c.position}`}
           >
-            <FloralCorner className="h-full w-full" flip={c.flip} />
+            <motion.div
+              animate={{ rotate: c.sway.rotate }}
+              transition={{
+                duration: c.sway.duration,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: c.fadeDelay + 0.6,
+              }}
+              style={{ transformOrigin: c.sway.origin }}
+              className="h-full w-full"
+            >
+              <FloralCorner className="h-full w-full" flip={c.flip} />
+            </motion.div>
           </motion.div>
         ))}
 
@@ -576,15 +670,24 @@ export default function CoverPage({
                 Amelia
               </p>
 
-              <p
+              {/* FIX: ampersand diberi heartbeat pulse halus tak
+                  berhenti supaya jadi titik fokus yang terasa hidup. */}
+              <motion.p
                 className="my-1 font-script font-semibold leading-none text-burgundy"
                 style={{
                   ...textLift,
                   fontSize: "clamp(0.8rem, 2.7cqw, 1.25rem)",
                 }}
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{
+                  duration: 2.6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 1.5,
+                }}
               >
                 &amp;
-              </p>
+              </motion.p>
 
               <p
                 className="w-full font-script font-semibold leading-[0.9] text-ink"
@@ -603,7 +706,21 @@ export default function CoverPage({
             variants={fadeUp}
             className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory px-4 py-3 shadow-sm sm:mt-4 sm:gap-x-3 sm:px-5"
           >
-            <MiniFlower className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+            {/* FIX: MiniFlower kiri & kanan diberi mekar-berdenyut halus
+                (scale + rotate kecil) dengan durasi & delay berbeda
+                supaya terasa organik, bukan seragam. */}
+            <motion.div
+              animate={{ scale: [1, 1.12, 1], rotate: [0, 6, 0] }}
+              transition={{
+                duration: 3.4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1.2,
+              }}
+              className="shrink-0"
+            >
+              <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
+            </motion.div>
             <span className="text-[0.65rem] font-bold tracking-[0.12em] text-ink sm:text-xs sm:tracking-[0.15em]">
               SABTU
             </span>
@@ -613,7 +730,18 @@ export default function CoverPage({
             <span className="text-[0.65rem] font-bold tracking-[0.12em] text-ink sm:text-xs sm:tracking-[0.15em]">
               DESEMBER 2026
             </span>
-            <MiniFlower className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+            <motion.div
+              animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
+              transition={{
+                duration: 3.7,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1.6,
+              }}
+              className="shrink-0"
+            >
+              <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
+            </motion.div>
           </motion.div>
 
           <motion.div variants={fadeUp} className="mt-5 w-32 sm:mt-6 sm:w-40">
@@ -634,13 +762,31 @@ export default function CoverPage({
 
           {!isOpening && (
             <motion.div variants={fadeUp} className="mt-6 sm:mt-8">
-              <button
+              {/* FIX: tombol CTA diberi pulsing glow halus tak berhenti
+                  untuk mengundang tamu menekan, hover scale tetap ada. */}
+              <motion.button
                 type="button"
                 onClick={handleOpen}
-                className="min-h-11 rounded-full bg-blush-dark px-8 py-3.5 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-md transition hover:scale-105 sm:px-10 sm:text-xs sm:tracking-[0.25em]"
+                className="min-h-11 rounded-full bg-blush-dark px-8 py-3.5 text-[0.65rem] font-bold tracking-[0.2em] text-white sm:px-10 sm:text-xs sm:tracking-[0.25em]"
+                animate={{
+                  boxShadow: [
+                    "0 4px 14px rgba(150,60,70,0.25)",
+                    "0 4px 22px rgba(150,60,70,0.5)",
+                    "0 4px 14px rgba(150,60,70,0.25)",
+                  ],
+                  scale: [1, 1.03, 1],
+                }}
+                transition={{
+                  duration: 2.4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 1,
+                }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.96 }}
               >
                 BUKA UNDANGAN
-              </button>
+              </motion.button>
             </motion.div>
           )}
         </motion.div>
