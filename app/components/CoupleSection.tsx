@@ -1,7 +1,13 @@
 "use client";
 
 import { memo } from "react";
-import { motion, type Variants } from "framer-motion";
+import {
+  LazyMotion,
+  domAnimation,
+  m,
+  type Transition,
+  type Variants,
+} from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
@@ -26,6 +32,19 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
 
+// Perf: reused on every element that animates forever, so the browser
+// promotes it to its own compositor layer ahead of time instead of doing
+// so mid-animation (a common cause of a stutter on the first loop).
+const GPU_HINT = { willChange: "transform, opacity" } as const;
+
+// Perf: single helper for "loop forever" transitions instead of repeating
+// { repeat: Infinity, ease: "easeInOut", ... } literals everywhere.
+const loop = (
+  duration: number,
+  delay = 0,
+  ease: Transition["ease"] = "easeInOut",
+): Transition => ({ duration, delay, repeat: Infinity, ease });
+
 const containerVariants: Variants = {
   hidden: {},
   visible: {
@@ -36,11 +55,6 @@ const containerVariants: Variants = {
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 22 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
-};
-
-const fadeOnly: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.9, ease: EASE } },
 };
 
 const slideFromLeft: Variants = {
@@ -609,7 +623,7 @@ const ArchPortrait = memo(function ArchPortrait({
   );
 });
 
-export default function CoupleSection({
+function CoupleSectionInner({
   groomName = "Alexander",
   groomFullName = "Alexander",
   groomParents = "Bapak ... & Ibu ...",
@@ -633,7 +647,7 @@ export default function CoupleSection({
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14]" />
 
-      {/* FIX: static, non-animated floral vines on all 4 sides
+      {/* Static, non-animated floral vines on all 4 sides
           (left, right, top, bottom) — matches Cover page's `vines` layout. */}
       {vines.map((v) => (
         <div
@@ -644,7 +658,7 @@ export default function CoupleSection({
         </div>
       ))}
 
-      {/* FIX: static, non-animated floral corners on all 4 corners,
+      {/* Static, non-animated floral corners on all 4 corners,
           using FloralCorner's own `flip` prop like the Cover page. */}
       {corners.map((c) => (
         <div
@@ -655,7 +669,7 @@ export default function CoupleSection({
         </div>
       ))}
 
-      {/* Small compass-style corner ornaments, now static (no wiggle/fade). */}
+      {/* Small compass-style corner ornaments, static (no wiggle/fade). */}
       {cornerOrnaments.map((c, i) => (
         <div
           key={`cf-${i}`}
@@ -683,41 +697,31 @@ export default function CoupleSection({
 
       <div className="hidden sm:contents">
         {sparkles.map((s, i) => (
-          <motion.div
+          <m.div
             key={`sparkle-${i}`}
             className="pointer-events-none absolute z-[1]"
-            style={{ top: s.top, left: s.left }}
+            style={{ top: s.top, left: s.left, ...GPU_HINT }}
             animate={{ opacity: [0.15, 0.85, 0.15], scale: [0.6, 1.1, 0.6] }}
-            transition={{
-              duration: 3 + (i % 3),
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.4,
-            }}
+            transition={loop(3 + (i % 3), i * 0.4)}
           >
             <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
-          </motion.div>
+          </m.div>
         ))}
       </div>
 
       <div className="hidden sm:contents">
         {floatingPetals.map((p, i) => (
-          <motion.div
+          <m.div
             key={`petal-${i}`}
             className="pointer-events-none absolute top-[-6%] z-[1]"
-            style={{ left: p.left, width: p.size, height: p.size }}
+            style={{ left: p.left, width: p.size, height: p.size, ...GPU_HINT }}
             animate={{
               y: ["0vh", "112vh"],
               x: [0, 16, -10, 0],
               rotate: [0, 180, 360],
               opacity: [0, 0.55, 0.55, 0],
             }}
-            transition={{
-              duration: p.duration,
-              delay: p.delay,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            transition={loop(p.duration, p.delay, "linear")}
           >
             <svg viewBox="0 0 20 20" fill="none">
               <ellipse
@@ -729,63 +733,50 @@ export default function CoupleSection({
                 opacity="0.7"
               />
             </svg>
-          </motion.div>
+          </m.div>
         ))}
       </div>
 
       <div className="hidden sm:contents">
         {butterflies.map((b, i) => (
-          <motion.div
+          <m.div
             key={`butterfly-${i}`}
             className="pointer-events-none absolute z-[2] h-4 w-5 lg:h-6 lg:w-8"
-            style={{ left: b.left, top: b.top }}
+            style={{ left: b.left, top: b.top, ...GPU_HINT }}
             animate={{
               x: [0, 36, -18, 48, 0],
               y: [0, -26, -6, -34, 0],
               rotate: [0, 8, -6, 5, 0],
             }}
-            transition={{
-              duration: b.duration,
-              delay: b.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            transition={loop(b.duration, b.delay)}
           >
-            <motion.div
+            <m.div
               animate={{ scaleX: [1, 0.82, 1] }}
-              transition={{
-                duration: 0.5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
+              transition={loop(0.5)}
+              style={GPU_HINT}
               className="h-full w-full"
             >
               <Butterfly className="h-full w-full" color={b.color} />
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         ))}
       </div>
 
       <div className="contents">
         {fireflies.map((f, i) => (
-          <motion.div
+          <m.div
             key={`firefly-${i}`}
             className="pointer-events-none absolute z-[1] h-1.5 w-1.5 lg:h-2 lg:w-2"
-            style={{ left: f.left, bottom: f.bottom }}
+            style={{ left: f.left, bottom: f.bottom, ...GPU_HINT }}
             animate={{
               y: [0, -60, -20, -90, 0],
               x: [0, 12, -8, 6, 0],
               opacity: [0, 0.9, 0.4, 0.9, 0],
             }}
-            transition={{
-              duration: f.duration,
-              delay: f.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            transition={loop(f.duration, f.delay)}
           >
             <Firefly className="h-full w-full" />
-          </motion.div>
+          </m.div>
         ))}
       </div>
 
@@ -820,33 +811,29 @@ export default function CoupleSection({
               fill="var(--mustard)"
               opacity="0.18"
             />
-            <motion.circle
+            <m.circle
               cx={f.cx}
               cy={f.cy}
               r="2.6"
               fill="var(--mustard)"
               animate={{ opacity: [0.35, 1, 0.35] }}
-              transition={{
-                duration: 2.4 + (i % 3) * 0.4,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.3,
-              }}
+              transition={loop(2.4 + (i % 3) * 0.4, i * 0.3)}
+              style={{ willChange: "opacity" }}
             />
           </g>
         ))}
       </svg>
 
-      <motion.div
+      <m.div
         className="pointer-events-none absolute bottom-0 left-0 z-[1] h-6 w-full opacity-90 sm:h-8 lg:h-10"
-        style={{ transformOrigin: "bottom center" }}
+        style={{ transformOrigin: "bottom center", ...GPU_HINT }}
         animate={{ skewX: [0, 1.5, 0, -1.5, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        transition={loop(6)}
       >
         <GrassSilhouette className="h-full w-full" />
-      </motion.div>
+      </m.div>
 
-      <motion.div
+      <m.div
         className="relative z-10 flex w-full max-w-3xl flex-col items-center"
         initial={initialState}
         whileInView="visible"
@@ -855,16 +842,13 @@ export default function CoupleSection({
       >
         <div className="flex w-full flex-col items-center">
           <div className="flex flex-col items-center gap-1 text-center">
-            <motion.div
-              variants={fadeUp}
-              style={{ willChange: "transform, opacity" }}
-            >
+            <m.div variants={fadeUp} style={GPU_HINT}>
               <StaticWreathBand className="mb-1 h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               variants={fadeUp}
-              style={{ willChange: "transform, opacity" }}
+              style={GPU_HINT}
               className="flex items-center gap-2 sm:gap-3"
             >
               <MiniBloom
@@ -878,31 +862,28 @@ export default function CoupleSection({
                 className="h-3 w-3 opacity-70 sm:h-4 sm:w-4"
                 color="var(--sage-light)"
               />
-            </motion.div>
+            </m.div>
 
-            <motion.p
+            <m.p
               variants={fadeUp}
               className="font-script mt-2 max-w-[18rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-lg font-semibold text-ink backdrop-blur-[2px] sm:max-w-md sm:text-2xl lg:mt-3 lg:text-3xl"
               style={{
                 textShadow: "0 1px 6px rgba(255,255,255,0.9)",
-                willChange: "transform, opacity",
+                ...GPU_HINT,
               }}
             >
               Dengan penuh syukur, kami mengundang Anda
-            </motion.p>
+            </m.p>
 
-            <motion.div
-              variants={fadeUp}
-              style={{ willChange: "transform, opacity" }}
-            >
+            <m.div variants={fadeUp} style={GPU_HINT}>
               <SprigDivider className="mt-1 h-4 w-32 sm:block lg:mt-2 lg:h-5 lg:w-44" />
-            </motion.div>
+            </m.div>
           </div>
 
           <div className="relative mt-4 flex w-full flex-row items-end justify-center gap-3 sm:mt-6 sm:gap-5 lg:mt-10 lg:gap-8">
-            <motion.div
+            <m.div
               variants={slideFromLeft}
-              style={{ willChange: "transform, opacity" }}
+              style={GPU_HINT}
               className="flex w-full max-w-[8.5rem] shrink-0 sm:max-w-[10rem] lg:max-w-[16rem]"
             >
               <ArchPortrait
@@ -912,11 +893,11 @@ export default function CoupleSection({
                 photoUrl={bridePhotoUrl}
                 align="left"
               />
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               variants={popIn}
-              style={{ willChange: "transform, opacity" }}
+              style={GPU_HINT}
               className="relative z-20 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-mustard bg-ivory shadow-lg sm:h-16 sm:w-16 lg:h-28 lg:w-28 lg:-translate-y-8"
             >
               <span className="absolute -inset-1 rounded-full border border-mustard/60" />
@@ -930,11 +911,11 @@ export default function CoupleSection({
               <span className="font-script text-lg font-semibold text-burgundy sm:text-2xl lg:text-4xl">
                 &amp;
               </span>
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               variants={slideFromRight}
-              style={{ willChange: "transform, opacity" }}
+              style={GPU_HINT}
               className="flex w-full max-w-[8.5rem] shrink-0 sm:max-w-[10rem] lg:max-w-[16rem]"
             >
               <ArchPortrait
@@ -944,22 +925,30 @@ export default function CoupleSection({
                 photoUrl={groomPhotoUrl}
                 align="right"
               />
-            </motion.div>
+            </m.div>
           </div>
 
-          <motion.div
+          <m.div
             variants={fadeUp}
-            style={{ willChange: "transform, opacity" }}
+            style={GPU_HINT}
             className="mt-3 sm:mt-5 lg:mt-8"
           >
             <StaticWreathBand
               flip
               className="h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
             />
-          </motion.div>
+          </m.div>
         </div>
-      </motion.div>
+      </m.div>
     </section>
+  );
+}
+
+export default function CoupleSection(props: CoupleSectionProps) {
+  return (
+    <LazyMotion features={domAnimation}>
+      <CoupleSectionInner {...props} />
+    </LazyMotion>
   );
 }
 
