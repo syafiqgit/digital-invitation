@@ -193,6 +193,12 @@ const fairyLights = [
 
 // Corner ornament sway is precomputed once (module scope), mirroring the
 // approach used on the cover page, since the data never changes at runtime.
+//
+// NOTE: intentionally NOT using `as const` here — that would freeze
+// `pulse.scale` / `pulse.rotate` into readonly tuples (e.g.
+// `readonly [1, 1.1, 1]`), which TypeScript rejects when passed to
+// Framer Motion's `animate` prop (it expects a mutable `number[]`
+// keyframe array). This was the cause of the build error.
 const cornerOrnaments = [
   {
     cls: "left-2 top-2 sm:left-4 sm:top-4 lg:left-8 lg:top-8",
@@ -218,7 +224,7 @@ const cornerOrnaments = [
     pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
     transition: loop(4.1, 0.2),
   },
-] as const;
+];
 
 const wreathBlooms = [
   { x: 40, y: 14, s: 1, color: "var(--burgundy)" },
@@ -252,6 +258,10 @@ const grassBlades = [
 
 // Vines now carry a `sway` config (rotate back-and-forth from their own
 // base edge) and a fade-in `delay`, same pattern as the cover page.
+//
+// NOTE: also not using `as const` on this array (or on `corners` below),
+// for the exact same reason as `cornerOrnaments` — `sway.rotate` is a
+// keyframe array consumed by Framer Motion's `animate` prop.
 const vines = [
   {
     key: "left",
@@ -285,7 +295,7 @@ const vines = [
     delay: 0.3,
     sway: makeSway(0.7, 9.2, "left center", true),
   },
-] as const;
+];
 
 // Precompute vine sway transitions once (module scope) — pure function of
 // static data, no need to recompute per render/hook.
@@ -322,7 +332,7 @@ const corners = [
     fadeDelay: 0.3,
     sway: makeSway(1.8, 7.4, "bottom right", true),
   },
-] as const;
+];
 
 const cornerTransitions = corners.map((c) =>
   loop(c.sway.duration, c.fadeDelay + 0.5),
