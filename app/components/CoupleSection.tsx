@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import Image from "next/image";
 import {
   LazyMotion,
   domAnimation,
@@ -11,6 +12,7 @@ import {
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
+import WreathFrame, { WREATH_HOLE } from "./WreathFrame";
 
 interface CoupleSectionProps {
   groomName?: string;
@@ -32,24 +34,35 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
 
-// Perf: reused on every element that animates forever, so the browser
-// promotes it to its own compositor layer ahead of time instead of doing
-// so mid-animation (a common cause of a stutter on the first loop).
 const GPU_HINT = { willChange: "transform, opacity" } as const;
+const GPU_HINT_OPACITY = { willChange: "opacity" } as const;
 
-// Perf: single helper for "loop forever" transitions instead of repeating
-// { repeat: Infinity, ease: "easeInOut", ... } literals everywhere.
 const loop = (
   duration: number,
   delay = 0,
   ease: Transition["ease"] = "easeInOut",
 ): Transition => ({ duration, delay, repeat: Infinity, ease });
 
+// Perf/DX: generates a symmetric sway (rotate back-and-forth) config so
+// vine/corner entries stay declarative instead of hand-typing keyframes.
+const makeSway = (
+  magnitude: number,
+  duration: number,
+  origin: string,
+  reverse = false,
+) => ({
+  rotate: reverse
+    ? [0, -magnitude, 0, magnitude, 0]
+    : [0, magnitude, 0, -magnitude, 0],
+  origin,
+  duration,
+});
+
+/* ---------- Framer Motion variants ---------- */
+
 const containerVariants: Variants = {
   hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.13, delayChildren: 0.05 },
-  },
+  visible: { transition: { staggerChildren: 0.13, delayChildren: 0.05 } },
 };
 
 const fadeUp: Variants = {
@@ -77,6 +90,20 @@ const popIn: Variants = {
   },
 };
 
+const vineFade: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 1.1, ease: "easeOut" } },
+};
+
+const cornerFade: Variants = {
+  hidden: { opacity: 0, scale: 0.85 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.9, ease: "easeOut" },
+  },
+};
+
 const textLift = {
   strong: {
     textShadow:
@@ -87,6 +114,8 @@ const textLift = {
       "0 1px 8px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.9)",
   },
 } as const;
+
+/* ---------- Static decoration data (computed once at module load) ---------- */
 
 const scatterItems = [
   { top: "5%", left: "8%", type: "bloom", color: "var(--burgundy)" },
@@ -118,13 +147,16 @@ const sparkles = [
   { top: "70%", left: "12%" },
   { top: "72%", left: "88%" },
   { top: "88%", left: "50%" },
-] as const;
+].map((s) => ({ ...s, style: { top: s.top, left: s.left, ...GPU_HINT } }));
 
 const floatingPetals = [
   { left: "6%", size: 7, duration: 10, delay: 0, color: "var(--blush-dark)" },
   { left: "93%", size: 6, duration: 12, delay: 3, color: "var(--coral)" },
   { left: "50%", size: 6, duration: 11, delay: 6, color: "var(--sage-light)" },
-] as const;
+].map((p) => ({
+  ...p,
+  style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
+}));
 
 const butterflies = [
   { left: "10%", top: "18%", color: "var(--coral)", duration: 16, delay: 0 },
@@ -136,7 +168,7 @@ const butterflies = [
     duration: 17,
     delay: 8,
   },
-] as const;
+].map((b) => ({ ...b, style: { left: b.left, top: b.top, ...GPU_HINT } }));
 
 const fireflies = [
   { left: "14%", bottom: "10%", duration: 7, delay: 0 },
@@ -144,7 +176,10 @@ const fireflies = [
   { left: "70%", bottom: "14%", duration: 7.5, delay: 3 },
   { left: "86%", bottom: "26%", duration: 9, delay: 2 },
   { left: "50%", bottom: "8%", duration: 8, delay: 4.5 },
-] as const;
+].map((f) => ({
+  ...f,
+  style: { left: f.left, bottom: f.bottom, ...GPU_HINT },
+}));
 
 const fairyLights = [
   { cx: 40, cy: 38 },
@@ -156,19 +191,32 @@ const fairyLights = [
   { cx: 360, cy: 38 },
 ] as const;
 
+// Corner ornament sway is precomputed once (module scope), mirroring the
+// approach used on the cover page, since the data never changes at runtime.
 const cornerOrnaments = [
-  { cls: "left-2 top-2 sm:left-4 sm:top-4 lg:left-8 lg:top-8", rotate: "" },
+  {
+    cls: "left-2 top-2 sm:left-4 sm:top-4 lg:left-8 lg:top-8",
+    rotate: "",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
+    transition: loop(3.6, 0.4),
+  },
   {
     cls: "bottom-2 right-2 sm:bottom-4 sm:right-4 lg:bottom-8 lg:right-8",
     rotate: "rotate-180",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
+    transition: loop(3.9, 0.9),
   },
   {
     cls: "right-2 top-2 sm:right-4 sm:top-4 lg:right-8 lg:top-8",
     rotate: "rotate-90",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
+    transition: loop(3.3, 1.4),
   },
   {
     cls: "bottom-2 left-2 sm:bottom-4 sm:left-4 lg:bottom-8 lg:left-8",
     rotate: "-rotate-90",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
+    transition: loop(4.1, 0.2),
   },
 ] as const;
 
@@ -202,59 +250,85 @@ const grassBlades = [
   { x: 390, h: 30, rot: 9 },
 ] as const;
 
-// Matches the Cover page's `vines` layout: left, right, top, bottom
-// so the couple section gets the same full floral-vine border.
+// Vines now carry a `sway` config (rotate back-and-forth from their own
+// base edge) and a fade-in `delay`, same pattern as the cover page.
 const vines = [
   {
     key: "left",
     orientation: "vertical" as const,
     className: "absolute left-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
     flip: "",
+    delay: 0,
+    sway: makeSway(1.1, 7.4, "top center"),
   },
   {
     key: "right",
     orientation: "vertical" as const,
     className: "absolute right-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
     flip: "-scale-x-100",
+    delay: 0.1,
+    sway: makeSway(1.1, 8, "top center", true),
   },
   {
     key: "top",
     orientation: "horizontal" as const,
     className: "absolute left-0 top-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
     flip: "",
+    delay: 0.2,
+    sway: makeSway(0.7, 8.6, "left center"),
   },
   {
     key: "bottom",
     orientation: "horizontal" as const,
     className: "absolute bottom-0 left-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
     flip: "-scale-y-100",
+    delay: 0.3,
+    sway: makeSway(0.7, 9.2, "left center", true),
   },
-];
+] as const;
 
-// Matches the Cover page's `corners` layout: uses FloralCorner's own
-// `flip` prop instead of Tailwind scale utilities.
+// Precompute vine sway transitions once (module scope) — pure function of
+// static data, no need to recompute per render/hook.
+const vineTransitions = vines.map((v) => loop(v.sway.duration, v.delay + 0.5));
+
+// Corners (FloralCorner) sway from their own corner point, same idea as
+// the cover page's corner sway.
 const corners = [
   {
     key: "top-left",
     position: "top-2 left-2 sm:top-4 sm:left-4",
     flip: "",
+    fadeDelay: 0,
+    sway: makeSway(1.8, 6.6, "top left"),
   },
   {
     key: "top-right",
     position: "top-2 right-2 sm:top-4 sm:right-4",
     flip: "-scale-x-100",
+    fadeDelay: 0.1,
+    sway: makeSway(1.8, 7.1, "top right", true),
   },
   {
     key: "bottom-left",
     position: "bottom-2 left-2 sm:bottom-4 sm:left-4",
     flip: "-scale-y-100",
+    fadeDelay: 0.2,
+    sway: makeSway(1.8, 6.9, "bottom left"),
   },
   {
     key: "bottom-right",
     position: "bottom-2 right-2 sm:bottom-4 sm:right-4",
     flip: "-scale-x-100 -scale-y-100",
+    fadeDelay: 0.3,
+    sway: makeSway(1.8, 7.4, "bottom right", true),
   },
-];
+] as const;
+
+const cornerTransitions = corners.map((c) =>
+  loop(c.sway.duration, c.fadeDelay + 0.5),
+);
+
+/* ---------- Small presentational pieces ---------- */
 
 const Monogram = memo(function Monogram({ name }: { name: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || "?";
@@ -264,40 +338,6 @@ const Monogram = memo(function Monogram({ name }: { name: string }) {
         {initial}
       </span>
     </div>
-  );
-});
-
-const PetalBadge = memo(function PetalBadge({
-  className = "",
-}: {
-  className?: string;
-}) {
-  return (
-    <svg viewBox="0 0 40 40" className={className} fill="none">
-      <circle
-        cx="20"
-        cy="20"
-        r="18.5"
-        fill="var(--ivory)"
-        stroke="var(--mustard)"
-        strokeWidth="1"
-      />
-      <g transform="translate(20, 20)">
-        {ANGLES_5.map((deg) => (
-          <ellipse
-            key={deg}
-            cx="0"
-            cy="-6.5"
-            rx="4.4"
-            ry="8.6"
-            fill="var(--burgundy)"
-            opacity="0.96"
-            transform={`rotate(${deg})`}
-          />
-        ))}
-        <circle r="2.8" fill="var(--mustard)" />
-      </g>
-    </svg>
   );
 });
 
@@ -544,414 +584,6 @@ const GrassSilhouette = memo(function GrassSilhouette({
   );
 });
 
-const ArchPortrait = memo(function ArchPortrait({
-  displayName,
-  fullName,
-  parents,
-  photoUrl,
-  align = "left",
-}: {
-  displayName: string;
-  fullName: string;
-  parents: string;
-  photoUrl?: string;
-  align?: "left" | "right";
-}) {
-  return (
-    <div className="relative flex w-full max-w-[8.5rem] flex-col items-center text-center sm:max-w-[10rem] lg:max-w-[16rem]">
-      <div className="relative w-full">
-        <div className="absolute -inset-[6px] rounded-t-[3.5rem] rounded-b-xl border border-mustard/35 sm:-inset-2 sm:rounded-t-[4.2rem] lg:-inset-[10px] lg:rounded-t-[6.5rem] lg:rounded-b-3xl" />
-        <div className="relative h-[30vh] w-full overflow-hidden rounded-t-[3.5rem] rounded-b-xl shadow-[0_14px_30px_-10px_rgba(58,54,48,0.35)] ring-1 ring-white/60 sm:h-[34vh] sm:rounded-t-[4.2rem] lg:h-[22rem] lg:rounded-t-[6.5rem] lg:rounded-b-3xl">
-          {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt={displayName}
-              loading="eager"
-              decoding="async"
-              referrerPolicy="no-referrer"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <Monogram name={displayName} />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/30 via-transparent to-transparent" />
-          <div className="pointer-events-none absolute inset-1 rounded-t-[3rem] rounded-b-lg border border-white/40 sm:rounded-t-[3.7rem] lg:inset-2 lg:rounded-t-[5.7rem] lg:rounded-b-2xl" />
-        </div>
-        <div
-          className={`absolute h-6 w-6 sm:h-8 sm:w-8 lg:h-11 lg:w-11 ${
-            align === "left"
-              ? "-right-1.5 -bottom-1.5 sm:-right-2 sm:-bottom-2"
-              : "-left-1.5 -bottom-1.5 sm:-left-2 sm:-bottom-2"
-          }`}
-        >
-          <PetalBadge className="h-full w-full" />
-        </div>
-        <div
-          className={`pointer-events-none absolute -top-2 h-5 w-5 opacity-80 sm:-top-3 sm:h-6 sm:w-6 lg:-top-4 lg:h-8 lg:w-8 ${
-            align === "left" ? "-left-1 sm:-left-2" : "-right-1 sm:-right-2"
-          }`}
-        >
-          <MiniLeaf
-            rot={align === "left" ? -30 : 30}
-            className="h-full w-full"
-          />
-        </div>
-      </div>
-
-      <p
-        className="font-script mt-4 text-2xl font-semibold leading-none text-ink sm:mt-5 sm:text-4xl lg:mt-8 lg:text-5xl"
-        style={textLift.strong}
-      >
-        {displayName}
-      </p>
-      <span className="mt-1.5 block h-px w-8 bg-sage/60 lg:mt-2 lg:w-10" />
-      <p
-        className="mt-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-ink lg:mt-2 lg:text-[13px]"
-        style={textLift.soft}
-      >
-        {fullName}
-      </p>
-      <p
-        className="mt-1 block max-w-[13rem] text-[11px] font-medium leading-relaxed text-ink/90 lg:mt-2.5 lg:text-[12px]"
-        style={textLift.soft}
-      >
-        {align === "left" ? "Putri dari" : "Putra dari"}
-        <br />
-        {parents}
-      </p>
-    </div>
-  );
-});
-
-function CoupleSectionInner({
-  groomName = "Alexander",
-  groomFullName = "Alexander",
-  groomParents = "Bapak ... & Ibu ...",
-  brideName = "Amelia",
-  brideFullName = "Amelia",
-  brideParents = "Bapak ... & Ibu ...",
-  groomPhotoUrl = DEFAULT_GROOM_PHOTO,
-  bridePhotoUrl = DEFAULT_BRIDE_PHOTO,
-  openingAnimation = true,
-}: CoupleSectionProps) {
-  const initialState = openingAnimation ? "hidden" : "visible";
-
-  return (
-    <section className="relative flex h-dvh min-h-[36rem] w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 sm:px-6">
-      <div className="pointer-events-none absolute inset-0 z-0">
-        <BackgroundPattern className="h-full w-full opacity-[0.32]" />
-      </div>
-      <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem]" />
-      <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72" />
-      <div className="pointer-events-none absolute left-1/2 top-8 z-0 h-40 w-40 -translate-x-1/2 rounded-full bg-mustard/15 blur-[70px] lg:h-56 lg:w-56" />
-
-      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14]" />
-
-      {/* Static, non-animated floral vines on all 4 sides
-          (left, right, top, bottom) — matches Cover page's `vines` layout. */}
-      {vines.map((v) => (
-        <div
-          key={v.key}
-          className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
-        >
-          <FloralVine orientation={v.orientation} className="h-full w-full" />
-        </div>
-      ))}
-
-      {/* Static, non-animated floral corners on all 4 corners,
-          using FloralCorner's own `flip` prop like the Cover page. */}
-      {corners.map((c) => (
-        <div
-          key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
-        >
-          <FloralCorner className="h-full w-full" flip={c.flip} />
-        </div>
-      ))}
-
-      {/* Small compass-style corner ornaments, static (no wiggle/fade). */}
-      {cornerOrnaments.map((c, i) => (
-        <div
-          key={`cf-${i}`}
-          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
-        >
-          <CornerFlourish className="h-full w-full" />
-        </div>
-      ))}
-
-      <div className="hidden sm:contents">
-        {scatterItems.map((item, i) => (
-          <div
-            key={`scatter-${i}`}
-            style={{ top: item.top, left: item.left }}
-            className="pointer-events-none absolute z-[1]"
-          >
-            {item.type === "bloom" ? (
-              <MiniBloom className="opacity-85" color={item.color} />
-            ) : (
-              <MiniLeaf className="opacity-80" rot={item.rot} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="hidden sm:contents">
-        {sparkles.map((s, i) => (
-          <m.div
-            key={`sparkle-${i}`}
-            className="pointer-events-none absolute z-[1]"
-            style={{ top: s.top, left: s.left, ...GPU_HINT }}
-            animate={{ opacity: [0.15, 0.85, 0.15], scale: [0.6, 1.1, 0.6] }}
-            transition={loop(3 + (i % 3), i * 0.4)}
-          >
-            <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
-          </m.div>
-        ))}
-      </div>
-
-      <div className="hidden sm:contents">
-        {floatingPetals.map((p, i) => (
-          <m.div
-            key={`petal-${i}`}
-            className="pointer-events-none absolute top-[-6%] z-[1]"
-            style={{ left: p.left, width: p.size, height: p.size, ...GPU_HINT }}
-            animate={{
-              y: ["0vh", "112vh"],
-              x: [0, 16, -10, 0],
-              rotate: [0, 180, 360],
-              opacity: [0, 0.55, 0.55, 0],
-            }}
-            transition={loop(p.duration, p.delay, "linear")}
-          >
-            <svg viewBox="0 0 20 20" fill="none">
-              <ellipse
-                cx="10"
-                cy="10"
-                rx="6"
-                ry="9"
-                fill={p.color}
-                opacity="0.7"
-              />
-            </svg>
-          </m.div>
-        ))}
-      </div>
-
-      <div className="hidden sm:contents">
-        {butterflies.map((b, i) => (
-          <m.div
-            key={`butterfly-${i}`}
-            className="pointer-events-none absolute z-[2] h-4 w-5 lg:h-6 lg:w-8"
-            style={{ left: b.left, top: b.top, ...GPU_HINT }}
-            animate={{
-              x: [0, 36, -18, 48, 0],
-              y: [0, -26, -6, -34, 0],
-              rotate: [0, 8, -6, 5, 0],
-            }}
-            transition={loop(b.duration, b.delay)}
-          >
-            <m.div
-              animate={{ scaleX: [1, 0.82, 1] }}
-              transition={loop(0.5)}
-              style={GPU_HINT}
-              className="h-full w-full"
-            >
-              <Butterfly className="h-full w-full" color={b.color} />
-            </m.div>
-          </m.div>
-        ))}
-      </div>
-
-      <div className="contents">
-        {fireflies.map((f, i) => (
-          <m.div
-            key={`firefly-${i}`}
-            className="pointer-events-none absolute z-[1] h-1.5 w-1.5 lg:h-2 lg:w-2"
-            style={{ left: f.left, bottom: f.bottom, ...GPU_HINT }}
-            animate={{
-              y: [0, -60, -20, -90, 0],
-              x: [0, 12, -8, 6, 0],
-              opacity: [0, 0.9, 0.4, 0.9, 0],
-            }}
-            transition={loop(f.duration, f.delay)}
-          >
-            <Firefly className="h-full w-full" />
-          </m.div>
-        ))}
-      </div>
-
-      <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
-      <div className="pointer-events-none absolute inset-6 z-[1] hidden rounded-[2.5rem] border border-dashed border-mustard/25 sm:block sm:inset-8 lg:inset-12" />
-
-      <svg
-        className="pointer-events-none absolute inset-0 z-[1] h-full w-full opacity-70"
-        viewBox="0 0 400 800"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M20 40 Q 120 10, 200 40 Q 280 10, 380 40"
-          stroke="var(--sage)"
-          strokeWidth="1"
-          fill="none"
-          opacity="0.5"
-        />
-        <path
-          d="M20 760 Q 120 790, 200 760 Q 280 790, 380 760"
-          stroke="var(--sage)"
-          strokeWidth="1"
-          fill="none"
-          opacity="0.5"
-        />
-        {fairyLights.map((f, i) => (
-          <g key={`fl-${i}`}>
-            <circle
-              cx={f.cx}
-              cy={f.cy}
-              r="5.5"
-              fill="var(--mustard)"
-              opacity="0.18"
-            />
-            <m.circle
-              cx={f.cx}
-              cy={f.cy}
-              r="2.6"
-              fill="var(--mustard)"
-              animate={{ opacity: [0.35, 1, 0.35] }}
-              transition={loop(2.4 + (i % 3) * 0.4, i * 0.3)}
-              style={{ willChange: "opacity" }}
-            />
-          </g>
-        ))}
-      </svg>
-
-      <m.div
-        className="pointer-events-none absolute bottom-0 left-0 z-[1] h-6 w-full opacity-90 sm:h-8 lg:h-10"
-        style={{ transformOrigin: "bottom center", ...GPU_HINT }}
-        animate={{ skewX: [0, 1.5, 0, -1.5, 0] }}
-        transition={loop(6)}
-      >
-        <GrassSilhouette className="h-full w-full" />
-      </m.div>
-
-      <m.div
-        className="relative z-10 flex w-full max-w-3xl flex-col items-center"
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.35 }}
-        variants={containerVariants}
-      >
-        <div className="flex w-full flex-col items-center">
-          <div className="flex flex-col items-center gap-1 text-center">
-            <m.div variants={fadeUp} style={GPU_HINT}>
-              <StaticWreathBand className="mb-1 h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
-            </m.div>
-
-            <m.div
-              variants={fadeUp}
-              style={GPU_HINT}
-              className="flex items-center gap-2 sm:gap-3"
-            >
-              <MiniBloom
-                className="h-3 w-3 opacity-70 sm:h-4 sm:w-4"
-                color="var(--sage-light)"
-              />
-              <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
-                MEMPELAI
-              </span>
-              <MiniBloom
-                className="h-3 w-3 opacity-70 sm:h-4 sm:w-4"
-                color="var(--sage-light)"
-              />
-            </m.div>
-
-            <m.p
-              variants={fadeUp}
-              className="font-script mt-2 max-w-[18rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-lg font-semibold text-ink backdrop-blur-[2px] sm:max-w-md sm:text-2xl lg:mt-3 lg:text-3xl"
-              style={{
-                textShadow: "0 1px 6px rgba(255,255,255,0.9)",
-                ...GPU_HINT,
-              }}
-            >
-              Dengan penuh syukur, kami mengundang Anda
-            </m.p>
-
-            <m.div variants={fadeUp} style={GPU_HINT}>
-              <SprigDivider className="mt-1 h-4 w-32 sm:block lg:mt-2 lg:h-5 lg:w-44" />
-            </m.div>
-          </div>
-
-          <div className="relative mt-4 flex w-full flex-row items-end justify-center gap-3 sm:mt-6 sm:gap-5 lg:mt-10 lg:gap-8">
-            <m.div
-              variants={slideFromLeft}
-              style={GPU_HINT}
-              className="flex w-full max-w-[8.5rem] shrink-0 sm:max-w-[10rem] lg:max-w-[16rem]"
-            >
-              <ArchPortrait
-                displayName={brideName}
-                fullName={brideFullName}
-                parents={brideParents}
-                photoUrl={bridePhotoUrl}
-                align="left"
-              />
-            </m.div>
-
-            <m.div
-              variants={popIn}
-              style={GPU_HINT}
-              className="relative z-20 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-mustard bg-ivory shadow-lg sm:h-16 sm:w-16 lg:h-28 lg:w-28 lg:-translate-y-8"
-            >
-              <span className="absolute -inset-1 rounded-full border border-mustard/60" />
-              <span className="absolute inset-[2px] rounded-full border border-sage/30 sm:inset-[3px]" />
-              <span className="absolute -left-3 -top-1 h-4 w-4 opacity-70 sm:-left-4 sm:h-5 sm:w-5 lg:-left-6 lg:h-7 lg:w-7">
-                <MiniLeaf rot={-40} className="h-full w-full" />
-              </span>
-              <span className="absolute -bottom-1 -right-3 h-4 w-4 opacity-70 sm:-right-4 sm:h-5 sm:w-5 lg:-right-6 lg:h-7 lg:w-7">
-                <MiniLeaf rot={40} className="h-full w-full" />
-              </span>
-              <span className="font-script text-lg font-semibold text-burgundy sm:text-2xl lg:text-4xl">
-                &amp;
-              </span>
-            </m.div>
-
-            <m.div
-              variants={slideFromRight}
-              style={GPU_HINT}
-              className="flex w-full max-w-[8.5rem] shrink-0 sm:max-w-[10rem] lg:max-w-[16rem]"
-            >
-              <ArchPortrait
-                displayName={groomName}
-                fullName={groomFullName}
-                parents={groomParents}
-                photoUrl={groomPhotoUrl}
-                align="right"
-              />
-            </m.div>
-          </div>
-
-          <m.div
-            variants={fadeUp}
-            style={GPU_HINT}
-            className="mt-3 sm:mt-5 lg:mt-8"
-          >
-            <StaticWreathBand
-              flip
-              className="h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
-            />
-          </m.div>
-        </div>
-      </m.div>
-    </section>
-  );
-}
-
-export default function CoupleSection(props: CoupleSectionProps) {
-  return (
-    <LazyMotion features={domAnimation}>
-      <CoupleSectionInner {...props} />
-    </LazyMotion>
-  );
-}
-
 const StaticWreathBand = memo(function StaticWreathBand({
   className = "",
   flip = false,
@@ -1013,3 +645,492 @@ const StaticWreathBand = memo(function StaticWreathBand({
     </svg>
   );
 });
+
+/* ---------- Portrait block ---------- */
+
+const ArchPortrait = memo(function ArchPortrait({
+  displayName,
+  fullName,
+  parents,
+  photoUrl,
+  align = "left",
+}: {
+  displayName: string;
+  fullName: string;
+  parents: string;
+  photoUrl?: string;
+  align?: "left" | "right";
+}) {
+  return (
+    <div className="relative flex w-full flex-col items-center text-center">
+      <div className="relative w-full">
+        <div className="absolute -inset-[7px] rounded-t-[3.6rem] rounded-b-xl border-[1.5px] border-mustard sm:-inset-2.5 sm:rounded-t-[4.3rem] lg:-inset-3 lg:rounded-t-[6.6rem] lg:rounded-b-3xl" />
+        <div className="absolute -inset-[3px] rounded-t-[3.4rem] rounded-b-lg border border-mustard/60 sm:-inset-1 sm:rounded-t-[4rem] lg:-inset-1.5 lg:rounded-t-[6.3rem] lg:rounded-b-2xl" />
+
+        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-t-[3.5rem] rounded-b-xl shadow-[0_14px_30px_-10px_rgba(58,54,48,0.35)] ring-1 ring-white/60 sm:rounded-t-[4.2rem] lg:rounded-t-[6.5rem] lg:rounded-b-3xl">
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={displayName}
+              loading="eager"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <Monogram name={displayName} />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/30 via-transparent to-transparent" />
+          <div className="pointer-events-none absolute inset-1 rounded-t-[3rem] rounded-b-lg border border-white/40 sm:rounded-t-[3.7rem] lg:inset-2 lg:rounded-t-[5.7rem] lg:rounded-b-2xl" />
+        </div>
+
+        {/* Garland is intentionally overflowed below the frame for a layered look */}
+        <div className="pointer-events-none absolute -bottom-[18%] sm:-bottom-[22%] lg:-bottom-[24%] left-1/2 z-20 w-[130%] -translate-x-1/2">
+          <Image
+            src="/assets/garland.png"
+            alt=""
+            width={900}
+            height={529}
+            className="h-auto w-full object-contain"
+          />
+        </div>
+
+        <div
+          className={`pointer-events-none absolute -top-2 z-30 h-5 w-5 opacity-80 sm:-top-3 sm:h-6 sm:w-6 lg:-top-4 lg:h-8 lg:w-8 ${
+            align === "left" ? "-left-1 sm:-left-2" : "-right-1 sm:-right-2"
+          }`}
+        >
+          <MiniLeaf
+            rot={align === "left" ? -30 : 30}
+            className="h-full w-full"
+          />
+        </div>
+      </div>
+
+      <p
+        className="font-script mt-12 text-2xl font-semibold leading-none text-balance break-words text-ink sm:mt-16 sm:text-4xl lg:mt-20 lg:text-5xl"
+        style={textLift.strong}
+      >
+        {displayName}
+      </p>
+      <span className="mt-1.5 block h-px w-8 bg-sage/60 lg:mt-2 lg:w-10" />
+      <p
+        className="mt-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-balance text-ink lg:mt-2 lg:text-[13px]"
+        style={textLift.soft}
+      >
+        {fullName}
+      </p>
+      <p
+        className="mt-1 block max-w-[13rem] text-[11px] font-medium leading-relaxed text-balance text-ink/90 lg:mt-2.5 lg:text-[12px]"
+        style={textLift.soft}
+      >
+        {align === "left" ? "Putri dari" : "Putra dari"}
+        <br />
+        {parents}
+      </p>
+    </div>
+  );
+});
+
+/* ---------- Ambient decoration groups (memoized, no per-render allocations) ---------- */
+
+const AmbientDecor = memo(function AmbientDecor() {
+  return (
+    <>
+      <div className="hidden sm:contents">
+        {scatterItems.map((item, i) => (
+          <div
+            key={`scatter-${i}`}
+            style={{ top: item.top, left: item.left }}
+            className="pointer-events-none absolute z-[1]"
+          >
+            {item.type === "bloom" ? (
+              <MiniBloom className="opacity-85" color={item.color} />
+            ) : (
+              <MiniLeaf className="opacity-80" rot={item.rot} />
+            )}
+          </div>
+        ))}
+
+        {sparkles.map((s, i) => (
+          <m.div
+            key={`sparkle-${i}`}
+            className="pointer-events-none absolute z-[1]"
+            style={s.style}
+            animate={{ opacity: [0.15, 0.85, 0.15], scale: [0.6, 1.1, 0.6] }}
+            transition={loop(3 + (i % 3), i * 0.4)}
+          >
+            <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
+          </m.div>
+        ))}
+
+        {floatingPetals.map((p, i) => (
+          <m.div
+            key={`petal-${i}`}
+            className="pointer-events-none absolute top-[-6%] z-[1]"
+            style={p.style}
+            animate={{
+              y: ["0vh", "112vh"],
+              x: [0, 16, -10, 0],
+              rotate: [0, 180, 360],
+              opacity: [0, 0.55, 0.55, 0],
+            }}
+            transition={loop(p.duration, p.delay, "linear")}
+          >
+            <svg viewBox="0 0 20 20" fill="none">
+              <ellipse
+                cx="10"
+                cy="10"
+                rx="6"
+                ry="9"
+                fill={p.color}
+                opacity="0.7"
+              />
+            </svg>
+          </m.div>
+        ))}
+
+        {butterflies.map((b, i) => (
+          <m.div
+            key={`butterfly-${i}`}
+            className="pointer-events-none absolute z-[2] h-4 w-5 lg:h-6 lg:w-8"
+            style={b.style}
+            animate={{
+              x: [0, 36, -18, 48, 0],
+              y: [0, -26, -6, -34, 0],
+              rotate: [0, 8, -6, 5, 0],
+            }}
+            transition={loop(b.duration, b.delay)}
+          >
+            <m.div
+              animate={{ scaleX: [1, 0.82, 1] }}
+              transition={loop(0.5)}
+              style={GPU_HINT}
+              className="h-full w-full"
+            >
+              <Butterfly className="h-full w-full" color={b.color} />
+            </m.div>
+          </m.div>
+        ))}
+      </div>
+
+      <div className="contents">
+        {fireflies.map((f, i) => (
+          <m.div
+            key={`firefly-${i}`}
+            className="pointer-events-none absolute z-[1] h-1.5 w-1.5 lg:h-2 lg:w-2"
+            style={f.style}
+            animate={{
+              y: [0, -60, -20, -90, 0],
+              x: [0, 12, -8, 6, 0],
+              opacity: [0, 0.9, 0.4, 0.9, 0],
+            }}
+            transition={loop(f.duration, f.delay)}
+          >
+            <Firefly className="h-full w-full" />
+          </m.div>
+        ))}
+      </div>
+    </>
+  );
+});
+
+const FairyLights = memo(function FairyLights() {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 z-[1] h-full w-full opacity-70"
+      viewBox="0 0 400 800"
+      preserveAspectRatio="none"
+    >
+      {fairyLights.map((f, i) => (
+        <g key={`fl-${i}`}>
+          <circle
+            cx={f.cx}
+            cy={f.cy}
+            r="5.5"
+            fill="var(--mustard)"
+            opacity="0.18"
+          />
+          <m.circle
+            cx={f.cx}
+            cy={f.cy}
+            r="2.6"
+            fill="var(--mustard)"
+            animate={{ opacity: [0.35, 1, 0.35] }}
+            transition={loop(2.4 + (i % 3) * 0.4, i * 0.3)}
+            style={GPU_HINT_OPACITY}
+          />
+        </g>
+      ))}
+    </svg>
+  );
+});
+
+// Vines & FloralCorner motifs now sway gently from their own base edge —
+// outer wrapper handles the entrance fade, inner wrapper runs the
+// never-ending rotate loop (same split used on the cover page).
+const FrameLayers = memo(function FrameLayers() {
+  return (
+    <>
+      {vines.map((v, i) => (
+        <m.div
+          key={v.key}
+          variants={vineFade}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          transition={{ delay: v.delay }}
+          className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
+        >
+          <m.div
+            animate={{ rotate: v.sway.rotate }}
+            transition={vineTransitions[i]}
+            style={{ transformOrigin: v.sway.origin, ...GPU_HINT }}
+            className="h-full w-full"
+          >
+            <FloralVine orientation={v.orientation} className="h-full w-full" />
+          </m.div>
+        </m.div>
+      ))}
+
+      {corners.map((c, i) => (
+        <m.div
+          key={c.key}
+          variants={cornerFade}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          transition={{ delay: c.fadeDelay }}
+          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+        >
+          <m.div
+            animate={{ rotate: c.sway.rotate }}
+            transition={cornerTransitions[i]}
+            style={{ transformOrigin: c.sway.origin, ...GPU_HINT }}
+            className="h-full w-full"
+          >
+            <FloralCorner className="h-full w-full" flip={c.flip} />
+          </m.div>
+        </m.div>
+      ))}
+
+      {cornerOrnaments.map((c, i) => (
+        <div
+          key={`cf-${i}`}
+          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
+        >
+          <m.div
+            animate={c.pulse}
+            transition={c.transition}
+            style={GPU_HINT}
+            className="h-full w-full"
+          >
+            <CornerFlourish className="h-full w-full" />
+          </m.div>
+        </div>
+      ))}
+
+      <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
+      <div className="pointer-events-none absolute inset-6 z-[1] hidden rounded-[2.5rem] border border-dashed border-mustard/25 sm:block sm:inset-8 lg:inset-12" />
+    </>
+  );
+});
+
+/* ---------- Main section ---------- */
+
+function CoupleSectionInner({
+  groomName = "Alexander",
+  groomFullName = "Alexander",
+  groomParents = "Bapak ... & Ibu ...",
+  brideName = "Amelia",
+  brideFullName = "Amelia",
+  brideParents = "Bapak ... & Ibu ...",
+  groomPhotoUrl = DEFAULT_GROOM_PHOTO,
+  bridePhotoUrl = DEFAULT_BRIDE_PHOTO,
+  openingAnimation = true,
+}: CoupleSectionProps) {
+  const initialState = openingAnimation ? "hidden" : "visible";
+
+  return (
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 sm:px-6 sm:py-24">
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <BackgroundPattern className="h-full w-full opacity-[0.32]" />
+      </div>
+      <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem]" />
+      <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72" />
+      <div className="pointer-events-none absolute left-1/2 top-8 z-0 h-40 w-40 -translate-x-1/2 rounded-full bg-mustard/15 blur-[70px] lg:h-56 lg:w-56" />
+
+      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14]" />
+
+      <FrameLayers />
+      <AmbientDecor />
+      <FairyLights />
+
+      <m.div
+        className="pointer-events-none absolute bottom-0 left-0 z-[1] h-6 w-full opacity-90 sm:h-8 lg:h-10"
+        style={{ transformOrigin: "bottom center", ...GPU_HINT }}
+        animate={{ skewX: [0, 1.5, 0, -1.5, 0] }}
+        transition={loop(6)}
+      >
+        <GrassSilhouette className="h-full w-full" />
+      </m.div>
+
+      <m.div
+        className="relative z-10 flex w-full max-w-3xl flex-col items-center"
+        initial={initialState}
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.35 }}
+        variants={containerVariants}
+      >
+        <div className="flex w-full flex-col items-center">
+          <div className="flex flex-col items-center gap-1 text-center">
+            <m.div variants={fadeUp} style={GPU_HINT}>
+              <StaticWreathBand className="mb-1 h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
+            </m.div>
+
+            <m.div
+              variants={fadeUp}
+              style={GPU_HINT}
+              className="flex items-center gap-2 sm:gap-3"
+            >
+              {/* MiniBloom flanking the badge now breathe gently, same
+                  language as the cover page's MiniFlower pulse. */}
+              <m.div
+                animate={{ scale: [1, 1.12, 1], rotate: [0, 6, 0] }}
+                transition={loop(3.4, 0.4)}
+                style={GPU_HINT}
+              >
+                <MiniBloom
+                  className="h-3 w-3 opacity-70 sm:h-4 sm:w-4"
+                  color="var(--sage-light)"
+                />
+              </m.div>
+              <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
+                MEMPELAI
+              </span>
+              <m.div
+                animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
+                transition={loop(3.7, 0.8)}
+                style={GPU_HINT}
+              >
+                <MiniBloom
+                  className="h-3 w-3 opacity-70 sm:h-4 sm:w-4"
+                  color="var(--sage-light)"
+                />
+              </m.div>
+            </m.div>
+
+            <m.p
+              variants={fadeUp}
+              className="font-script mt-2 max-w-[18rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-lg font-semibold text-ink backdrop-blur-[2px] sm:max-w-md sm:text-2xl lg:mt-3 lg:text-3xl"
+              style={{
+                textShadow: "0 1px 6px rgba(255,255,255,0.9)",
+                ...GPU_HINT,
+              }}
+            >
+              Dengan penuh syukur, kami mengundang Anda
+            </m.p>
+
+            <m.div variants={fadeUp} style={GPU_HINT}>
+              <SprigDivider className="mt-1 h-4 w-32 sm:block lg:mt-2 lg:h-5 lg:w-44" />
+            </m.div>
+          </div>
+
+          <div
+            className="relative mt-4 flex w-full flex-row items-end justify-center gap-2 sm:mt-6 sm:gap-4 lg:mt-10 lg:gap-6"
+            style={{ paddingInline: "clamp(1rem, 6vw, 3rem)" }}
+          >
+            <m.div
+              variants={slideFromLeft}
+              style={GPU_HINT}
+              className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]"
+            >
+              <ArchPortrait
+                displayName={brideName}
+                fullName={brideFullName}
+                parents={brideParents}
+                photoUrl={bridePhotoUrl}
+                align="left"
+              />
+            </m.div>
+
+            <m.div
+              variants={popIn}
+              style={GPU_HINT}
+              className="relative z-20 w-14 shrink-0 sm:w-24 lg:w-40 mb-6 sm:mb-10 lg:mb-12"
+            >
+              {/* Breathing glow behind the wreath, layered the same way
+                  as the cover page's glow behind its main wreath. */}
+              <m.div
+                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl"
+                animate={{
+                  opacity: [0.45, 0.9, 0.45],
+                  scale: [0.9, 1.08, 0.9],
+                }}
+                transition={loop(4.2, 0.6)}
+                style={GPU_HINT}
+              />
+
+              <WreathFrame className="relative z-10 w-full" />
+
+              <div
+                className="absolute z-10 flex items-center justify-center"
+                style={{
+                  left: `${WREATH_HOLE.centerLeftPct}%`,
+                  top: `${WREATH_HOLE.centerTopPct}%`,
+                  width: `${WREATH_HOLE.widthPct - 20}%`,
+                  height: `${WREATH_HOLE.heightPct - 20}%`,
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                {/* Ampersand heartbeat pulse — transform-only (scale),
+                    same feel as the cover page's "&" animation. */}
+                <m.span
+                  className="font-script block font-semibold leading-none text-burgundy text-sm sm:text-2xl lg:text-4xl"
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={loop(2.6, 1)}
+                  style={GPU_HINT}
+                >
+                  &amp;
+                </m.span>
+              </div>
+            </m.div>
+
+            <m.div
+              variants={slideFromRight}
+              style={GPU_HINT}
+              className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]"
+            >
+              <ArchPortrait
+                displayName={groomName}
+                fullName={groomFullName}
+                parents={groomParents}
+                photoUrl={groomPhotoUrl}
+                align="right"
+              />
+            </m.div>
+          </div>
+
+          <m.div
+            variants={fadeUp}
+            style={GPU_HINT}
+            className="mt-8 sm:mt-12 lg:mt-16"
+          >
+            <StaticWreathBand
+              flip
+              className="h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
+            />
+          </m.div>
+        </div>
+      </m.div>
+    </section>
+  );
+}
+
+export default function CoupleSection(props: CoupleSectionProps) {
+  return (
+    <LazyMotion features={domAnimation}>
+      <CoupleSectionInner {...props} />
+    </LazyMotion>
+  );
+}
