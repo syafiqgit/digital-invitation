@@ -20,6 +20,7 @@ interface CoverPageProps {
   onOpen: () => void;
 }
 
+// Hanya gunakan untuk elemen wrapper statis yang besar, jangan disebar ke partikel kecil
 const GPU_HINT = { willChange: "transform, opacity" } as const;
 
 const loop = (
@@ -51,21 +52,25 @@ const makeSway = (
 const container: Variants = {
   hidden: {},
   show: {
-    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
+    transition: { staggerChildren: 0.12, delayChildren: 0.1 },
   },
 };
 
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+  },
 };
 
 const cornerFade: Variants = {
-  hidden: { opacity: 0, scale: 0.85 },
+  hidden: { opacity: 0, scale: 0.9 },
   show: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.9, ease: "easeOut" },
+    transition: { duration: 1, ease: "easeOut" },
   },
 };
 
@@ -73,7 +78,7 @@ const vineFade: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { duration: 1.2, ease: "easeOut", delay: 0.5 },
+    transition: { duration: 1.2, ease: "easeOut", delay: 0.3 },
   },
 };
 
@@ -81,26 +86,26 @@ const borderFade: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { duration: 1.2, ease: "easeOut", delay: 0.6 },
+    transition: { duration: 1.2, ease: "easeOut", delay: 0.4 },
   },
 };
 
 const glowVariant: Variants = {
-  hidden: { opacity: 0, scale: 0.8 },
+  hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    scale: 1,
-    transition: { duration: 1.4, ease: "easeOut", delay: 0.3 },
+    transition: { duration: 1.5, ease: "easeOut", delay: 0.2 },
   },
 };
 
+// Dibuat sedikit lebih smooth (stiffness diturunkan, damping dinaikkan)
 const wreathVariant: Variants = {
-  hidden: { opacity: 0, scale: 0.85, rotate: -6 },
+  hidden: { opacity: 0, scale: 0.9, rotate: -4 },
   show: {
     opacity: 1,
     scale: 1,
     rotate: 0,
-    transition: { type: "spring", stiffness: 130, damping: 16 },
+    transition: { type: "spring", stiffness: 100, damping: 20 },
   },
 };
 
@@ -453,7 +458,7 @@ const Butterfly = memo(function Butterfly({
         repeatType: "reverse",
         ease: "easeInOut",
       }}
-      style={{ transformOrigin: "center", ...GPU_HINT }}
+      style={{ transformOrigin: "center" }} // GPU_HINT dicabut agar browser nge-batch render
     >
       <path
         d="M16 16 C 10 4, 0 6, 2 14 C 3 20, 10 20, 16 16 Z"
@@ -526,8 +531,8 @@ function CoverPageInner({
 
         <m.div
           className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={loop(24)}
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={loop(30)} // Diperlambat agar tidak membebani render statis
           style={GPU_HINT}
         >
           <Image
@@ -535,10 +540,10 @@ function CoverPageInner({
             alt=""
             fill
             priority
-            quality={100}
+            quality={90} // Turunkan sedikit quality untuk mempercepat decode image saat initial load
             sizes="100vw"
             className="pointer-events-none object-cover opacity-100"
-            style={{ filter: "saturate(1.35) contrast(1.15) brightness(1.05)" }}
+            style={{ filter: "saturate(1.2) contrast(1.1)" }} // Filter disederhanakan
           />
         </m.div>
 
@@ -563,7 +568,7 @@ function CoverPageInner({
             <m.div
               animate={{ rotate: v.sway.rotate }}
               transition={vineTransitions[i]}
-              style={{ transformOrigin: v.sway.origin, ...GPU_HINT }}
+              style={{ transformOrigin: v.sway.origin }}
               className="h-full w-full"
             >
               <FloralVine
@@ -575,7 +580,7 @@ function CoverPageInner({
           </m.div>
         ))}
 
-        {/* Luxurious Central Glow */}
+        {/* Luxurious Central Glow - Hapus animasi scale pada blur, cukup main di opacity agar enteng */}
         <m.div
           variants={glowVariant}
           initial="hidden"
@@ -583,19 +588,18 @@ function CoverPageInner({
           className="pointer-events-none absolute left-1/2 top-1/2 z-[2] h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl sm:h-72 sm:w-72 lg:h-[28rem] lg:w-[28rem]"
         >
           <m.div
-            className="h-full w-full rounded-full bg-blush/40 blur-3xl"
-            animate={{ opacity: [0.5, 1, 0.5], scale: [0.92, 1.08, 0.92] }}
+            className="h-full w-full rounded-full bg-blush/40"
+            animate={{ opacity: [0.4, 0.8, 0.4] }}
             transition={loop(5, 1.7)}
-            style={GPU_HINT}
           />
         </m.div>
 
-        {/* Ambient Decor: Petals, Sparkles, Fireflies */}
+        {/* Ambient Decor: Petals, Sparkles, Fireflies - Hapus GPU_HINT agar tidak terjadi Layer Explosion */}
         {petals.map((p, i) => (
           <m.div
             key={i}
             className="pointer-events-none absolute top-[-5%] z-10"
-            style={{ left: p.left, width: p.size, height: p.size, ...GPU_HINT }}
+            style={{ left: p.left, width: p.size, height: p.size }}
             animate={{
               y: ["0vh", "105vh"],
               x: [0, 20, -12, 0],
@@ -626,7 +630,6 @@ function CoverPageInner({
             <m.div
               animate={{ opacity: [0.15, 0.9, 0.15], scale: [0.6, 1.2, 0.6] }}
               transition={loop(2.8 + (i % 3), i * 0.35)}
-              style={GPU_HINT}
             >
               <Sparkle className="h-3 w-3 opacity-90 sm:h-4 sm:w-4" />
             </m.div>
@@ -637,7 +640,7 @@ function CoverPageInner({
           <m.div
             key={`ff-${i}`}
             className="pointer-events-none absolute z-10 h-1.5 w-1.5 sm:h-2 sm:w-2"
-            style={{ left: f.left, bottom: f.bottom, ...GPU_HINT }}
+            style={{ left: f.left, bottom: f.bottom }}
             animate={{
               y: [0, -60, -20, -90, 0],
               x: [0, 12, -8, 6, 0],
@@ -653,7 +656,7 @@ function CoverPageInner({
           <m.div
             key={i}
             className="pointer-events-none absolute z-10"
-            style={{ top: b.top, left: b.left, ...GPU_HINT }}
+            style={{ top: b.top, left: b.left }}
             animate={{ x: b.path, y: b.yPath, opacity: [0, 0.9, 0.9, 0.9, 0] }}
             transition={{
               duration: b.duration,
@@ -676,7 +679,6 @@ function CoverPageInner({
             <m.div
               animate={c.pulse}
               transition={c.transition}
-              style={GPU_HINT}
               className="h-full w-full"
             >
               <CornerFlourish className="h-full w-full" />
@@ -696,7 +698,7 @@ function CoverPageInner({
             <m.div
               animate={{ rotate: c.sway.rotate }}
               transition={cornerTransitions[i]}
-              style={{ transformOrigin: c.sway.origin, ...GPU_HINT }}
+              style={{ transformOrigin: c.sway.origin }}
               className="h-full w-full"
             >
               <FloralCorner className="h-full w-full" flip={c.flip} />
@@ -748,7 +750,6 @@ function CoverPageInner({
                 className="relative my-1"
                 animate={{ scale: [1, 1.15, 1] }}
                 transition={loop(2.6, 1.5)}
-                style={GPU_HINT}
               >
                 <p
                   className="font-script font-semibold leading-none text-burgundy"
@@ -784,7 +785,6 @@ function CoverPageInner({
             <m.div
               animate={{ scale: [1, 1.12, 1], rotate: [0, 6, 0] }}
               transition={loop(3.4, 1.2)}
-              style={GPU_HINT}
               className="shrink-0"
             >
               <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -801,7 +801,6 @@ function CoverPageInner({
             <m.div
               animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
               transition={loop(3.7, 1.6)}
-              style={GPU_HINT}
               className="shrink-0"
             >
               <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -832,24 +831,19 @@ function CoverPageInner({
               variants={fadeUp}
               className="relative mt-8 inline-block sm:mt-10"
             >
+              {/* Animasi scale dicabut dari elemen blur, cukup main opacity */}
               <m.div
                 className="pointer-events-none absolute inset-0 rounded-full bg-burgundy/60 blur-xl"
-                animate={{
-                  opacity: [0.35, 0.8, 0.35],
-                  scale: [0.94, 1.12, 0.94],
-                }}
+                animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={loop(2.4, 1)}
-                style={GPU_HINT}
               />
               <m.button
                 type="button"
                 onClick={handleOpen}
                 className="relative min-h-12 rounded-full border border-mustard/60 bg-gradient-to-r from-blush-dark to-burgundy px-10 py-4 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-lg sm:px-12 sm:text-xs sm:tracking-[0.25em]"
-                animate={{ scale: [1, 1.03, 1] }}
-                transition={loop(2.4, 1)}
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.96 }}
-                style={GPU_HINT}
+                style={GPU_HINT} // GPU_HINT aman dipertahankan khusus di tombol utama
               >
                 BUKA UNDANGAN
               </m.button>
