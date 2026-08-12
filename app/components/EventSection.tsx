@@ -107,12 +107,25 @@ const textLift = {
 /* ---------- Static decoration data ---------- */
 
 const scatterItems = [
-  { top: "15%", left: "12%", type: "bloom", color: "var(--burgundy)" },
-  { top: "22%", left: "85%", type: "leaf", rot: 25 },
-  { top: "45%", left: "8%", type: "bloom", color: "var(--coral)" },
-  { top: "55%", left: "92%", type: "bloom", color: "var(--blush-dark)" },
-  { top: "78%", left: "14%", type: "leaf", rot: -30 },
-  { top: "82%", left: "88%", type: "bloom", color: "var(--sage-light)" },
+  // Area Atas (Sekitar judul "SAVE THE DATE" dan Tanggal)
+  { top: "12%", left: "10%", type: "bloom", color: "var(--burgundy)" },
+  { top: "18%", left: "88%", type: "leaf", rot: 25 },
+  { top: "25%", left: "15%", type: "leaf", rot: -15 },
+  { top: "28%", left: "82%", type: "bloom", color: "var(--coral)" },
+
+  // Area Tengah (Membingkai sisi kiri-kanan area Countdown)
+  { top: "42%", left: "6%", type: "bloom", color: "var(--coral)" },
+  { top: "45%", left: "94%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "52%", left: "12%", type: "leaf", rot: 45 },
+  { top: "55%", left: "88%", type: "leaf", rot: -45 },
+
+  // Area Bawah (Mengapit ketat kotak informasi Akad & Resepsi)
+  { top: "68%", left: "4%", type: "bloom", color: "var(--sage-light)" },
+  { top: "72%", left: "96%", type: "bloom", color: "var(--burgundy)" },
+  { top: "80%", left: "14%", type: "leaf", rot: -30 },
+  { top: "82%", left: "86%", type: "bloom", color: "var(--sage-light)" },
+  { top: "88%", left: "8%", type: "bloom", color: "var(--coral)" },
+  { top: "90%", left: "92%", type: "leaf", rot: 15 },
 ] as const;
 
 const sparkles = [
@@ -132,20 +145,123 @@ const fireflies = [
   style: { left: f.left, bottom: f.bottom, ...GPU_HINT },
 }));
 
-const petals = [
-  { left: "8%", size: 6, duration: 12, delay: 1, color: "var(--sage-light)" },
+// --- UPDATE: Parallax Floating Petals ---
+const floatingPetals = [
+  // Layer Belakang
   {
-    left: "52%",
+    left: "8%",
     size: 7,
-    duration: 10.5,
-    delay: 5,
+    duration: 16,
+    delay: 0,
     color: "var(--blush-dark)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
   },
-  { left: "90%", size: 6, duration: 13, delay: 3, color: "var(--coral)" },
+  {
+    left: "35%",
+    size: 6,
+    duration: 18,
+    delay: 2,
+    color: "var(--coral)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
+  },
+  {
+    left: "65%",
+    size: 8,
+    duration: 15,
+    delay: 5,
+    color: "var(--sage-light)",
+    blur: "blur-[4px]",
+    zIndex: "z-[2]",
+  },
+  {
+    left: "88%",
+    size: 7,
+    duration: 17,
+    delay: 1,
+    color: "var(--burgundy)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
+  },
+  // Layer Tengah
+  {
+    left: "15%",
+    size: 12,
+    duration: 12,
+    delay: 3,
+    color: "var(--coral)",
+    blur: "blur-none",
+    zIndex: "z-[5]",
+  },
+  {
+    left: "45%",
+    size: 10,
+    duration: 14,
+    delay: 6,
+    color: "var(--burgundy)",
+    blur: "blur-[1px]",
+    zIndex: "z-[5]",
+  },
+  {
+    left: "75%",
+    size: 14,
+    duration: 13,
+    delay: 4,
+    color: "var(--sage-light)",
+    blur: "blur-none",
+    zIndex: "z-[5]",
+  },
+  {
+    left: "92%",
+    size: 11,
+    duration: 11,
+    delay: 0.5,
+    color: "var(--blush-dark)",
+    blur: "blur-[1px]",
+    zIndex: "z-[5]",
+  },
+  // Layer Depan
+  {
+    left: "5%",
+    size: 40,
+    duration: 8,
+    delay: 1.5,
+    color: "var(--burgundy)",
+    blur: "blur-[6px]",
+    zIndex: "z-[30]",
+  },
+  {
+    left: "55%",
+    size: 35,
+    duration: 9,
+    delay: 7,
+    color: "var(--coral)",
+    blur: "blur-[5px]",
+    zIndex: "z-[30]",
+  },
+  {
+    left: "95%",
+    size: 45,
+    duration: 10,
+    delay: 2.5,
+    color: "var(--blush-dark)",
+    blur: "blur-[8px]",
+    zIndex: "z-[30]",
+  },
 ].map((p) => ({
   ...p,
   style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
 }));
+
+// --- UPDATE: Partikel Emas ---
+const goldDusts = [
+  { left: "20%", bottom: "5%", size: 4, duration: 14, delay: 0 },
+  { left: "50%", bottom: "-2%", size: 6, duration: 17, delay: 2 },
+  { left: "70%", bottom: "8%", size: 3, duration: 12, delay: 1 },
+  { left: "85%", bottom: "-5%", size: 5, duration: 16, delay: 3 },
+  { left: "30%", bottom: "-10%", size: 7, duration: 18, delay: 4 },
+];
 
 const vines = [
   {
@@ -373,6 +489,31 @@ const Firefly = memo(function Firefly({
   );
 });
 
+// --- UPDATE: Komponen GoldDust & MajesticRay ---
+const GoldDust = memo(function GoldDust({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] ${className}`}
+    />
+  );
+});
+
+const MajesticRay = memo(function MajesticRay() {
+  return (
+    <m.div
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] -translate-x-1/2 -translate-y-1/2 opacity-50"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+    >
+      <div className="h-[550px] w-[550px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.06)_60deg,transparent_120deg,rgba(212,175,55,0.06)_180deg,transparent_240deg,rgba(212,175,55,0.06)_300deg,transparent_360deg)] blur-3xl lg:h-[750px] lg:w-[750px]" />
+    </m.div>
+  );
+});
+
 const SprigDivider = memo(function SprigDivider({
   className = "",
 }: {
@@ -516,29 +657,52 @@ const AmbientDecor = memo(function AmbientDecor() {
           </m.div>
         ))}
 
-        {petals.map((p, i) => (
+        {/* --- UPDATE: Render Parallax Petals --- */}
+        {floatingPetals.map((p, i) => (
           <m.div
             key={`petal-${i}`}
-            className="pointer-events-none absolute top-[-5%] z-[1]"
+            className={`pointer-events-none absolute top-[-10%] ${p.zIndex} ${p.blur}`}
             style={p.style}
             animate={{
-              y: ["0vh", "108vh"],
-              x: [0, -14, 10, 0],
-              rotate: [0, -180, -360],
-              opacity: [0, 0.5, 0.5, 0],
+              y: ["0vh", "115vh"],
+              x: [0, p.size > 20 ? 45 : 20, -15, 0],
+              rotate: [0, 180, 360],
+              opacity: [0, 0.75, 0.75, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
-            <svg viewBox="0 0 20 20" fill="none">
+            <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
               <ellipse
                 cx="10"
                 cy="10"
                 rx="6"
                 ry="9"
                 fill={p.color}
-                opacity="0.7"
+                opacity="0.8"
               />
             </svg>
+          </m.div>
+        ))}
+
+        {/* --- UPDATE: Render Gold Dust --- */}
+        {goldDusts.map((g, i) => (
+          <m.div
+            key={`gd-${i}`}
+            className="pointer-events-none absolute z-[15]"
+            style={{
+              left: g.left,
+              bottom: g.bottom,
+              width: g.size,
+              height: g.size,
+            }}
+            animate={{
+              y: ["0vh", "-110vh"],
+              x: [0, 15, -10, 5, 0],
+              opacity: [0, 0.8, 0.4, 0.8, 0],
+            }}
+            transition={loop(g.duration, g.delay, "linear")}
+          >
+            <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
           </m.div>
         ))}
       </div>
@@ -738,6 +902,9 @@ function EventSectionInner({
         className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sage-light/30 blur-[100px] sm:h-80 sm:w-80"
         style={GPU_HINT}
       />
+
+      {/* --- UPDATE: Majestic Ray dipasang memusat di belakang konten utama --- */}
+      <MajesticRay />
 
       <FrameLayers />
       <AmbientDecor />

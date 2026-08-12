@@ -105,12 +105,21 @@ const textLift = {
 /* ---------- Static decoration data ---------- */
 
 const scatterItems = [
-  { top: "8%", left: "12%", type: "bloom", color: "var(--burgundy)" },
-  { top: "20%", left: "86%", type: "leaf", rot: 25 },
-  { top: "42%", left: "8%", type: "bloom", color: "var(--coral)" },
-  { top: "60%", left: "90%", type: "bloom", color: "var(--blush-dark)" },
-  { top: "80%", left: "10%", type: "leaf", rot: -30 },
-  { top: "92%", left: "88%", type: "bloom", color: "var(--sage-light)" },
+  // Membingkai kartu pertama
+  { top: "18%", left: "5%", type: "bloom", color: "var(--burgundy)" },
+  { top: "25%", left: "95%", type: "leaf", rot: 25 },
+
+  // Membingkai kartu kedua (area tengah)
+  { top: "48%", left: "8%", type: "bloom", color: "var(--coral)" },
+  { top: "52%", left: "92%", type: "leaf", rot: -30 },
+
+  // Membingkai kartu ketiga (area bawah)
+  { top: "75%", left: "5%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "82%", left: "95%", type: "leaf", rot: 40 },
+
+  // Tambahan kecil untuk mengisi celah antar kartu
+  { top: "35%", left: "15%", type: "leaf", rot: -10 },
+  { top: "65%", left: "85%", type: "bloom", color: "var(--sage-light)" },
 ] as const;
 
 const sparkles = [
@@ -130,20 +139,55 @@ const fireflies = [
   style: { left: f.left, bottom: f.bottom, ...GPU_HINT },
 }));
 
-const petals = [
-  { left: "10%", size: 6, duration: 12, delay: 1, color: "var(--sage-light)" },
+// --- UPDATE: Parallax Floating Petals 3D ---
+const floatingPetals = [
   {
-    left: "55%",
+    left: "8%",
     size: 7,
-    duration: 10.5,
-    delay: 4,
+    duration: 16,
+    delay: 0,
     color: "var(--blush-dark)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
   },
-  { left: "90%", size: 6, duration: 13, delay: 2, color: "var(--coral)" },
+  {
+    left: "35%",
+    size: 6,
+    duration: 18,
+    delay: 2,
+    color: "var(--coral)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
+  },
+  {
+    left: "75%",
+    size: 14,
+    duration: 13,
+    delay: 4,
+    color: "var(--sage-light)",
+    blur: "blur-none",
+    zIndex: "z-[5]",
+  },
+  {
+    left: "90%",
+    size: 42,
+    duration: 9,
+    delay: 1.5,
+    color: "var(--burgundy)",
+    blur: "blur-[6px]",
+    zIndex: "z-[30]",
+  },
 ].map((p) => ({
   ...p,
   style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
 }));
+
+// --- UPDATE: Partikel Emas Mewah ---
+const goldDusts = [
+  { left: "15%", bottom: "10%", size: 4, duration: 13, delay: 0 },
+  { left: "50%", bottom: "5%", size: 6, duration: 16, delay: 2 },
+  { left: "85%", bottom: "15%", size: 5, duration: 14, delay: 3 },
+];
 
 const butterflies = [
   { left: "12%", top: "28%", color: "var(--coral)", duration: 16, delay: 0 },
@@ -367,6 +411,30 @@ const Firefly = memo(function Firefly({
   );
 });
 
+const GoldDust = memo(function GoldDust({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] ${className}`}
+    />
+  );
+});
+
+const MajesticRay = memo(function MajesticRay() {
+  return (
+    <m.div
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] -translate-x-1/2 -translate-y-1/2 opacity-50"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+    >
+      <div className="h-[550px] w-[550px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.06)_60deg,transparent_120deg,rgba(212,175,55,0.06)_180deg,transparent_240deg,rgba(212,175,55,0.06)_300deg,transparent_360deg)] blur-3xl lg:h-[750px] lg:w-[750px]" />
+    </m.div>
+  );
+});
+
 const Butterfly = memo(function Butterfly({
   className = "",
   color = "var(--coral)",
@@ -490,29 +558,50 @@ const AmbientDecor = memo(function AmbientDecor() {
           </m.div>
         ))}
 
-        {petals.map((p, i) => (
+        {floatingPetals.map((p, i) => (
           <m.div
             key={`petal-${i}`}
-            className="pointer-events-none absolute top-[-5%] z-[1]"
+            className={`pointer-events-none absolute top-[-10%] ${p.zIndex} ${p.blur}`}
             style={p.style}
             animate={{
-              y: ["0vh", "108vh"],
-              x: [0, -14, 10, 0],
-              rotate: [0, -180, -360],
-              opacity: [0, 0.5, 0.5, 0],
+              y: ["0vh", "115vh"],
+              x: [0, p.size > 20 ? 45 : 20, -15, 0],
+              rotate: [0, 180, 360],
+              opacity: [0, 0.75, 0.75, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
-            <svg viewBox="0 0 20 20" fill="none">
+            <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
               <ellipse
                 cx="10"
                 cy="10"
                 rx="6"
                 ry="9"
                 fill={p.color}
-                opacity="0.7"
+                opacity="0.8"
               />
             </svg>
+          </m.div>
+        ))}
+
+        {goldDusts.map((g, i) => (
+          <m.div
+            key={`gd-${i}`}
+            className="pointer-events-none absolute z-[15]"
+            style={{
+              left: g.left,
+              bottom: g.bottom,
+              width: g.size,
+              height: g.size,
+            }}
+            animate={{
+              y: ["0vh", "-110vh"],
+              x: [0, 15, -10, 5, 0],
+              opacity: [0, 0.8, 0.4, 0.8, 0],
+            }}
+            transition={loop(g.duration, g.delay, "linear")}
+          >
+            <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
           </m.div>
         ))}
 
@@ -636,11 +725,12 @@ function StorySectionInner({
         style={GPU_HINT}
       />
 
+      <MajesticRay />
       <FrameLayers />
       <AmbientDecor />
 
       <m.div
-        className="relative z-10 flex w-full max-w-3xl flex-col items-center px-2 text-center"
+        className="relative z-10 flex w-full max-w-4xl flex-col items-center px-2 text-center"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.2 }}
@@ -687,15 +777,15 @@ function StorySectionInner({
         <m.div
           variants={fadeUp}
           style={GPU_HINT}
-          className="mt-2 mb-8 sm:mb-12"
+          className="mt-2 mb-10 sm:mb-14"
         >
           <SprigDivider className="h-4 w-36 sm:w-44" />
         </m.div>
 
-        {/* Timeline Container */}
-        <div className="relative flex w-full flex-col gap-8 sm:gap-12">
+        {/* Timeline Container dengan Asimetris & Organic Layout */}
+        <div className="relative flex w-full flex-col gap-10 sm:gap-16">
           {/* Garis Tengah Timeline dengan Gradient Emas */}
-          <div className="absolute bottom-6 left-1/2 top-6 w-0.5 -translate-x-1/2 bg-gradient-to-b from-mustard/20 via-mustard/70 to-mustard/20 hidden sm:block" />
+          <div className="absolute bottom-6 left-6 sm:left-1/2 top-6 w-0.5 -translate-x-1/2 bg-gradient-to-b from-mustard/20 via-mustard/70 to-mustard/20" />
 
           {milestones.map((item, index) => {
             const isEven = index % 2 === 0;
@@ -703,14 +793,16 @@ function StorySectionInner({
               <m.div
                 key={`milestone-${index}`}
                 variants={fadeUp}
-                className="relative flex flex-col sm:flex-row items-center w-full gap-6 sm:gap-0"
+                className={`relative flex flex-col sm:flex-row items-center w-full gap-4 sm:gap-0 ${
+                  isEven ? "sm:flex-row-reverse" : ""
+                }`}
               >
-                {/* Card Container */}
+                {/* Card Container dengan Efek Rotasi Tipis & Glassmorphism */}
                 <div
-                  className={`w-full sm:w-[calc(50%-2.5rem)] rounded-3xl border border-mustard/40 bg-ivory/95 p-5 sm:p-6 shadow-[0_12px_40px_rgba(58,54,48,0.08)] text-left relative overflow-hidden ${
+                  className={`w-[calc(100%-3rem)] ml-auto sm:w-[calc(50%-3rem)] rounded-3xl border border-mustard/40 bg-ivory/95 p-5 sm:p-7 shadow-[0_12px_40px_rgba(58,54,48,0.08)] text-left relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
                     isEven
-                      ? "sm:mr-auto sm:text-right"
-                      : "sm:ml-auto sm:text-left"
+                      ? "sm:mr-auto sm:text-left sm:-rotate-1"
+                      : "sm:ml-auto sm:text-left sm:rotate-1"
                   }`}
                 >
                   <div className="absolute inset-0 rounded-3xl shadow-[inset_0_0_15px_rgba(255,255,255,0.7)] pointer-events-none" />
@@ -728,7 +820,7 @@ function StorySectionInner({
                     </div>
                   )}
 
-                  <span className="inline-block rounded-full border border-mustard/50 bg-ivory px-3 py-0.5 text-[9px] font-extrabold tracking-[0.2em] text-burgundy sm:text-[10px] mb-2">
+                  <span className="inline-block rounded-full border border-mustard/50 bg-ivory px-3 py-0.5 text-[9px] font-extrabold tracking-[0.2em] text-burgundy sm:text-[10px] mb-2 shadow-xs">
                     {item.date}
                   </span>
                   <h3 className="font-serif text-lg font-bold text-ink sm:text-xl">
@@ -740,9 +832,9 @@ function StorySectionInner({
                 </div>
 
                 {/* Central Icon / Dot dengan efek Pulse */}
-                <div className="absolute left-1/2 -translate-x-1/2 hidden sm:flex h-11 w-11 items-center justify-center rounded-full border border-mustard/70 bg-ivory shadow-lg z-20">
+                <div className="absolute left-6 sm:left-1/2 -translate-x-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-mustard/70 bg-ivory shadow-lg z-20">
                   <div className="absolute inset-0 rounded-full bg-mustard/20 animate-ping opacity-75" />
-                  <HeartIcon className="relative z-10 h-4 w-4" />
+                  <HeartIcon className="relative z-10 h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               </m.div>
             );

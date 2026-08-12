@@ -20,7 +20,6 @@ interface CoverPageProps {
   onOpen: () => void;
 }
 
-// Hanya gunakan untuk elemen wrapper statis yang besar, jangan disebar ke partikel kecil
 const GPU_HINT = { willChange: "transform, opacity" } as const;
 
 const loop = (
@@ -98,7 +97,6 @@ const glowVariant: Variants = {
   },
 };
 
-// Dibuat sedikit lebih smooth (stiffness diturunkan, damping dinaikkan)
 const wreathVariant: Variants = {
   hidden: { opacity: 0, scale: 0.9, rotate: -4 },
   show: {
@@ -127,22 +125,82 @@ const containerQueryStyle = {
 /* ---------- Static Decoration Data ---------- */
 
 const petals = [
-  { left: "8%", size: 8, duration: 9, delay: 0, color: "var(--blush-dark)" },
-  { left: "38%", size: 7, duration: 10, delay: 4, color: "var(--coral)" },
-  { left: "65%", size: 6, duration: 13, delay: 1.5, color: "var(--burgundy)" },
+  // Layer Belakang (Kecil, lambat, agak blur memberikan kesan jauh)
   {
-    left: "85%",
-    size: 7.5,
-    duration: 11,
-    delay: 5,
-    color: "var(--sage-light)",
+    left: "12%",
+    size: 12,
+    duration: 15,
+    delay: 0,
+    color: "var(--blush-dark)",
+    blur: "blur-[2px]",
+    zIndex: "z-[5]",
   },
   {
-    left: "93%",
-    size: 6,
-    duration: 11.5,
-    delay: 2.5,
+    left: "45%",
+    size: 10,
+    duration: 17,
+    delay: 3,
+    color: "var(--burgundy)",
+    blur: "blur-[3px]",
+    zIndex: "z-[5]",
+  },
+  {
+    left: "75%",
+    size: 14,
+    duration: 14,
+    delay: 1,
+    color: "var(--coral)",
+    blur: "blur-[2px]",
+    zIndex: "z-[5]",
+  },
+
+  // Layer Tengah (Ukuran normal, fokus tajam)
+  {
+    left: "25%",
+    size: 18,
+    duration: 12,
+    delay: 2,
+    color: "var(--coral)",
+    blur: "blur-none",
+    zIndex: "z-[10]",
+  },
+  {
+    left: "65%",
+    size: 16,
+    duration: 13,
+    delay: 4,
     color: "var(--sage-light)",
+    blur: "blur-none",
+    zIndex: "z-[10]",
+  },
+  {
+    left: "88%",
+    size: 20,
+    duration: 11,
+    delay: 0.5,
+    color: "var(--blush-dark)",
+    blur: "blur-none",
+    zIndex: "z-[10]",
+  },
+
+  // Layer Depan (Ekstra besar, sangat blur, cepat, melayang di atas konten seolah melewati lensa kamera)
+  {
+    left: "5%",
+    size: 45,
+    duration: 8,
+    delay: 1.5,
+    color: "var(--burgundy)",
+    blur: "blur-[6px]",
+    zIndex: "z-[60]",
+  },
+  {
+    left: "92%",
+    size: 55,
+    duration: 9,
+    delay: 5,
+    color: "var(--coral)",
+    blur: "blur-[8px]",
+    zIndex: "z-[60]",
   },
 ] as const;
 
@@ -162,6 +220,14 @@ const fireflies = [
   { left: "15%", bottom: "60%", duration: 8, delay: 3 },
   { left: "85%", bottom: "50%", duration: 9, delay: 2 },
   { left: "50%", bottom: "15%", duration: 7.5, delay: 4 },
+];
+
+const goldDusts = [
+  { left: "15%", bottom: "-10%", size: 4, duration: 12, delay: 0 },
+  { left: "45%", bottom: "-5%", size: 6, duration: 15, delay: 2 },
+  { left: "75%", bottom: "-15%", size: 3, duration: 10, delay: 1 },
+  { left: "85%", bottom: "-10%", size: 5, duration: 14, delay: 3 },
+  { left: "25%", bottom: "-20%", size: 7, duration: 16, delay: 4 },
 ];
 
 interface ButterflyConfig {
@@ -325,6 +391,30 @@ const Firefly = memo(function Firefly({
   );
 });
 
+const GoldDust = memo(function GoldDust({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] ${className}`}
+    />
+  );
+});
+
+const MajesticRay = memo(function MajesticRay() {
+  return (
+    <m.div
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+    >
+      <div className="h-[350px] w-[350px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.08)_60deg,transparent_120deg,rgba(212,175,55,0.08)_180deg,transparent_240deg,rgba(212,175,55,0.08)_300deg,transparent_360deg)] blur-2xl sm:h-[450px] sm:w-[450px]" />
+    </m.div>
+  );
+});
+
 const CornerFlourish = memo(function CornerFlourish({
   className = "",
 }: {
@@ -458,7 +548,7 @@ const Butterfly = memo(function Butterfly({
         repeatType: "reverse",
         ease: "easeInOut",
       }}
-      style={{ transformOrigin: "center" }} // GPU_HINT dicabut agar browser nge-batch render
+      style={{ transformOrigin: "center" }}
     >
       <path
         d="M16 16 C 10 4, 0 6, 2 14 C 3 20, 10 20, 16 16 Z"
@@ -529,10 +619,17 @@ function CoverPageInner({
       >
         <BackgroundPattern className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.16]" />
 
+        {/* --- Watermark Monogram --- */}
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-[0.03]">
+          <span className="font-script text-[30rem] leading-none text-ink">
+            A
+          </span>
+        </div>
+
         <m.div
           className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
           animate={{ scale: [1, 1.05, 1] }}
-          transition={loop(30)} // Diperlambat agar tidak membebani render statis
+          transition={loop(30)}
           style={GPU_HINT}
         >
           <Image
@@ -540,10 +637,10 @@ function CoverPageInner({
             alt=""
             fill
             priority
-            quality={90} // Turunkan sedikit quality untuk mempercepat decode image saat initial load
+            quality={90}
             sizes="100vw"
             className="pointer-events-none object-cover opacity-100"
-            style={{ filter: "saturate(1.2) contrast(1.1)" }} // Filter disederhanakan
+            style={{ filter: "saturate(1.2) contrast(1.1)" }}
           />
         </m.div>
 
@@ -580,7 +677,7 @@ function CoverPageInner({
           </m.div>
         ))}
 
-        {/* Luxurious Central Glow - Hapus animasi scale pada blur, cukup main di opacity agar enteng */}
+        {/* Luxurious Central Glow */}
         <m.div
           variants={glowVariant}
           initial="hidden"
@@ -594,28 +691,31 @@ function CoverPageInner({
           />
         </m.div>
 
-        {/* Ambient Decor: Petals, Sparkles, Fireflies - Hapus GPU_HINT agar tidak terjadi Layer Explosion */}
+        {/* --- Efek Cahaya Memutar Mewah --- */}
+        <MajesticRay />
+
+        {/* Ambient Decor: Petals, Sparkles, Fireflies, Gold Dust */}
         {petals.map((p, i) => (
           <m.div
-            key={i}
-            className="pointer-events-none absolute top-[-5%] z-10"
+            key={`petal-${i}`}
+            className={`pointer-events-none absolute top-[-10%] ${p.zIndex} ${p.blur}`}
             style={{ left: p.left, width: p.size, height: p.size }}
             animate={{
-              y: ["0vh", "105vh"],
-              x: [0, 20, -12, 0],
+              y: ["0vh", "110vh"],
+              x: [0, p.size > 20 ? 45 : 20, -15, 0], // Ayunan lebih lebar untuk layer depan
               rotate: [0, 180, 360],
-              opacity: [0, 0.65, 0.65, 0],
+              opacity: [0, 0.85, 0.85, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
-            <svg viewBox="0 0 20 20" fill="none">
+            <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
               <ellipse
                 cx="10"
                 cy="10"
                 rx="6"
                 ry="9"
                 fill={p.color}
-                opacity="0.75"
+                opacity="0.8"
               />
             </svg>
           </m.div>
@@ -649,6 +749,28 @@ function CoverPageInner({
             transition={loop(f.duration, f.delay)}
           >
             <Firefly className="h-full w-full" />
+          </m.div>
+        ))}
+
+        {/* --- Partikel Emas Mewah --- */}
+        {goldDusts.map((g, i) => (
+          <m.div
+            key={`gd-${i}`}
+            className="pointer-events-none absolute z-[12]"
+            style={{
+              left: g.left,
+              bottom: g.bottom,
+              width: g.size,
+              height: g.size,
+            }}
+            animate={{
+              y: ["0vh", "-110vh"],
+              x: [0, 15, -10, 5, 0],
+              opacity: [0, 0.8, 0.4, 0.8, 0],
+            }}
+            transition={loop(g.duration, g.delay, "linear")}
+          >
+            <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
           </m.div>
         ))}
 
@@ -831,7 +953,6 @@ function CoverPageInner({
               variants={fadeUp}
               className="relative mt-8 inline-block sm:mt-10"
             >
-              {/* Animasi scale dicabut dari elemen blur, cukup main opacity */}
               <m.div
                 className="pointer-events-none absolute inset-0 rounded-full bg-burgundy/60 blur-xl"
                 animate={{ opacity: [0.3, 0.7, 0.3] }}
@@ -843,7 +964,7 @@ function CoverPageInner({
                 className="relative min-h-12 rounded-full border border-mustard/60 bg-gradient-to-r from-blush-dark to-burgundy px-10 py-4 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-lg sm:px-12 sm:text-xs sm:tracking-[0.25em]"
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.96 }}
-                style={GPU_HINT} // GPU_HINT aman dipertahankan khusus di tombol utama
+                style={GPU_HINT}
               >
                 BUKA UNDANGAN
               </m.button>

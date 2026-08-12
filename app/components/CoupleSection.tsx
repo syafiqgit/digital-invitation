@@ -138,7 +138,6 @@ const scatterItems = [
   { top: "85%", left: "62%", type: "leaf", rot: -40 },
 ] as const;
 
-// Menambah kepadatan partikel
 const sparkles = [
   { top: "12%", left: "45%" },
   { top: "22%", left: "10%" },
@@ -150,22 +149,125 @@ const sparkles = [
   { top: "88%", left: "50%" },
 ].map((s) => ({ ...s, style: { top: s.top, left: s.left, ...GPU_HINT } }));
 
+// --- UPDATE: Parallax Floating Petals (Lebih Rame & Sinematik) ---
 const floatingPetals = [
-  { left: "6%", size: 7, duration: 10, delay: 0, color: "var(--blush-dark)" },
-  { left: "25%", size: 5, duration: 14, delay: 4, color: "var(--burgundy)" },
-  { left: "93%", size: 6, duration: 12, delay: 3, color: "var(--coral)" },
+  // Layer Belakang (Kecil, sangat blur, pergerakan lambat di kejauhan)
+  {
+    left: "8%",
+    size: 7,
+    duration: 16,
+    delay: 0,
+    color: "var(--blush-dark)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
+  },
+  {
+    left: "35%",
+    size: 6,
+    duration: 18,
+    delay: 2,
+    color: "var(--coral)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
+  },
+  {
+    left: "65%",
+    size: 8,
+    duration: 15,
+    delay: 5,
+    color: "var(--sage-light)",
+    blur: "blur-[4px]",
+    zIndex: "z-[2]",
+  },
+  {
+    left: "88%",
+    size: 7,
+    duration: 17,
+    delay: 1,
+    color: "var(--burgundy)",
+    blur: "blur-[3px]",
+    zIndex: "z-[2]",
+  },
+
+  // Layer Tengah (Fokus tajam, ukuran medium, melayang di sela-sela konten)
+  {
+    left: "15%",
+    size: 12,
+    duration: 12,
+    delay: 3,
+    color: "var(--coral)",
+    blur: "blur-none",
+    zIndex: "z-[5]",
+  },
+  {
+    left: "45%",
+    size: 10,
+    duration: 14,
+    delay: 6,
+    color: "var(--burgundy)",
+    blur: "blur-[1px]",
+    zIndex: "z-[5]",
+  },
   {
     left: "75%",
-    size: 5.5,
-    duration: 15,
-    delay: 7,
+    size: 14,
+    duration: 13,
+    delay: 4,
     color: "var(--sage-light)",
+    blur: "blur-none",
+    zIndex: "z-[5]",
   },
-  { left: "50%", size: 6, duration: 11, delay: 6, color: "var(--sage-light)" },
+  {
+    left: "92%",
+    size: 11,
+    duration: 11,
+    delay: 0.5,
+    color: "var(--blush-dark)",
+    blur: "blur-[1px]",
+    zIndex: "z-[5]",
+  },
+
+  // Layer Depan (Ekstra besar, sangat blur, pergerakan cepat seolah lewat persis di depan lensa)
+  {
+    left: "5%",
+    size: 40,
+    duration: 8,
+    delay: 1.5,
+    color: "var(--burgundy)",
+    blur: "blur-[6px]",
+    zIndex: "z-[30]",
+  },
+  {
+    left: "55%",
+    size: 35,
+    duration: 9,
+    delay: 7,
+    color: "var(--coral)",
+    blur: "blur-[5px]",
+    zIndex: "z-[30]",
+  },
+  {
+    left: "95%",
+    size: 45,
+    duration: 10,
+    delay: 2.5,
+    color: "var(--blush-dark)",
+    blur: "blur-[8px]",
+    zIndex: "z-[30]",
+  },
 ].map((p) => ({
   ...p,
   style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
 }));
+
+// --- UPDATE: Partikel Emas Mewah ---
+const goldDusts = [
+  { left: "15%", bottom: "0%", size: 4, duration: 13, delay: 0 },
+  { left: "45%", bottom: "-5%", size: 6, duration: 16, delay: 2 },
+  { left: "75%", bottom: "5%", size: 3, duration: 11, delay: 1 },
+  { left: "85%", bottom: "-10%", size: 5, duration: 15, delay: 3 },
+  { left: "25%", bottom: "-8%", size: 7, duration: 17, delay: 4 },
+];
 
 const butterflies = [
   { left: "10%", top: "18%", color: "var(--coral)", duration: 16, delay: 0 },
@@ -513,6 +615,31 @@ const Sparkle = memo(function Sparkle({
   );
 });
 
+// --- UPDATE: Komponen GoldDust & MajesticRay ---
+const GoldDust = memo(function GoldDust({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] ${className}`}
+    />
+  );
+});
+
+const MajesticRay = memo(function MajesticRay() {
+  return (
+    <m.div
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] -translate-x-1/2 -translate-y-1/2 opacity-60"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+    >
+      <div className="h-[600px] w-[600px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.06)_60deg,transparent_120deg,rgba(212,175,55,0.06)_180deg,transparent_240deg,rgba(212,175,55,0.06)_300deg,transparent_360deg)] blur-3xl lg:h-[800px] lg:w-[800px]" />
+    </m.div>
+  );
+});
+
 const Butterfly = memo(function Butterfly({
   className = "",
   color = "var(--coral)",
@@ -773,31 +900,56 @@ const AmbientDecor = memo(function AmbientDecor() {
             <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
           </m.div>
         ))}
+
+        {/* --- UPDATE: Render Parallax Petals --- */}
         {floatingPetals.map((p, i) => (
           <m.div
             key={`petal-${i}`}
-            className="pointer-events-none absolute top-[-6%] z-[1]"
+            className={`pointer-events-none absolute top-[-10%] ${p.zIndex} ${p.blur}`}
             style={p.style}
             animate={{
-              y: ["0vh", "112vh"],
-              x: [0, 16, -10, 0],
+              y: ["0vh", "115vh"],
+              x: [0, p.size > 20 ? 45 : 20, -15, 0],
               rotate: [0, 180, 360],
-              opacity: [0, 0.6, 0.6, 0],
+              opacity: [0, 0.75, 0.75, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
-            <svg viewBox="0 0 20 20" fill="none">
+            <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
               <ellipse
                 cx="10"
                 cy="10"
                 rx="6"
                 ry="9"
                 fill={p.color}
-                opacity="0.75"
+                opacity="0.8"
               />
             </svg>
           </m.div>
         ))}
+
+        {/* --- UPDATE: Render Gold Dust --- */}
+        {goldDusts.map((g, i) => (
+          <m.div
+            key={`gd-${i}`}
+            className="pointer-events-none absolute z-[15]"
+            style={{
+              left: g.left,
+              bottom: g.bottom,
+              width: g.size,
+              height: g.size,
+            }}
+            animate={{
+              y: ["0vh", "-110vh"],
+              x: [0, 15, -10, 5, 0],
+              opacity: [0, 0.8, 0.4, 0.8, 0],
+            }}
+            transition={loop(g.duration, g.delay, "linear")}
+          >
+            <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+          </m.div>
+        ))}
+
         {butterflies.map((b, i) => (
           <m.div
             key={`butterfly-${i}`}
@@ -977,6 +1129,9 @@ function CoupleSectionInner({
         transition={loop(6, 2)}
         style={GPU_HINT}
       />
+
+      {/* --- UPDATE: Majestic Ray di bagian latar --- */}
+      <MajesticRay />
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14]" />
 
