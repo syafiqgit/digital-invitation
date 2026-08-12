@@ -11,11 +11,11 @@ const MUSIC_SRC = "/assets/alex-morgan-wedding-garden-ceremony-glow-578500.mp3";
 const BLOOM_ORIGIN = { xPct: 50, yPct: 40 };
 
 const TIMELINE = {
-  irisDuration: 1100,
-  contentFadeDelay: 680,
-  contentFadeDuration: 750,
-  particleTail: 1400,
-  overlayExitDuration: 400,
+  irisDuration: 950,
+  contentFadeDelay: 620,
+  contentFadeDuration: 600,
+  particleTail: 1150,
+  overlayExitDuration: 300,
 } as const;
 
 const TOTAL_MS =
@@ -25,24 +25,29 @@ const TOTAL_MS =
     TIMELINE.particleTail,
   ) + TIMELINE.overlayExitDuration;
 
-// Hanya berikan hint pada layer induk utama, jangan sebar ke puluhan child
+// Perf: hint transform/opacity (compositor-only) plus clip-path, since the
+// iris-bloom transition animates clip-path directly — without this hint the
+// browser may not promote the layer ahead of time, causing a dropped frame
+// right as the animation starts.
 const gpuLayer: React.CSSProperties = {
   willChange: "transform, opacity, clip-path",
   transform: "translateZ(0)",
   backfaceVisibility: "hidden",
 };
 
-// Blur animation dihapus dari keyframes.
-// Filter blur animasi sangat menguras GPU memori pada mobile.
+// Perf: both @keyframes blocks used to live inside components that only
+// mount once the user taps "buka undangan" — meaning the browser had to
+// parse fresh CSS at the exact moment the bloom transition needed to run
+// smoothly. Mounting them once, unconditionally, at the root lets the
+// browser parse & cache them well ahead of time.
 const GlobalStyles = memo(function GlobalStyles() {
   return (
     <style>{`
       @keyframes bloomFly {
-        0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.2); }
-        15% { opacity: 1; }
-        45% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.7), calc(var(--ty) * 0.7), 0) rotate(calc(var(--rot) * 0.6)) scale(1.15); }
-        75% { opacity: 0.8; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.9)) scale(1); }
-        100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.2), calc(var(--ty) * 1.2), 0) rotate(var(--rot)) scale(0.6); }
+        0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.3); }
+        30% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.6), calc(var(--ty) * 0.6), 0) rotate(calc(var(--rot) * 0.5)) scale(1.05); }
+        70% { opacity: 1; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.85)) scale(1); }
+        100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.08), calc(var(--ty) * 1.08), 0) rotate(var(--rot)) scale(0.7); }
       }
       .bloom-particle {
         position: absolute;
@@ -52,16 +57,12 @@ const GlobalStyles = memo(function GlobalStyles() {
         animation-name: bloomFly;
         animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
         animation-fill-mode: both;
+        will-change: transform, opacity;
       }
       @keyframes gardenGlowPulse {
-        0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.2); }
-        35% { opacity: 0.8; transform: translate3d(-50%,-50%,0) scale(2.8); }
-        70% { opacity: 0.6; transform: translate3d(-50%,-50%,0) scale(4.5); }
-        100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(5.5); }
-      }
-      @keyframes musicGlowPulse {
-        0%, 100% { box-shadow: 0 0 10px rgba(212,175,55,0.2), inset 0 0 5px rgba(212,175,55,0.1); transform: scale(1); }
-        50% { box-shadow: 0 0 20px rgba(212,175,55,0.6), inset 0 0 10px rgba(212,175,55,0.3); transform: scale(1.05); }
+        0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.4); }
+        45% { opacity: 0.6; transform: translate3d(-50%,-50%,0) scale(2.3); }
+        100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(3.1); }
       }
     `}</style>
   );
@@ -119,7 +120,7 @@ const MutedNoteIcon = memo(function MutedNoteIcon({
 
 type Particle = {
   id: string;
-  kind: "petal" | "leaf" | "sparkle";
+  kind: "petal" | "leaf";
   tx: number;
   ty: number;
   rot: number;
@@ -129,50 +130,34 @@ type Particle = {
   size: number;
 };
 
-// Optimal particle count: 3 waves x 20 particles = 60 elemen.
-// Cukup ramai secara visual tapi tidak menghancurkan framerate.
-const PARTICLES_PER_WAVE = 20;
-const WAVE_COUNT = 3;
+const PARTICLES_PER_WAVE = 26;
+const WAVE_COUNT = 2;
 
 const PARTICLE_COLORS = [
   "var(--blush-dark)",
   "var(--coral)",
   "var(--sage-light)",
   "var(--burgundy)",
-  "var(--mustard)",
 ] as const;
 
 function buildWave(waveIndex: number): Particle[] {
   return Array.from({ length: PARTICLES_PER_WAVE }, (_, i) => {
     const angle =
       (i / PARTICLES_PER_WAVE) * Math.PI * 2 +
-      (i % 2 ? 0.15 : -0.15) +
-      waveIndex * 0.25;
-    const distance = 140 + (i % 5) * 75 + waveIndex * 60;
-
-    let kind: "petal" | "leaf" | "sparkle" = "petal";
-    if (i % 4 === 1) kind = "leaf";
-    else if (i % 4 === 2) kind = "sparkle";
-
-    const rotMultiplier = i % 2 === 0 ? 1 : -1;
-
+      (i % 2 ? 0.12 : -0.08) +
+      waveIndex * 0.18;
+    const distance = 120 + (i % 5) * 60 + waveIndex * 40;
+    const isLeaf = i % 3 !== 1;
     return {
       id: `${waveIndex}-${i}`,
-      kind,
+      kind: isLeaf ? "leaf" : "petal",
       tx: Math.cos(angle) * distance,
       ty: Math.sin(angle) * distance,
-      rot:
-        ((kind === "leaf" ? 540 : 280) + ((i * 53 + waveIndex * 40) % 180)) *
-        rotMultiplier,
-      delay: waveIndex * 0.18 + (i % 9) * 0.02,
-      duration: 1.1 + (i % 4) * 0.15,
+      rot: (isLeaf ? 480 : 220) + ((i * 41 + waveIndex * 30) % 120),
+      delay: waveIndex * 0.16 + (i % 7) * 0.018,
+      duration: 0.95 + (i % 3) * 0.08,
       color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
-      size:
-        kind === "leaf"
-          ? 12 + (i % 4) * 4
-          : kind === "sparkle"
-            ? 6 + (i % 3) * 2
-            : 9 + (i % 5) * 4,
+      size: isLeaf ? 11 + (i % 3) * 4 : 8 + (i % 4) * 4,
     };
   });
 }
@@ -191,10 +176,10 @@ const BloomParticles = memo(function BloomParticles() {
       {particles.map((p) => (
         <svg
           key={p.id}
-          viewBox={p.kind === "sparkle" ? "0 0 24 24" : "0 0 20 20"}
+          viewBox="0 0 20 20"
           width={p.size}
           height={p.size}
-          className="bloom-particle -translate-x-1/2 -translate-y-1/2 drop-shadow-md"
+          className="bloom-particle -translate-x-1/2 -translate-y-1/2"
           style={
             {
               "--tx": `${p.tx}px`,
@@ -210,12 +195,6 @@ const BloomParticles = memo(function BloomParticles() {
               d="M10 0 C 16 4, 18 12, 10 20 C 2 12, 4 4, 10 0 Z"
               fill={p.color}
               opacity="0.85"
-            />
-          ) : p.kind === "sparkle" ? (
-            <path
-              d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"
-              fill="var(--mustard)"
-              opacity="0.9"
             />
           ) : (
             <ellipse
@@ -274,12 +253,13 @@ function HomeInner() {
   const isOpened = phase !== "cover";
   const isBlooming = phase === "opening" || phase === "content";
 
-  const clipPathVisible = `circle(160% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
+  const clipPathVisible = `circle(150% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
   const clipPathHidden = `circle(0% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
 
   return (
     <>
       <GlobalStyles />
+
       <audio ref={audioRef} src={MUSIC_SRC} loop preload="auto" />
 
       <AnimatePresence>
@@ -287,23 +267,18 @@ function HomeInner() {
           <m.button
             type="button"
             onClick={toggleMusic}
-            initial={{ opacity: 0, scale: 0.6, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.6, y: 20 }}
-            transition={{ duration: 0.6, ease: "backOut", delay: 1 }}
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.7 }}
+            transition={{ duration: 0.4 }}
             aria-label={isMusicPlaying ? "Matikan musik" : "Putar musik"}
-            className="fixed bottom-5 right-5 z-70 flex h-12 w-12 items-center justify-center rounded-full border border-mustard/60 bg-ivory/95 shadow-[0_8px_20px_rgba(58,54,48,0.15)] backdrop-blur-sm sm:bottom-8 sm:right-8 sm:h-14 sm:w-14"
-            style={{
-              willChange: "transform, opacity",
-              animation: isMusicPlaying
-                ? "musicGlowPulse 3s infinite ease-in-out"
-                : "none",
-            }}
+            className="fixed bottom-4 right-4 z-70 flex h-11 w-11 items-center justify-center rounded-full border border-mustard/60 bg-ivory shadow-md sm:h-12 sm:w-12"
+            style={gpuLayer}
           >
             <m.span
               animate={isMusicPlaying ? { rotate: 360 } : { rotate: 0 }}
               transition={{
-                duration: 5,
+                duration: 6,
                 repeat: isMusicPlaying ? Infinity : 0,
                 ease: "linear",
               }}
@@ -325,22 +300,18 @@ function HomeInner() {
         animate={{ clipPath: isBlooming ? clipPathVisible : clipPathHidden }}
         transition={{
           duration: TIMELINE.irisDuration / 1000,
-          ease: [0.22, 1, 0.36, 1],
+          ease: [0.16, 1.35, 0.3, 1],
         }}
         style={{ contain: "paint", ...gpuLayer }}
         className="relative z-0"
       >
         <m.div
-          initial={{ opacity: 0, y: 30, scale: 0.96 }}
-          animate={
-            isBlooming
-              ? { opacity: 1, y: 0, scale: 1 }
-              : { opacity: 0, y: 30, scale: 0.96 }
-          }
+          initial={{ opacity: 0, y: 18 }}
+          animate={isBlooming ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
           transition={{
             duration: TIMELINE.contentFadeDuration / 1000,
             delay: TIMELINE.contentFadeDelay / 1000,
-            ease: [0.22, 1, 0.36, 1],
+            ease: "easeOut",
           }}
           style={{ willChange: "transform, opacity" }}
         >
@@ -365,32 +336,13 @@ function HomeInner() {
               transition: { duration: TIMELINE.overlayExitDuration / 1000 },
             }}
           >
-            {/* Glow dibiarkan statis blur-nya, scale-nya saja yang dianimasikan */}
-            <div
-              style={{
-                left: `${BLOOM_ORIGIN.xPct}%`,
-                top: `${BLOOM_ORIGIN.yPct}%`,
-                animation: "gardenGlowPulse 1.4s ease-out forwards",
-              }}
-              className="absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/60 blur-[40px]"
-            />
-            <div
-              style={{
-                left: `${BLOOM_ORIGIN.xPct}%`,
-                top: `${BLOOM_ORIGIN.yPct}%`,
-                animation: "gardenGlowPulse 1.2s ease-out forwards",
-                animationDelay: "0.1s",
-              }}
-              className="absolute h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush-dark/50 blur-[50px]"
-            />
             <div
               style={{
                 left: `${BLOOM_ORIGIN.xPct}%`,
                 top: `${BLOOM_ORIGIN.yPct}%`,
                 animation: "gardenGlowPulse 1s ease-out forwards",
-                animationDelay: "0.2s",
               }}
-              className="absolute h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sage-light/40 blur-[60px]"
+              className="absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/70 blur-3xl"
             />
 
             <BloomParticles />
