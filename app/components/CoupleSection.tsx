@@ -43,8 +43,6 @@ const loop = (
   ease: Transition["ease"] = "easeInOut",
 ): Transition => ({ duration, delay, repeat: Infinity, ease });
 
-// Perf/DX: generates a symmetric sway (rotate back-and-forth) config so
-// vine/corner entries stay declarative instead of hand-typing keyframes.
 const makeSway = (
   magnitude: number,
   duration: number,
@@ -107,7 +105,7 @@ const cornerFade: Variants = {
 const textLift = {
   strong: {
     textShadow:
-      "0 1px 2px rgba(255,255,255,0.95), 0 1px 12px rgba(255,255,255,0.85)",
+      "0 1px 4px rgba(255,255,255,0.9), 0 2px 14px rgba(255,255,255,0.85)",
   },
   soft: {
     textShadow:
@@ -115,7 +113,7 @@ const textLift = {
   },
 } as const;
 
-/* ---------- Static decoration data (computed once at module load) ---------- */
+/* ---------- Static decoration data ---------- */
 
 const scatterItems = [
   { top: "5%", left: "8%", type: "bloom", color: "var(--burgundy)" },
@@ -140,10 +138,13 @@ const scatterItems = [
   { top: "85%", left: "62%", type: "leaf", rot: -40 },
 ] as const;
 
+// Menambah kepadatan partikel
 const sparkles = [
   { top: "12%", left: "45%" },
   { top: "22%", left: "10%" },
   { top: "20%", left: "90%" },
+  { top: "40%", left: "85%" },
+  { top: "60%", left: "15%" },
   { top: "70%", left: "12%" },
   { top: "72%", left: "88%" },
   { top: "88%", left: "50%" },
@@ -151,7 +152,15 @@ const sparkles = [
 
 const floatingPetals = [
   { left: "6%", size: 7, duration: 10, delay: 0, color: "var(--blush-dark)" },
+  { left: "25%", size: 5, duration: 14, delay: 4, color: "var(--burgundy)" },
   { left: "93%", size: 6, duration: 12, delay: 3, color: "var(--coral)" },
+  {
+    left: "75%",
+    size: 5.5,
+    duration: 15,
+    delay: 7,
+    color: "var(--sage-light)",
+  },
   { left: "50%", size: 6, duration: 11, delay: 6, color: "var(--sage-light)" },
 ].map((p) => ({
   ...p,
@@ -173,8 +182,10 @@ const butterflies = [
 const fireflies = [
   { left: "14%", bottom: "10%", duration: 7, delay: 0 },
   { left: "30%", bottom: "22%", duration: 8.5, delay: 1.5 },
+  { left: "20%", bottom: "50%", duration: 8, delay: 2.5 },
   { left: "70%", bottom: "14%", duration: 7.5, delay: 3 },
   { left: "86%", bottom: "26%", duration: 9, delay: 2 },
+  { left: "80%", bottom: "60%", duration: 7.5, delay: 5 },
   { left: "50%", bottom: "8%", duration: 8, delay: 4.5 },
 ].map((f) => ({
   ...f,
@@ -191,14 +202,6 @@ const fairyLights = [
   { cx: 360, cy: 38 },
 ] as const;
 
-// Corner ornament sway is precomputed once (module scope), mirroring the
-// approach used on the cover page, since the data never changes at runtime.
-//
-// NOTE: intentionally NOT using `as const` here — that would freeze
-// `pulse.scale` / `pulse.rotate` into readonly tuples (e.g.
-// `readonly [1, 1.1, 1]`), which TypeScript rejects when passed to
-// Framer Motion's `animate` prop (it expects a mutable `number[]`
-// keyframe array). This was the cause of the build error.
 const cornerOrnaments = [
   {
     cls: "left-2 top-2 sm:left-4 sm:top-4 lg:left-8 lg:top-8",
@@ -256,12 +259,6 @@ const grassBlades = [
   { x: 390, h: 30, rot: 9 },
 ] as const;
 
-// Vines now carry a `sway` config (rotate back-and-forth from their own
-// base edge) and a fade-in `delay`, same pattern as the cover page.
-//
-// NOTE: also not using `as const` on this array (or on `corners` below),
-// for the exact same reason as `cornerOrnaments` — `sway.rotate` is a
-// keyframe array consumed by Framer Motion's `animate` prop.
 const vines = [
   {
     key: "left",
@@ -297,12 +294,8 @@ const vines = [
   },
 ];
 
-// Precompute vine sway transitions once (module scope) — pure function of
-// static data, no need to recompute per render/hook.
 const vineTransitions = vines.map((v) => loop(v.sway.duration, v.delay + 0.5));
 
-// Corners (FloralCorner) sway from their own corner point, same idea as
-// the cover page's corner sway.
 const corners = [
   {
     key: "top-left",
@@ -333,7 +326,6 @@ const corners = [
     sway: makeSway(1.8, 7.4, "bottom right", true),
   },
 ];
-
 const cornerTransitions = corners.map((c) =>
   loop(c.sway.duration, c.fadeDelay + 0.5),
 );
@@ -673,11 +665,18 @@ const ArchPortrait = memo(function ArchPortrait({
 }) {
   return (
     <div className="relative flex w-full flex-col items-center text-center">
-      <div className="relative w-full">
-        <div className="absolute -inset-[7px] rounded-t-[3.6rem] rounded-b-xl border-[1.5px] border-mustard sm:-inset-2.5 sm:rounded-t-[4.3rem] lg:-inset-3 lg:rounded-t-[6.6rem] lg:rounded-b-3xl" />
-        <div className="absolute -inset-[3px] rounded-t-[3.4rem] rounded-b-lg border border-mustard/60 sm:-inset-1 sm:rounded-t-[4rem] lg:-inset-1.5 lg:rounded-t-[6.3rem] lg:rounded-b-2xl" />
+      {/* Container foto melayang tipis (levitation effect) */}
+      <m.div
+        animate={{ y: [-3, 3, -3] }}
+        transition={loop(6, align === "left" ? 0 : 1)}
+        className="relative w-full"
+        style={GPU_HINT}
+      >
+        {/* Layer luar bingkai dengan Luxurious Glow */}
+        <div className="absolute -inset-[7px] rounded-t-[3.6rem] rounded-b-xl border-[1.5px] border-mustard shadow-[0_0_15px_rgba(212,175,55,0.3)] sm:-inset-2.5 sm:rounded-t-[4.3rem] lg:-inset-3 lg:rounded-t-[6.6rem] lg:rounded-b-3xl" />
+        <div className="absolute -inset-[3px] rounded-t-[3.4rem] rounded-b-lg border border-mustard/70 sm:-inset-1 sm:rounded-t-[4rem] lg:-inset-1.5 lg:rounded-t-[6.3rem] lg:rounded-b-2xl" />
 
-        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-t-[3.5rem] rounded-b-xl shadow-[0_14px_30px_-10px_rgba(58,54,48,0.35)] ring-1 ring-white/60 sm:rounded-t-[4.2rem] lg:rounded-t-[6.5rem] lg:rounded-b-3xl">
+        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-t-[3.5rem] rounded-b-xl shadow-[0_20px_40px_-10px_rgba(58,54,48,0.4)] ring-1 ring-white/70 sm:rounded-t-[4.2rem] lg:rounded-t-[6.5rem] lg:rounded-b-3xl">
           {photoUrl ? (
             <img
               src={photoUrl}
@@ -690,32 +689,34 @@ const ArchPortrait = memo(function ArchPortrait({
           ) : (
             <Monogram name={displayName} />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/30 via-transparent to-transparent" />
-          <div className="pointer-events-none absolute inset-1 rounded-t-[3rem] rounded-b-lg border border-white/40 sm:rounded-t-[3.7rem] lg:inset-2 lg:rounded-t-[5.7rem] lg:rounded-b-2xl" />
+          {/* Inner Vignette / Shadow agar foto lebih dramatis */}
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/40 via-transparent to-ink/10" />
+          <div className="absolute inset-0 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] mix-blend-overlay" />
+
+          <div className="pointer-events-none absolute inset-1 rounded-t-[3rem] rounded-b-lg border border-white/50 sm:rounded-t-[3.7rem] lg:inset-2 lg:rounded-t-[5.7rem] lg:rounded-b-2xl" />
         </div>
 
-        {/* Garland is intentionally overflowed below the frame for a layered look */}
-        <div className="pointer-events-none absolute -bottom-[18%] sm:-bottom-[22%] lg:-bottom-[24%] left-1/2 z-20 w-[130%] -translate-x-1/2">
+        <div className="pointer-events-none absolute -bottom-[18%] left-1/2 z-20 w-[130%] -translate-x-1/2 sm:-bottom-[22%] lg:-bottom-[24%]">
           <Image
             src="/assets/garland.png"
             alt=""
             width={900}
             height={529}
-            className="h-auto w-full object-contain"
+            className="h-auto w-full object-contain drop-shadow-md"
           />
         </div>
 
         <div
-          className={`pointer-events-none absolute -top-2 z-30 h-5 w-5 opacity-80 sm:-top-3 sm:h-6 sm:w-6 lg:-top-4 lg:h-8 lg:w-8 ${
+          className={`pointer-events-none absolute -top-2 z-30 h-5 w-5 opacity-90 sm:-top-3 sm:h-6 sm:w-6 lg:-top-4 lg:h-8 lg:w-8 ${
             align === "left" ? "-left-1 sm:-left-2" : "-right-1 sm:-right-2"
           }`}
         >
           <MiniLeaf
             rot={align === "left" ? -30 : 30}
-            className="h-full w-full"
+            className="h-full w-full drop-shadow-sm"
           />
         </div>
-      </div>
+      </m.div>
 
       <p
         className="font-script mt-12 text-2xl font-semibold leading-none text-balance break-words text-ink sm:mt-16 sm:text-4xl lg:mt-20 lg:text-5xl"
@@ -742,7 +743,7 @@ const ArchPortrait = memo(function ArchPortrait({
   );
 });
 
-/* ---------- Ambient decoration groups (memoized, no per-render allocations) ---------- */
+/* ---------- Ambient decoration groups ---------- */
 
 const AmbientDecor = memo(function AmbientDecor() {
   return (
@@ -761,19 +762,17 @@ const AmbientDecor = memo(function AmbientDecor() {
             )}
           </div>
         ))}
-
         {sparkles.map((s, i) => (
           <m.div
             key={`sparkle-${i}`}
             className="pointer-events-none absolute z-[1]"
             style={s.style}
-            animate={{ opacity: [0.15, 0.85, 0.15], scale: [0.6, 1.1, 0.6] }}
+            animate={{ opacity: [0.15, 0.9, 0.15], scale: [0.6, 1.2, 0.6] }}
             transition={loop(3 + (i % 3), i * 0.4)}
           >
             <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
           </m.div>
         ))}
-
         {floatingPetals.map((p, i) => (
           <m.div
             key={`petal-${i}`}
@@ -783,7 +782,7 @@ const AmbientDecor = memo(function AmbientDecor() {
               y: ["0vh", "112vh"],
               x: [0, 16, -10, 0],
               rotate: [0, 180, 360],
-              opacity: [0, 0.55, 0.55, 0],
+              opacity: [0, 0.6, 0.6, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
@@ -794,12 +793,11 @@ const AmbientDecor = memo(function AmbientDecor() {
                 rx="6"
                 ry="9"
                 fill={p.color}
-                opacity="0.7"
+                opacity="0.75"
               />
             </svg>
           </m.div>
         ))}
-
         {butterflies.map((b, i) => (
           <m.div
             key={`butterfly-${i}`}
@@ -823,7 +821,6 @@ const AmbientDecor = memo(function AmbientDecor() {
           </m.div>
         ))}
       </div>
-
       <div className="contents">
         {fireflies.map((f, i) => (
           <m.div
@@ -876,9 +873,6 @@ const FairyLights = memo(function FairyLights() {
   );
 });
 
-// Vines & FloralCorner motifs now sway gently from their own base edge —
-// outer wrapper handles the entrance fade, inner wrapper runs the
-// never-ending rotate loop (same split used on the cover page).
 const FrameLayers = memo(function FrameLayers() {
   return (
     <>
@@ -902,7 +896,6 @@ const FrameLayers = memo(function FrameLayers() {
           </m.div>
         </m.div>
       ))}
-
       {corners.map((c, i) => (
         <m.div
           key={c.key}
@@ -923,7 +916,6 @@ const FrameLayers = memo(function FrameLayers() {
           </m.div>
         </m.div>
       ))}
-
       {cornerOrnaments.map((c, i) => (
         <div
           key={`cf-${i}`}
@@ -939,7 +931,6 @@ const FrameLayers = memo(function FrameLayers() {
           </m.div>
         </div>
       ))}
-
       <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
       <div className="pointer-events-none absolute inset-6 z-[1] hidden rounded-[2.5rem] border border-dashed border-mustard/25 sm:block sm:inset-8 lg:inset-12" />
     </>
@@ -966,9 +957,26 @@ function CoupleSectionInner({
       <div className="pointer-events-none absolute inset-0 z-0">
         <BackgroundPattern className="h-full w-full opacity-[0.32]" />
       </div>
-      <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem]" />
-      <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72" />
-      <div className="pointer-events-none absolute left-1/2 top-8 z-0 h-40 w-40 -translate-x-1/2 rounded-full bg-mustard/15 blur-[70px] lg:h-56 lg:w-56" />
+
+      {/* Breathing Background Blobs untuk efek Magis */}
+      <m.div
+        className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem]"
+        animate={{ opacity: [0.35, 0.55, 0.35], scale: [1, 1.15, 1] }}
+        transition={loop(7.5)}
+        style={GPU_HINT}
+      />
+      <m.div
+        className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72"
+        animate={{ opacity: [0.4, 0.6, 0.4], scale: [1, 1.1, 1] }}
+        transition={loop(8.5, 1)}
+        style={GPU_HINT}
+      />
+      <m.div
+        className="pointer-events-none absolute left-1/2 top-8 z-0 h-40 w-40 -translate-x-1/2 rounded-full bg-mustard/15 blur-[70px] lg:h-56 lg:w-56"
+        animate={{ opacity: [0.15, 0.3, 0.15], scale: [1, 1.05, 1] }}
+        transition={loop(6, 2)}
+        style={GPU_HINT}
+      />
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14]" />
 
@@ -1003,20 +1011,20 @@ function CoupleSectionInner({
               style={GPU_HINT}
               className="flex items-center gap-2 sm:gap-3"
             >
-              {/* MiniBloom flanking the badge now breathe gently, same
-                  language as the cover page's MiniFlower pulse. */}
               <m.div
                 animate={{ scale: [1, 1.12, 1], rotate: [0, 6, 0] }}
                 transition={loop(3.4, 0.4)}
                 style={GPU_HINT}
               >
                 <MiniBloom
-                  className="h-3 w-3 opacity-70 sm:h-4 sm:w-4"
+                  className="h-3 w-3 opacity-80 sm:h-4 sm:w-4"
                   color="var(--sage-light)"
                 />
               </m.div>
-              <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
-                MEMPELAI
+              <span className="inline-block rounded-full border border-mustard/60 bg-ivory/95 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-[0_2px_8px_rgba(0,0,0,0.06)] backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
+                {/* Menambah inner glow tipis pada badge */}
+                <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
+                <span className="relative z-10">MEMPELAI</span>
               </span>
               <m.div
                 animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -1024,7 +1032,7 @@ function CoupleSectionInner({
                 style={GPU_HINT}
               >
                 <MiniBloom
-                  className="h-3 w-3 opacity-70 sm:h-4 sm:w-4"
+                  className="h-3 w-3 opacity-80 sm:h-4 sm:w-4"
                   color="var(--sage-light)"
                 />
               </m.div>
@@ -1067,10 +1075,8 @@ function CoupleSectionInner({
             <m.div
               variants={popIn}
               style={GPU_HINT}
-              className="relative z-20 w-14 shrink-0 sm:w-24 lg:w-40 mb-6 sm:mb-10 lg:mb-12"
+              className="relative z-20 mb-6 w-14 shrink-0 sm:mb-10 sm:w-24 lg:mb-12 lg:w-40"
             >
-              {/* Breathing glow behind the wreath, layered the same way
-                  as the cover page's glow behind its main wreath. */}
               <m.div
                 className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl"
                 animate={{
@@ -1093,16 +1099,36 @@ function CoupleSectionInner({
                   transform: "translate(-50%, -50%)",
                 }}
               >
-                {/* Ampersand heartbeat pulse — transform-only (scale),
-                    same feel as the cover page's "&" animation. */}
-                <m.span
-                  className="font-script block font-semibold leading-none text-burgundy text-sm sm:text-2xl lg:text-4xl"
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={loop(2.6, 1)}
-                  style={GPU_HINT}
-                >
-                  &amp;
-                </m.span>
+                {/* Magical Ampersand with Sparkles */}
+                <m.div className="relative flex items-center justify-center">
+                  <m.div
+                    className="absolute -left-2 -top-2"
+                    animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+                    transition={loop(2.5, 0.2)}
+                  >
+                    <Sparkle className="h-2 w-2 opacity-80 sm:h-3 sm:w-3" />
+                  </m.div>
+
+                  <m.span
+                    className="font-script block font-semibold leading-none text-burgundy text-sm sm:text-2xl lg:text-4xl"
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={loop(2.6, 1)}
+                    style={{
+                      textShadow: "0 2px 10px rgba(255,255,255,0.8)",
+                      ...GPU_HINT,
+                    }}
+                  >
+                    &amp;
+                  </m.span>
+
+                  <m.div
+                    className="absolute -bottom-1 -right-2"
+                    animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
+                    transition={loop(3, 1.2)}
+                  >
+                    <Sparkle className="h-1.5 w-1.5 opacity-80 sm:h-2 sm:w-2" />
+                  </m.div>
+                </m.div>
               </div>
             </m.div>
 

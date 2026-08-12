@@ -20,13 +20,8 @@ interface CoverPageProps {
   onOpen: () => void;
 }
 
-// Perf: style hint reused on every element that animates forever, so the
-// browser promotes it to its own compositor layer up front instead of
-// doing it mid-animation (a common cause of a "jump"/stutter on first loop).
 const GPU_HINT = { willChange: "transform, opacity" } as const;
 
-// Perf: single helper for "loop forever" transitions instead of repeating
-// { repeat: Infinity, ease: "easeInOut", ... } literals everywhere.
 const loop = (
   duration: number,
   delay = 0,
@@ -38,9 +33,6 @@ const loop = (
   ease,
 });
 
-// Perf/DX: generates a symmetric sway (rotate back-and-forth) config so
-// vine/corner entries stay declarative instead of hand-typing each keyframe
-// array.
 const makeSway = (
   magnitude: number,
   duration: number,
@@ -54,111 +46,67 @@ const makeSway = (
   duration,
 });
 
+/* ---------- Framer Motion variants ---------- */
+
 const container: Variants = {
   hidden: {},
   show: {
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.2,
-    },
+    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
   },
 };
 
 const fadeUp: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 16,
-  },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut",
-    },
-  },
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };
 
 const cornerFade: Variants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.85,
-  },
+  hidden: { opacity: 0, scale: 0.85 },
   show: {
     opacity: 1,
     scale: 1,
-    transition: {
-      duration: 0.9,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.9, ease: "easeOut" },
   },
 };
 
 const vineFade: Variants = {
-  hidden: {
-    opacity: 0,
-  },
+  hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      duration: 1.2,
-      ease: "easeOut",
-      delay: 0.5,
-    },
+    transition: { duration: 1.2, ease: "easeOut", delay: 0.5 },
   },
 };
 
 const borderFade: Variants = {
-  hidden: {
-    opacity: 0,
-  },
+  hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      duration: 1.2,
-      ease: "easeOut",
-      delay: 0.6,
-    },
+    transition: { duration: 1.2, ease: "easeOut", delay: 0.6 },
   },
 };
 
 const glowVariant: Variants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.8,
-  },
+  hidden: { opacity: 0, scale: 0.8 },
   show: {
     opacity: 1,
     scale: 1,
-    transition: {
-      duration: 1.4,
-      ease: "easeOut",
-      delay: 0.3,
-    },
+    transition: { duration: 1.4, ease: "easeOut", delay: 0.3 },
   },
 };
 
 const wreathVariant: Variants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.85,
-    rotate: -6,
-  },
+  hidden: { opacity: 0, scale: 0.85, rotate: -6 },
   show: {
     opacity: 1,
     scale: 1,
     rotate: 0,
-    transition: {
-      type: "spring",
-      stiffness: 130,
-      damping: 16,
-    },
+    transition: { type: "spring", stiffness: 130, damping: 16 },
   },
 };
 
 const textLift = {
   textShadow:
-    "0 1px 3px rgba(255,255,255,0.9), 0 1px 14px rgba(255,255,255,0.7)",
+    "0 1px 3px rgba(255,255,255,0.9), 0 2px 14px rgba(255,255,255,0.7)",
 } as const;
 
 const nameTextStyle = {
@@ -171,11 +119,21 @@ const containerQueryStyle = {
   containerType: "inline-size",
 } as const;
 
+/* ---------- Static Decoration Data ---------- */
+
 const petals = [
   { left: "8%", size: 8, duration: 9, delay: 0, color: "var(--blush-dark)" },
   { left: "38%", size: 7, duration: 10, delay: 4, color: "var(--coral)" },
+  { left: "65%", size: 6, duration: 13, delay: 1.5, color: "var(--burgundy)" },
   {
-    left: "90%",
+    left: "85%",
+    size: 7.5,
+    duration: 11,
+    delay: 5,
+    color: "var(--sage-light)",
+  },
+  {
+    left: "93%",
     size: 6,
     duration: 11.5,
     delay: 2.5,
@@ -183,15 +141,24 @@ const petals = [
   },
 ] as const;
 
-const stars = [
+const sparkles = [
   { top: "10%", left: "12%" },
   { top: "18%", left: "88%" },
+  { top: "35%", left: "15%" },
+  { top: "45%", left: "85%" },
+  { top: "65%", left: "12%" },
   { top: "78%", left: "18%" },
   { top: "88%", left: "82%" },
 ] as const;
 
-// Path/yPath tetap number[] (bukan readonly tuple) supaya kompatibel dengan
-// tipe animate.x / animate.y milik Framer Motion.
+const fireflies = [
+  { left: "20%", bottom: "10%", duration: 7, delay: 0 },
+  { left: "80%", bottom: "25%", duration: 8.5, delay: 1.5 },
+  { left: "15%", bottom: "60%", duration: 8, delay: 3 },
+  { left: "85%", bottom: "50%", duration: 9, delay: 2 },
+  { left: "50%", bottom: "15%", duration: 7.5, delay: 4 },
+];
+
 interface ButterflyConfig {
   top: string;
   left: string;
@@ -236,8 +203,6 @@ const butterflies: ButterflyConfig[] = [
   },
 ];
 
-// Vine vertikal berayun dari ujung atas, vine horizontal dari ujung kiri —
-// bukan berputar di tengah elemen. Dibuat lewat makeSway() supaya ringkas.
 const vines = [
   {
     key: "left",
@@ -273,8 +238,6 @@ const vines = [
   },
 ];
 
-// Corner berayun dari titik sudutnya sendiri (mis. top-left dari "top left")
-// supaya motif floral terasa melambai dari pangkalnya di pojok.
 const corners = [
   {
     key: "bottom-left",
@@ -305,6 +268,100 @@ const corners = [
     sway: makeSway(2.2, 7.3, "top right", true),
   },
 ];
+
+const cornerOrnaments = [
+  {
+    cls: "left-2 top-2 sm:left-4 sm:top-4 lg:left-8 lg:top-8",
+    rotate: "-scale-y-100",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
+    transition: loop(3.6, 0.4),
+  },
+  {
+    cls: "bottom-2 right-2 sm:bottom-4 sm:right-4 lg:bottom-8 lg:right-8",
+    rotate: "-scale-x-100",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
+    transition: loop(3.9, 0.9),
+  },
+  {
+    cls: "right-2 top-2 sm:right-4 sm:top-4 lg:right-8 lg:top-8",
+    rotate: "-scale-x-100 -scale-y-100",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
+    transition: loop(3.3, 1.4),
+  },
+  {
+    cls: "bottom-2 left-2 sm:bottom-4 sm:left-4 lg:bottom-8 lg:left-8",
+    rotate: "",
+    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
+    transition: loop(4.1, 0.2),
+  },
+];
+
+/* ---------- Small Presentational Components ---------- */
+
+const Sparkle = memo(function Sparkle({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="var(--mustard)">
+      <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z" />
+    </svg>
+  );
+});
+
+const Firefly = memo(function Firefly({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-full bg-mustard blur-[1.5px] ${className}`} />
+  );
+});
+
+const CornerFlourish = memo(function CornerFlourish({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg viewBox="0 0 60 60" className={className} fill="none">
+      <path
+        d="M4 4 C 4 24, 18 36, 40 38 C 48 39, 54 44, 56 52"
+        stroke="var(--sage)"
+        strokeWidth="1.1"
+        fill="none"
+        opacity="0.6"
+      />
+      <g transform="translate(10, 10)">
+        {[0, 72, 144, 216, 288].map((deg) => (
+          <ellipse
+            key={deg}
+            cx="0"
+            cy="-5.5"
+            rx="3.6"
+            ry="7"
+            fill="var(--blush-dark)"
+            opacity="0.9"
+            transform={`rotate(${deg})`}
+          />
+        ))}
+        <circle r="2.2" fill="var(--mustard)" />
+      </g>
+      <ellipse
+        cx="28"
+        cy="30"
+        rx="3"
+        ry="6"
+        fill="var(--sage-light)"
+        stroke="var(--sage)"
+        strokeWidth="0.5"
+        transform="rotate(30 28 30)"
+      />
+    </svg>
+  );
+});
 
 const MiniFlower = memo(function MiniFlower({
   className = "",
@@ -431,6 +488,8 @@ const Butterfly = memo(function Butterfly({
   );
 });
 
+/* ---------- Main Component ---------- */
+
 function CoverPageInner({
   guestName = "Tamu Undangan",
   onOpen,
@@ -442,8 +501,6 @@ function CoverPageInner({
     onOpen();
   }, [onOpen]);
 
-  // Perf: transition objects untuk sway loop dibuat sekali (memoized),
-  // bukan dialokasikan ulang setiap render.
   const vineTransitions = useMemo(
     () => vines.map((v) => loop(v.sway.duration, v.delay + 0.6)),
     [],
@@ -465,10 +522,8 @@ function CoverPageInner({
           paddingRight: "env(safe-area-inset-right)",
         }}
       >
-        <BackgroundPattern className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.12]" />
+        <BackgroundPattern className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.16]" />
 
-        {/* Ken Burns: background zoom halus tanpa henti, transform-only
-            (scale) sehingga sepenuhnya digambar oleh compositor/GPU. */}
         <m.div
           className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
           animate={{ scale: [1, 1.06, 1] }}
@@ -483,22 +538,19 @@ function CoverPageInner({
             quality={100}
             sizes="100vw"
             className="pointer-events-none object-cover opacity-100"
-            style={{
-              filter: "saturate(1.35) contrast(1.15) brightness(1.05)",
-            }}
+            style={{ filter: "saturate(1.35) contrast(1.15) brightness(1.05)" }}
           />
         </m.div>
 
+        {/* Elegant Inner Border */}
         <m.div
           variants={borderFade}
           initial="hidden"
           animate="show"
-          className="pointer-events-none absolute inset-3 z-[2] rounded-sm border border-sage/30 sm:inset-6"
+          className="pointer-events-none absolute inset-3 z-[2] rounded-2xl border border-mustard/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] sm:inset-6"
         />
 
-        {/* Setiap vine: wrapper luar mengurus fade-in masuk (vineFade),
-            wrapper dalam menjalankan ayunan halus tak berhenti (rotate
-            kecil bolak-balik) dengan transformOrigin di pangkal vine. */}
+        {/* Vines Layer */}
         {vines.map((v, i) => (
           <m.div
             key={v.key}
@@ -523,8 +575,7 @@ function CoverPageInner({
           </m.div>
         ))}
 
-        {/* Glow di belakang wreath "bernapas" — pulsing opacity & scale
-            tak berhenti, mulai setelah entrance selesai. */}
+        {/* Luxurious Central Glow */}
         <m.div
           variants={glowVariant}
           initial="hidden"
@@ -533,27 +584,23 @@ function CoverPageInner({
         >
           <m.div
             className="h-full w-full rounded-full bg-blush/40 blur-3xl"
-            animate={{ opacity: [0.5, 1, 0.5], scale: [0.92, 1.05, 0.92] }}
+            animate={{ opacity: [0.5, 1, 0.5], scale: [0.92, 1.08, 0.92] }}
             transition={loop(5, 1.7)}
             style={GPU_HINT}
           />
         </m.div>
 
+        {/* Ambient Decor: Petals, Sparkles, Fireflies */}
         {petals.map((p, i) => (
           <m.div
             key={i}
             className="pointer-events-none absolute top-[-5%] z-10"
-            style={{
-              left: p.left,
-              width: p.size,
-              height: p.size,
-              ...GPU_HINT,
-            }}
+            style={{ left: p.left, width: p.size, height: p.size, ...GPU_HINT }}
             animate={{
               y: ["0vh", "105vh"],
               x: [0, 20, -12, 0],
               rotate: [0, 180, 360],
-              opacity: [0, 0.6, 0.6, 0],
+              opacity: [0, 0.65, 0.65, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
@@ -570,27 +617,36 @@ function CoverPageInner({
           </m.div>
         ))}
 
-        {stars.map((s, i) => (
+        {sparkles.map((s, i) => (
           <div
             key={i}
             className="pointer-events-none absolute z-10"
             style={{ top: s.top, left: s.left }}
           >
             <m.div
-              animate={{ opacity: [0.2, 0.9, 0.2], scale: [0.6, 1.15, 0.6] }}
+              animate={{ opacity: [0.15, 0.9, 0.15], scale: [0.6, 1.2, 0.6] }}
               transition={loop(2.8 + (i % 3), i * 0.35)}
               style={GPU_HINT}
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="var(--mustard)"
-              >
-                <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z" />
-              </svg>
+              <Sparkle className="h-3 w-3 opacity-90 sm:h-4 sm:w-4" />
             </m.div>
           </div>
+        ))}
+
+        {fireflies.map((f, i) => (
+          <m.div
+            key={`ff-${i}`}
+            className="pointer-events-none absolute z-10 h-1.5 w-1.5 sm:h-2 sm:w-2"
+            style={{ left: f.left, bottom: f.bottom, ...GPU_HINT }}
+            animate={{
+              y: [0, -60, -20, -90, 0],
+              x: [0, 12, -8, 6, 0],
+              opacity: [0, 0.9, 0.4, 0.9, 0],
+            }}
+            transition={loop(f.duration, f.delay)}
+          >
+            <Firefly className="h-full w-full" />
+          </m.div>
         ))}
 
         {butterflies.map((b, i) => (
@@ -611,9 +667,23 @@ function CoverPageInner({
           </m.div>
         ))}
 
-        {/* Setiap corner: wrapper luar mengurus fade-in masuk (cornerFade),
-            wrapper dalam menjalankan ayunan halus dengan transformOrigin
-            diarahkan ke titik sudutnya sendiri. */}
+        {/* Double Cornering: Luxurious Corner Flourish behind FloralCorner */}
+        {cornerOrnaments.map((c, i) => (
+          <div
+            key={`cf-${i}`}
+            className={`pointer-events-none absolute z-[15] h-14 w-14 opacity-90 sm:h-20 sm:w-20 lg:h-24 lg:w-24 ${c.cls} ${c.rotate}`}
+          >
+            <m.div
+              animate={c.pulse}
+              transition={c.transition}
+              style={GPU_HINT}
+              className="h-full w-full"
+            >
+              <CornerFlourish className="h-full w-full" />
+            </m.div>
+          </div>
+        ))}
+
         {corners.map((c, i) => (
           <m.div
             key={c.key}
@@ -643,16 +713,17 @@ function CoverPageInner({
         >
           <m.span
             variants={fadeUp}
-            className="inline-block rounded-full border border-mustard/60 bg-ivory px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.25em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em]"
+            className="relative inline-block rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.25em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em]"
           >
-            UNDANGAN PERNIKAHAN
+            <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
+            <span className="relative z-10">UNDANGAN PERNIKAHAN</span>
           </m.span>
 
           <m.div
             variants={wreathVariant}
             className="relative mt-4 w-[clamp(270px,92cqw,610px)] sm:mt-5"
           >
-            <WreathFrame className="w-full" />
+            <WreathFrame className="w-full drop-shadow-sm" />
 
             <div
               className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center text-center"
@@ -673,20 +744,25 @@ function CoverPageInner({
                 Amelia
               </p>
 
-              {/* Ampersand: heartbeat pulse halus tak berhenti,
-                  transform (scale) saja supaya ringan. */}
-              <m.p
-                className="my-1 font-script font-semibold leading-none text-burgundy"
-                style={{
-                  ...textLift,
-                  fontSize: "clamp(0.8rem, 2.7cqw, 1.25rem)",
-                  ...GPU_HINT,
-                }}
+              <m.div
+                className="relative my-1"
                 animate={{ scale: [1, 1.15, 1] }}
                 transition={loop(2.6, 1.5)}
+                style={GPU_HINT}
               >
-                &amp;
-              </m.p>
+                <p
+                  className="font-script font-semibold leading-none text-burgundy"
+                  style={{
+                    ...textLift,
+                    fontSize: "clamp(0.8rem, 2.7cqw, 1.25rem)",
+                  }}
+                >
+                  &amp;
+                </p>
+                <div className="absolute -right-3 -top-1">
+                  <Sparkle className="h-2 w-2 opacity-70" />
+                </div>
+              </m.div>
 
               <p
                 className="w-full font-script font-semibold leading-[0.9] text-ink"
@@ -703,10 +779,8 @@ function CoverPageInner({
 
           <m.div
             variants={fadeUp}
-            className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory px-4 py-3 shadow-sm sm:mt-4 sm:gap-x-3 sm:px-5"
+            className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)] sm:mt-4 sm:gap-x-3 sm:px-5"
           >
-            {/* MiniFlower kiri & kanan: mekar-berdenyut halus (scale +
-                rotate kecil), durasi & delay berbeda supaya organik. */}
             <m.div
               animate={{ scale: [1, 1.12, 1], rotate: [0, 6, 0] }}
               transition={loop(3.4, 1.2)}
@@ -740,29 +814,29 @@ function CoverPageInner({
 
           <m.div
             variants={fadeUp}
-            className="mt-5 w-full rounded-2xl border border-sage/30 bg-ivory px-4 py-4 shadow-sm sm:mt-6 sm:px-5"
+            className="relative mt-5 w-full rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] sm:mt-6 sm:px-5"
           >
-            <p className="text-[0.7rem] font-semibold tracking-[0.06em] text-ink/70 sm:text-xs sm:tracking-[0.08em]">
-              Kepada Yth. Bapak/Ibu/Saudara/i
-            </p>
-            <p className="mt-1.5 wrap-break-word text-lg font-bold leading-snug text-ink sm:text-xl">
-              {guestName}
-            </p>
+            <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_12px_rgba(255,255,255,0.7)]" />
+            <div className="relative z-10">
+              <p className="text-[0.7rem] font-semibold tracking-[0.06em] text-ink/80 sm:text-xs sm:tracking-[0.08em]">
+                Kepada Yth. Bapak/Ibu/Saudara/i
+              </p>
+              <p className="mt-1.5 wrap-break-word text-lg font-bold leading-snug text-ink sm:text-xl">
+                {guestName}
+              </p>
+            </div>
           </m.div>
 
           {!isOpening && (
             <m.div
               variants={fadeUp}
-              className="relative mt-6 inline-block sm:mt-8"
+              className="relative mt-8 inline-block sm:mt-10"
             >
-              {/* Glow tombol dipisah jadi layer sendiri (blur + opacity/
-                  scale) — full compositor/GPU, jauh lebih mulus daripada
-                  animasi boxShadow (yang memicu repaint tiap frame). */}
               <m.div
-                className="pointer-events-none absolute inset-0 rounded-full bg-blush-dark/60 blur-lg"
+                className="pointer-events-none absolute inset-0 rounded-full bg-burgundy/60 blur-xl"
                 animate={{
-                  opacity: [0.35, 0.75, 0.35],
-                  scale: [0.94, 1.08, 0.94],
+                  opacity: [0.35, 0.8, 0.35],
+                  scale: [0.94, 1.12, 0.94],
                 }}
                 transition={loop(2.4, 1)}
                 style={GPU_HINT}
@@ -770,10 +844,10 @@ function CoverPageInner({
               <m.button
                 type="button"
                 onClick={handleOpen}
-                className="relative min-h-11 rounded-full bg-blush-dark px-8 py-3.5 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-md sm:px-10 sm:text-xs sm:tracking-[0.25em]"
+                className="relative min-h-12 rounded-full border border-mustard/60 bg-gradient-to-r from-blush-dark to-burgundy px-10 py-4 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-lg sm:px-12 sm:text-xs sm:tracking-[0.25em]"
                 animate={{ scale: [1, 1.03, 1] }}
                 transition={loop(2.4, 1)}
-                whileHover={{ scale: 1.08 }}
+                whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.96 }}
                 style={GPU_HINT}
               >
