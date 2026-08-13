@@ -1,5 +1,6 @@
 "use client";
 
+import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import WreathFrame, { WREATH_HOLE } from "./WreathFrame";
 import { AmbientDecor } from "./Ambientdecor";
@@ -24,13 +25,33 @@ interface CoupleSectionProps {
   brideParents?: string;
   groomPhotoUrl?: string;
   bridePhotoUrl?: string;
-  openingAnimation?: boolean; // Sudah tidak dipakai karena kita buat statis murni
 }
 
 const DEFAULT_BRIDE_PHOTO = "https://picsum.photos/id/1027/600/800";
 const DEFAULT_GROOM_PHOTO = "https://picsum.photos/id/1005/600/800";
 
-export default function CoupleSection({
+// Custom easing yang sangat smooth dan natural
+const EASE = [0.22, 1, 0.36, 1];
+
+// ✅ OPTIMASI: Stagger yang dipercepat dan dipersingkat
+const containerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.15 },
+  },
+};
+
+// ✅ OPTIMASI: Fade up ringan (hanya 15px, tidak terlalu jauh agar GPU tidak berat)
+const blockFadeUp: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, ease: EASE },
+  },
+};
+
+function CoupleSectionInner({
   groomName = "Alexander",
   groomFullName = "Alexander",
   groomParents = "Mr. ... & Mrs. ...",
@@ -48,7 +69,6 @@ export default function CoupleSection({
         <BackgroundPattern className="h-full w-full opacity-[0.28]" />
       </div>
 
-      {/* Background Glow Statis */}
       <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem] opacity-70" />
       <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72 opacity-70" />
 
@@ -61,15 +81,24 @@ export default function CoupleSection({
         <GrassSilhouette className="h-full w-full" />
       </div>
 
-      <div className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl">
+      {/* ✅ BUNGKUS UTAMA ANIMASI: Menggunakan threshold (amount) kecil 
+          agar animasi terpicu lebih awal sebelum user selesai men-scroll */}
+      <m.div
+        className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15, margin: "0px 0px -10% 0px" }}
+      >
         <div className="flex w-full flex-col items-center">
-          <div className="flex flex-col items-center gap-1 text-center">
-            <div>
-              <StaticWreathBand className="mb-1 h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
-            </div>
+          {/* BLOK 1: Header & Teks (Dianimasi secara bersamaan dalam 1 grup) */}
+          <m.div
+            variants={blockFadeUp}
+            className="flex flex-col items-center gap-1 text-center"
+          >
+            <StaticWreathBand className="mb-1 h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
 
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Animasi spin murni rotasi */}
               <div
                 style={{
                   animation: "couple-badge-spin-l 3.4s ease-in-out infinite",
@@ -95,16 +124,6 @@ export default function CoupleSection({
                   color="var(--sage-light)"
                 />
               </div>
-              <style>{`
-                @keyframes couple-badge-spin-l {
-                  0%, 100% { transform: rotate(0deg); }
-                  50% { transform: rotate(15deg); }
-                }
-                @keyframes couple-badge-spin-r {
-                  0%, 100% { transform: rotate(0deg); }
-                  50% { transform: rotate(-15deg); }
-                }
-              `}</style>
             </div>
 
             <p
@@ -114,12 +133,12 @@ export default function CoupleSection({
               With joyful hearts, we warmly invite you
             </p>
 
-            <div>
-              <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
-            </div>
-          </div>
+            <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
+          </m.div>
 
-          <div
+          {/* BLOK 2: Area Foto & Bingkai Tengah */}
+          <m.div
+            variants={blockFadeUp}
             className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 lg:gap-6"
             style={{ paddingInline: "clamp(0.75rem, 6vw, 3rem)" }}
           >
@@ -137,7 +156,6 @@ export default function CoupleSection({
 
             <div className="relative z-20 mb-6 w-14 shrink-0 sm:mb-10 sm:w-24 lg:mb-12 lg:w-40">
               <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl opacity-70" />
-
               <WreathFrame className="relative z-10 w-full" />
 
               <div
@@ -159,7 +177,6 @@ export default function CoupleSection({
                   >
                     <Sparkle className="h-2 w-2 opacity-80 sm:h-3 sm:w-3" />
                   </div>
-
                   <span
                     className="font-script block font-semibold leading-none text-burgundy text-sm sm:text-2xl lg:text-4xl"
                     style={{
@@ -170,7 +187,6 @@ export default function CoupleSection({
                   >
                     &amp;
                   </span>
-
                   <div
                     className="absolute -bottom-1 -right-2"
                     style={{
@@ -182,20 +198,6 @@ export default function CoupleSection({
                   </div>
                 </div>
               </div>
-              <style>{`
-                @keyframes couple-amp-scale {
-                  0%, 100% { transform: scale(1); }
-                  50% { transform: scale(1.08); }
-                }
-                @keyframes couple-twinkle-pop {
-                  0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }
-                  50% { opacity: 1; transform: scale(1.2) translateZ(0); }
-                }
-                @keyframes couple-twinkle-pop-lg {
-                  0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }
-                  50% { opacity: 1; transform: scale(1.4) translateZ(0); }
-                }
-              `}</style>
             </div>
 
             <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]">
@@ -208,16 +210,48 @@ export default function CoupleSection({
                 floatDelay={0}
               />
             </div>
-          </div>
+          </m.div>
 
-          <div className="mt-9 sm:mt-12 lg:mt-16">
+          {/* BLOK 3: Pembatas Bawah */}
+          <m.div variants={blockFadeUp} className="mt-9 sm:mt-12 lg:mt-16">
             <StaticWreathBand
               flip
               className="h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
             />
-          </div>
+          </m.div>
         </div>
-      </div>
+      </m.div>
+
+      <style>{`
+        @keyframes couple-badge-spin-l {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(15deg); }
+        }
+        @keyframes couple-badge-spin-r {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(-15deg); }
+        }
+        @keyframes couple-amp-scale {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+        @keyframes couple-twinkle-pop {
+          0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }
+          50% { opacity: 1; transform: scale(1.2) translateZ(0); }
+        }
+        @keyframes couple-twinkle-pop-lg {
+          0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }
+          50% { opacity: 1; transform: scale(1.4) translateZ(0); }
+        }
+      `}</style>
     </section>
+  );
+}
+
+export default function CoupleSection(props: CoupleSectionProps) {
+  return (
+    <LazyMotion features={domAnimation}>
+      <CoupleSectionInner {...props} />
+    </LazyMotion>
   );
 }
