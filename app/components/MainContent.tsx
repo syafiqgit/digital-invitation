@@ -1,12 +1,22 @@
 "use client";
 
-import ClosingSection from "./ClosingSection";
+import dynamic from "next/dynamic";
 import CoupleSection from "./CoupleSection";
-import DigitalEnvelopeSection from "./DigitalEnvelopeSection";
-import EventSection from "./EventSection";
-import GallerySection from "./GallerySection";
-import RsvpWishSection from "./RsvpWishSection";
-import StorySection from "./StorySection";
+const EventSection = dynamic(() => import("./EventSection"), { ssr: false });
+const StorySection = dynamic(() => import("./StorySection"), { ssr: false });
+const GallerySection = dynamic(() => import("./GallerySection"), {
+  ssr: false,
+});
+const RsvpWishSection = dynamic(() => import("./RsvpWishSection"), {
+  ssr: false,
+});
+const DigitalEnvelopeSection = dynamic(
+  () => import("./DigitalEnvelopeSection"),
+  { ssr: false },
+);
+const ClosingSection = dynamic(() => import("./ClosingSection"), {
+  ssr: false,
+});
 
 interface MainContentProps {
   guestName?: string;
@@ -17,6 +27,7 @@ export default function MainContent({
 }: MainContentProps) {
   return (
     <main className="relative w-full overflow-hidden bg-ivory">
+      {/* Langsung di-render saat klik tombol (Ringan) */}
       <CoupleSection
         brideFullName="Amelia Grace Henderson"
         brideName="Amelia"
@@ -27,6 +38,8 @@ export default function MainContent({
         groomPhotoUrl="https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80"
         openingAnimation={true}
       />
+
+      {/* Komponen-komponen berat ini akan di-render belakangan secara asinkron */}
       <EventSection
         akadAddress="The Grand Glasshouse, Jl. MH Thamrin No. 1, Central Jakarta"
         akadTime="08:00 AM - 10:00 AM"
@@ -37,6 +50,7 @@ export default function MainContent({
         resepsiVenue="The Grand Glasshouse Grand Hall"
         targetDate="2026-12-12T08:00:00"
       />
+
       <StorySection
         milestones={[
           {
@@ -65,6 +79,7 @@ export default function MainContent({
           },
         ]}
       />
+
       <GallerySection
         photos={[
           "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
@@ -73,11 +88,14 @@ export default function MainContent({
           "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=800&q=80",
         ]}
       />
+
       <RsvpWishSection />
+
       <DigitalEnvelopeSection />
+
       <ClosingSection
-        brideName="Sarah"
-        groomName="Michael"
+        brideName="Amelia" // Saya koreksi nama bride menyesuaikan data di atas
+        groomName="Alexander" // Saya koreksi nama groom menyesuaikan data di atas
         couplePhotoUrl="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80"
       />
     </main>
