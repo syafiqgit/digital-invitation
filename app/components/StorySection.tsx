@@ -26,24 +26,24 @@ interface StorySectionProps {
 
 const DEFAULT_MILESTONES: StoryMilestone[] = [
   {
-    date: "Desember 2022",
-    title: "Awal Berkenalan",
+    date: "December 2022",
+    title: "First Met",
     description:
-      "Takdir mempertemukan kami melalui sebuah acara kecil di kota yang sama. Percakapan sederhana yang berlanjut menjadi senyuman penuh arti.",
+      "Destiny brought us together through a small gathering in the same city. A simple conversation that blossomed into a meaningful smile.",
     photoUrl: "https://picsum.photos/id/1011/600/800",
   },
   {
-    date: "Juni 2024",
-    title: "Menjalin Komitmen",
+    date: "June 2024",
+    title: "Making Our Commitment",
     description:
-      "Setelah melalui berbagai tawa, cerita, dan dukungan satu sama lain, kami memutuskan untuk melangkah bersama dalam ikatan komitmen yang serius.",
+      "After sharing countless laughs, stories, and mutual support, we decided to walk hand in hand into a serious commitment.",
     photoUrl: "https://picsum.photos/id/1025/600/800",
   },
   {
-    date: "Desember 2025",
-    title: "Menuju Pelaminan",
+    date: "December 2025",
+    title: "Heading to the Altar",
     description:
-      "Dengan restu kedua orang tua dan niat yang suci, kami mengikat janji untuk menempuh babak baru sebagai teman hidup selamanya.",
+      "With the blessing of our parents and pure intentions, we pledged to embark on a new chapter as lifelong companions.",
     photoUrl: "https://picsum.photos/id/338/600/800",
   },
 ];
@@ -775,7 +775,7 @@ function StorySectionInner({
             />
           </m.div>
           <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
-            KISAH CINTA KAMI
+            OUR LOVE STORY
           </span>
           <m.div
             animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -794,7 +794,7 @@ function StorySectionInner({
           className="font-script mt-4 text-3xl font-semibold text-ink xs:text-4xl sm:mt-5 sm:text-5xl md:text-6xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
-          Perjalanan Menuju Halal
+          Our Journey to Forever
         </m.p>
 
         <m.div

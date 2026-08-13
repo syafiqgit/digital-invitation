@@ -774,7 +774,7 @@ const ArchPortrait = memo(function ArchPortrait({
         className="mt-1 block max-w-[13rem] text-[11px] font-medium leading-relaxed text-balance text-ink/90 lg:mt-2.5 lg:text-[12px]"
         style={textLift.soft}
       >
-        {align === "left" ? "Putri dari" : "Putra dari"}
+        {align === "left" ? "Daughter of" : "Son of"}
         <br />
         {parents}
       </p>
@@ -1003,10 +1003,10 @@ const FrameLayers = memo(function FrameLayers() {
 function CoupleSectionInner({
   groomName = "Alexander",
   groomFullName = "Alexander",
-  groomParents = "Bapak ... & Ibu ...",
+  groomParents = "Mr. ... & Mrs. ...",
   brideName = "Amelia",
   brideFullName = "Amelia",
-  brideParents = "Bapak ... & Ibu ...",
+  brideParents = "Mr. ... & Mrs. ...",
   groomPhotoUrl = DEFAULT_GROOM_PHOTO,
   bridePhotoUrl = DEFAULT_BRIDE_PHOTO,
   openingAnimation = true,
@@ -1073,7 +1073,7 @@ function CoupleSectionInner({
                 />
               </m.div>
               <span className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-gradient-to-b from-ivory to-ivory/85 px-3.5 py-1 text-[9px] font-extrabold tracking-[0.3em] text-burgundy shadow-[0_2px_10px_rgba(58,54,48,0.08)] backdrop-blur-sm sm:px-5 sm:py-1.5 sm:text-[11px] sm:tracking-[0.34em]">
-                MEMPELAI
+                THE BRIDE &amp; GROOM
               </span>
               <m.div
                 animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -1095,7 +1095,7 @@ function CoupleSectionInner({
                 ...GPU_HINT,
               }}
             >
-              Dengan penuh syukur, kami mengundang Anda
+              With joyful hearts, we warmly invite you
             </m.p>
 
             <m.div variants={fadeUp} style={GPU_HINT}>

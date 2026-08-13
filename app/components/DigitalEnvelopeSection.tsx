@@ -48,9 +48,9 @@ const DEFAULT_ACCOUNTS: BankAccount[] = [
 
 const DEFAULT_GIFT_ADDRESS = {
   recipient: "Amelia & Alexander",
-  phone: "081234567890",
+  phone: "+62 812-3456-7890",
   address:
-    "Jl. Mawar Indah No. 45, RT 03/RW 05, Kel. Gardenia, Jakarta Selatan 12550",
+    "45 Mawar Indah Street, RT 03/RW 05, Gardenia Sub-district, South Jakarta 12550",
 };
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -115,7 +115,6 @@ const textLift = {
 
 /* ---------- Static decoration data ---------- */
 
-// UPDATE: Ekstra Elemen Dekorasi untuk Efek "Rame & Mewah"
 const scatterItems = [
   { top: "8%", left: "8%", type: "bloom", color: "var(--burgundy)" },
   { top: "15%", left: "90%", type: "leaf", rot: 25 },
@@ -388,7 +387,6 @@ const Firefly = memo(function Firefly({
   );
 });
 
-// UPDATE: Komponen Majestic Ray & Gold Dust
 const GoldDust = memo(function GoldDust({
   className = "",
 }: {
@@ -522,7 +520,6 @@ const GiftIcon = memo(function GiftIcon({
         stroke="var(--burgundy)"
         strokeWidth="1.5"
       />
-      {/* Sparkle di atas gift */}
       <path
         d="M18 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"
         fill="var(--mustard)"
@@ -731,7 +728,7 @@ function DigitalEnvelopeSectionInner({
   };
 
   const handleCopyAddress = () => {
-    const fullText = `Penerima: ${giftAddress.recipient}\nNo. HP: ${giftAddress.phone}\nAlamat: ${giftAddress.address}`;
+    const fullText = `Recipient: ${giftAddress.recipient}\nPhone: ${giftAddress.phone}\nAddress: ${giftAddress.address}`;
     navigator.clipboard.writeText(fullText);
     setCopiedAddress(true);
     setTimeout(() => setCopiedAddress(false), 2500);
@@ -752,7 +749,6 @@ function DigitalEnvelopeSectionInner({
       <FrameLayers />
       <AmbientDecor />
 
-      {/* max-w-4xl agar grid 2 kolom bisa napas dengan lega di Desktop */}
       <m.div
         className="relative z-10 flex w-full max-w-4xl flex-col items-center px-2 text-center"
         initial="hidden"
@@ -776,7 +772,7 @@ function DigitalEnvelopeSectionInner({
             />
           </m.div>
           <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
-            TANDA KASIH
+            WEDDING GIFT
           </span>
           <m.div
             animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -795,7 +791,7 @@ function DigitalEnvelopeSectionInner({
           className="font-script mt-4 text-4xl font-semibold text-ink sm:mt-5 sm:text-5xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
-          Kado &amp; Angpao Digital
+          Digital Envelope &amp; Gifts
         </m.p>
 
         <m.div
@@ -810,13 +806,11 @@ function DigitalEnvelopeSectionInner({
           variants={fadeUp}
           className="text-xs text-ink/80 max-w-lg mx-auto mb-10 leading-relaxed sm:text-sm"
         >
-          Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Namun
-          jika Anda ingin mengirimkan tanda kasih secara{" "}
-          <span className="font-semibold italic">cashless</span> atau kado
-          fisik, silakan melalui informasi di bawah ini:
+          Your prayers and presence are the greatest gifts of all. However, if
+          you wish to send a token of love via cashless transfer or physical
+          gift, please use the information below:
         </m.p>
 
-        {/* UPDATE: Grid layout Responsif untuk Bank Accounts (2 Kolom di Tablet/Desktop) */}
         <m.div
           variants={containerVariants}
           className="w-full grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8"
@@ -841,7 +835,7 @@ function DigitalEnvelopeSectionInner({
 
                 <div className="mb-6">
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink/50 mb-1">
-                    No. Rekening
+                    Account Number
                   </p>
                   <p className="font-mono text-xl font-bold text-ink sm:text-2xl tracking-[0.1em]">
                     {acc.accountNumber}
@@ -862,14 +856,13 @@ function DigitalEnvelopeSectionInner({
                 }`}
               >
                 {copiedId === acc.id
-                  ? "Berhasil Disalin ✓"
-                  : "Salin No. Rekening"}
+                  ? "Successfully Copied ✓"
+                  : "Copy Account Number"}
               </button>
             </m.div>
           ))}
         </m.div>
 
-        {/* UPDATE: Physical Gift Address Card (Full Width) */}
         <m.div
           variants={fadeUp}
           className="group relative w-full rounded-[2rem] border-[1.5px] border-mustard/40 bg-gradient-to-b from-white/90 to-ivory/95 p-6 sm:p-8 shadow-[0_15px_40px_rgba(212,175,55,0.08)] backdrop-blur-md text-left transition-all duration-500 hover:shadow-[0_20px_50px_rgba(212,175,55,0.15)] hover:border-mustard/70"
@@ -879,7 +872,7 @@ function DigitalEnvelopeSectionInner({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
             <div className="flex-1">
               <h4 className="font-serif text-lg font-bold text-ink mb-3 group-hover:text-burgundy transition-colors">
-                Kirim Kado Fisik
+                Send a Physical Gift
               </h4>
               <p className="text-xs text-ink/80 leading-relaxed">
                 <span className="font-semibold text-ink text-sm">
@@ -887,7 +880,7 @@ function DigitalEnvelopeSectionInner({
                 </span>
                 <br />
                 <span className="inline-block mt-1 mb-1 opacity-70">
-                  No. HP: {giftAddress.phone}
+                  Phone: {giftAddress.phone}
                 </span>
                 <br />
                 {giftAddress.address}
@@ -904,7 +897,7 @@ function DigitalEnvelopeSectionInner({
                     : "border-mustard/60 bg-white/80 text-burgundy shadow-sm hover:bg-gradient-to-r hover:from-burgundy hover:to-[#5e1927] hover:text-white hover:border-transparent hover:shadow-[0_8px_20px_rgba(94,25,39,0.3)]"
                 }`}
               >
-                {copiedAddress ? "Alamat Disalin ✓" : "Salin Alamat"}
+                {copiedAddress ? "Address Copied ✓" : "Copy Address"}
               </button>
             </div>
           </div>

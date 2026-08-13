@@ -632,7 +632,7 @@ function ClosingSectionInner({
             />
           </m.div>
           <span className="inline-block rounded-full border border-mustard/50 bg-gradient-to-b from-ivory to-ivory/80 px-3.5 py-1 text-[9px] font-extrabold tracking-[0.3em] text-burgundy shadow-[0_2px_10px_rgba(58,54,48,0.08)] backdrop-blur-sm sm:px-5 sm:py-1.5 sm:text-[11px] sm:tracking-[0.34em]">
-            TERIMA KASIH
+            THANK YOU
           </span>
           <m.div
             animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -652,7 +652,7 @@ function ClosingSectionInner({
           className="font-script mt-5 px-2 text-[2.1rem] leading-tight font-semibold text-ink xs:text-4xl sm:mt-6 sm:text-5xl md:text-[3.4rem]"
           style={{ ...textLift, ...GPU_HINT }}
         >
-          Merupakan Suatu Kehormatan
+          It Is an Honor
         </m.p>
 
         <m.div
@@ -682,7 +682,7 @@ function ClosingSectionInner({
             <div className="relative h-full w-full overflow-hidden rounded-t-[8.6rem] rounded-b-2xl">
               <img
                 src={couplePhotoUrl}
-                alt="Mempelai"
+                alt="Couple"
                 className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.08]"
                 loading="lazy"
               />
@@ -696,9 +696,8 @@ function ClosingSectionInner({
           variants={fadeUp}
           className="mx-auto mb-8 max-w-xs px-1 text-[13px] leading-relaxed text-ink/80 xs:max-w-sm sm:mb-10 sm:max-w-md sm:text-[15px]"
         >
-          Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila
-          Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu kepada
-          kedua mempelai.
+          It is an honor and a joy for us if you would grace us with your
+          presence and bestow your blessings upon the newlyweds.
         </m.p>
 
         {/* Names Card */}

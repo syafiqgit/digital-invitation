@@ -537,10 +537,7 @@ const Butterfly = memo(function Butterfly({
 
 /* ---------- Main Component ---------- */
 
-function CoverPageInner({
-  guestName = "Tamu Undangan",
-  onOpen,
-}: CoverPageProps) {
+function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
   const [isOpening, setIsOpening] = useState(false);
 
   const handleOpen = useCallback(() => {
@@ -808,7 +805,7 @@ function CoverPageInner({
             className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.6rem] font-bold tracking-[0.22em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em]"
           >
             <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
-            <span className="relative z-10">UNDANGAN PERNIKAHAN</span>
+            <span className="relative z-10">WEDDING INVITATION</span>
           </m.span>
 
           <m.div
@@ -882,13 +879,13 @@ function CoverPageInner({
               <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
             </m.div>
             <span className="text-[0.62rem] font-bold tracking-[0.1em] text-ink sm:text-xs sm:tracking-[0.15em]">
-              SABTU
+              SATURDAY
             </span>
             <span className="font-script text-2xl font-bold text-burgundy sm:text-3xl">
               12
             </span>
             <span className="text-[0.62rem] font-bold tracking-[0.1em] text-ink sm:text-xs sm:tracking-[0.15em]">
-              DESEMBER 2026
+              DECEMBER 2026
             </span>
             <m.div
               animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -914,7 +911,7 @@ function CoverPageInner({
             <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_12px_rgba(255,255,255,0.7)]" />
             <div className="relative z-10">
               <p className="text-[0.68rem] font-semibold tracking-[0.05em] text-ink/80 sm:text-xs sm:tracking-[0.08em]">
-                Kepada Yth. Bapak/Ibu/Saudara/i
+                To Our Respected Guest,
               </p>
               <p className="mt-1.5 wrap-break-word text-base font-bold leading-snug text-ink xs:text-lg sm:text-xl">
                 {guestName}
@@ -941,7 +938,7 @@ function CoverPageInner({
                 whileTap={{ scale: 0.96 }}
                 style={GPU_HINT}
               >
-                BUKA UNDANGAN
+                OPEN INVITATION
               </m.button>
             </m.div>
           )}

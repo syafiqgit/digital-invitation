@@ -35,19 +35,19 @@ interface WishPayload {
 const INITIAL_WISHES: WishItem[] = [
   {
     id: "1",
-    name: "Budi & Keluarga",
+    name: "John & Family",
     message:
-      "Selamat berbahagia! Semoga menjadi keluarga yang sakinah, mawaddah, warahmah hingga akhir masa.",
+      "Wishing you a lifetime of love and happiness! May your marriage be filled with endless joy.",
     attendance: "hadir",
-    date: "Baru saja",
+    date: "Just now",
   },
   {
     id: "2",
-    name: "Siti Rahma",
+    name: "Sarah Jenkins",
     message:
-      "Barakallah, lancar sampai hari H ya! Turut berbahagia untuk kedua mempelai.",
+      "Congratulations! Wishing both of you a smooth preparation and a wonderful wedding day.",
     attendance: "hadir",
-    date: "5 menit lalu",
+    date: "5 mins ago",
   },
 ];
 
@@ -94,7 +94,7 @@ async function submitRsvp(payload: RsvpPayload): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 500));
   // TODO: replace with a real request, e.g.
   // const res = await fetch("/api/rsvp", { method: "POST", body: JSON.stringify(payload) });
-  // if (!res.ok) throw new Error("Gagal mengirim konfirmasi");
+  // if (!res.ok) throw new Error("Failed to submit confirmation");
   if (typeof window !== "undefined") {
     const existing = JSON.parse(
       window.localStorage.getItem("wedding_rsvp_v1") || "[]",
@@ -108,14 +108,14 @@ async function submitWish(payload: WishPayload): Promise<WishItem> {
   await new Promise((resolve) => setTimeout(resolve, 500));
   // TODO: replace with a real request, e.g.
   // const res = await fetch("/api/wishes", { method: "POST", body: JSON.stringify(payload) });
-  // if (!res.ok) throw new Error("Gagal mengirim ucapan");
+  // if (!res.ok) throw new Error("Failed to submit wish");
   // return res.json();
   const newWish: WishItem = {
     id: `${Date.now()}`,
     name: payload.name,
     message: payload.message,
     attendance: payload.attendance,
-    date: "Baru saja",
+    date: "Just now",
   };
   const current = readStoredWishes();
   const updated = [newWish, ...current];
@@ -752,7 +752,7 @@ function RsvpCard() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!rsvpName.trim()) {
-      setErrorMsg("Nama tidak boleh kosong.");
+      setErrorMsg("Name cannot be empty.");
       return;
     }
     setErrorMsg("");
@@ -766,7 +766,7 @@ function RsvpCard() {
       setStatus("done");
     } catch {
       setStatus("error");
-      setErrorMsg("Gagal mengirim konfirmasi. Coba lagi.");
+      setErrorMsg("Failed to send confirmation. Please try again.");
     }
   };
 
@@ -778,31 +778,31 @@ function RsvpCard() {
       <div className="pointer-events-none absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,1)]" />
 
       <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
-        Konfirmasi Kehadiran
+        RSVP Confirmation
       </h3>
       <p className="relative z-10 mb-8 text-center text-xs text-ink/70">
-        Merupakan suatu kehormatan bagi kami apabila Anda berkenan hadir.
+        It would be an honor for us if you could attend.
       </p>
 
       <div className="relative z-10">
         {status === "done" ? (
           <div className="rounded-2xl border border-mustard/50 bg-gradient-to-r from-blush/20 to-white/50 p-6 text-center shadow-inner">
             <p className="font-serif text-xl font-bold text-burgundy">
-              Terima Kasih, {rsvpName}!
+              Thank You, {rsvpName}!
             </p>
             <p className="mt-2 text-xs leading-relaxed text-ink/80">
-              Konfirmasi kehadiran Anda (
+              Your attendance confirmation (
               <span className="font-bold">
-                {attendance === "hadir" ? "Hadir" : "Berhalangan"}
+                {attendance === "hadir" ? "Attending" : "Declined"}
               </span>
-              ) telah tercatat.
+              ) has been recorded.
             </p>
             <button
               type="button"
               onClick={() => setStatus("idle")}
               className="mt-5 rounded-full border border-burgundy/30 bg-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-burgundy transition-all hover:bg-burgundy hover:text-white"
             >
-              Ubah Konfirmasi
+              Change Confirmation
             </button>
           </div>
         ) : (
@@ -816,14 +816,14 @@ function RsvpCard() {
                 htmlFor="rsvp-name"
                 className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-ink/70"
               >
-                Nama Lengkap Tamu
+                Guest Full Name
               </label>
               <input
                 id="rsvp-name"
                 type="text"
                 value={rsvpName}
                 onChange={(e) => setRsvpName(e.target.value)}
-                placeholder="Ketik nama Anda di sini..."
+                placeholder="Type your name here..."
                 aria-invalid={Boolean(errorMsg)}
                 className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-sm text-ink shadow-inner outline-none transition-all placeholder:text-ink/40 focus:bg-white focus:ring-2 focus:ring-mustard/50"
               />
@@ -843,7 +843,7 @@ function RsvpCard() {
                   htmlFor="rsvp-attendance"
                   className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-ink/70"
                 >
-                  Kehadiran
+                  Attendance
                 </label>
                 <select
                   id="rsvp-attendance"
@@ -853,8 +853,8 @@ function RsvpCard() {
                   }
                   className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-sm text-ink shadow-inner outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50"
                 >
-                  <option value="hadir">Hadir, insya Allah</option>
-                  <option value="tidak">Maaf, berhalangan</option>
+                  <option value="hadir">Attending, God willing</option>
+                  <option value="tidak">Sorry, unable to attend</option>
                 </select>
               </div>
 
@@ -863,7 +863,7 @@ function RsvpCard() {
                   htmlFor="rsvp-guest-count"
                   className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-ink/70"
                 >
-                  Jumlah Tamu
+                  Number of Guests
                 </label>
                 <select
                   id="rsvp-guest-count"
@@ -872,9 +872,9 @@ function RsvpCard() {
                   disabled={attendance === "tidak"}
                   className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-sm text-ink shadow-inner outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="1">1 Orang</option>
-                  <option value="2">2 Orang</option>
-                  <option value="3">3 Orang</option>
+                  <option value="1">1 Person</option>
+                  <option value="2">2 People</option>
+                  <option value="3">3 People</option>
                 </select>
               </div>
             </div>
@@ -894,7 +894,7 @@ function RsvpCard() {
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-burgundy to-[#5e1927] py-4 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-[0_8px_20px_rgba(94,25,39,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_25px_rgba(94,25,39,0.4)] active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
             >
               {status === "submitting" && <SpinnerIcon className="h-4 w-4" />}
-              {status === "submitting" ? "Mengirim..." : "Kirim Konfirmasi"}
+              {status === "submitting" ? "Submitting..." : "Send Confirmation"}
             </button>
           </form>
         )}
@@ -929,7 +929,7 @@ function WishCard() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!wishName.trim() || !wishMessage.trim()) {
-      setErrorMsg("Nama dan pesan wajib diisi.");
+      setErrorMsg("Name and message are required.");
       return;
     }
     setErrorMsg("");
@@ -952,7 +952,7 @@ function WishCard() {
       );
     } catch {
       setStatus("error");
-      setErrorMsg("Gagal mengirim ucapan. Coba lagi.");
+      setErrorMsg("Failed to send wish. Please try again.");
     }
   };
 
@@ -964,10 +964,10 @@ function WishCard() {
       <div className="pointer-events-none absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,1)]" />
 
       <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
-        Buku Tamu
+        Guestbook &amp; Wishes
       </h3>
       <p className="relative z-10 mb-8 text-center text-xs text-ink/70">
-        Tuliskan pesan dan doa restu terbaik Anda.
+        Leave your best wishes and prayers for us.
       </p>
 
       <div className="relative z-10 flex h-full flex-col">
@@ -981,28 +981,28 @@ function WishCard() {
               role="status"
               className="rounded-xl border border-mustard/50 bg-blush/20 p-3 text-center text-[11px] font-semibold text-burgundy"
             >
-              Ucapan berhasil dikirim!
+              Wish sent successfully!
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="wish-name" className="sr-only">
-                Nama Anda
+                Your Name
               </label>
               <input
                 id="wish-name"
                 type="text"
                 value={wishName}
                 onChange={(e) => setWishName(e.target.value)}
-                placeholder="Nama Anda"
+                placeholder="Your Name"
                 aria-invalid={Boolean(errorMsg)}
                 className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3 text-xs text-ink shadow-inner outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
               />
             </div>
             <div>
               <label htmlFor="wish-attendance" className="sr-only">
-                Status kehadiran
+                Attendance Status
               </label>
               <select
                 id="wish-attendance"
@@ -1012,22 +1012,22 @@ function WishCard() {
                 }
                 className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3 text-xs text-ink shadow-inner outline-none transition-all focus:ring-2 focus:ring-mustard/50"
               >
-                <option value="hadir">Hadir</option>
-                <option value="tidak">Tidak Hadir</option>
+                <option value="hadir">Attending</option>
+                <option value="tidak">Not Attending</option>
               </select>
             </div>
           </div>
 
           <div>
             <label htmlFor="wish-message" className="sr-only">
-              Doa restu
+              Wishes &amp; Prayers
             </label>
             <textarea
               id="wish-message"
               rows={3}
               value={wishMessage}
               onChange={(e) => setWishMessage(e.target.value)}
-              placeholder="Tuliskan doa restu..."
+              placeholder="Write your wishes..."
               aria-invalid={Boolean(errorMsg)}
               className="w-full resize-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3 text-xs text-ink shadow-inner outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
             />
@@ -1048,13 +1048,13 @@ function WishCard() {
             className="flex w-full items-center justify-center gap-2 rounded-full bg-ink py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white shadow-lg transition-all hover:bg-ink/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
           >
             {status === "submitting" && <SpinnerIcon className="h-3.5 w-3.5" />}
-            {status === "submitting" ? "Mengirim..." : "Kirim Pesan"}
+            {status === "submitting" ? "Submitting..." : "Send Message"}
           </button>
         </form>
 
         <div className="flex min-h-0 flex-1 flex-col border-t border-mustard/20 pt-5">
           <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-ink/50">
-            Daftar Ucapan ({wishes.length})
+            Wishes List ({wishes.length})
           </p>
 
           <div className="custom-scroll flex flex-1 flex-col gap-3 overflow-y-auto pr-2">
@@ -1077,7 +1077,7 @@ function WishCard() {
                         : "bg-coral/20 text-ink/60"
                     }`}
                   >
-                    {item.attendance === "hadir" ? "Hadir" : "Berhalangan"}
+                    {item.attendance === "hadir" ? "Attending" : "Declined"}
                   </span>
                 </div>
                 <p className="mb-2 text-[11px] italic leading-relaxed text-ink/80">
@@ -1184,7 +1184,7 @@ function RsvpWishSectionInner() {
             />
           </m.div>
           <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
-            RSVP &amp; UCAPAN
+            RSVP &amp; WISHES
           </span>
           <m.div
             animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -1203,7 +1203,7 @@ function RsvpWishSectionInner() {
           className="font-script mt-4 text-4xl font-semibold text-ink sm:mt-5 sm:text-5xl md:text-6xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
-          Konfirmasi &amp; Doa
+          Confirmation &amp; Prayers
         </m.p>
 
         <m.div

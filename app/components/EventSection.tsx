@@ -31,12 +31,12 @@ interface TimeLeft {
 }
 
 const DEFAULT_TARGET_DATE = "2026-12-12T08:00:00+07:00";
-const DEFAULT_AKAD_TIME = "08:00 - 09:00 WIB";
-const DEFAULT_AKAD_VENUE = "Kediaman Mempelai";
-const DEFAULT_AKAD_ADDRESS = "Jl. Melati No. 12, Jakarta";
-const DEFAULT_RESEPSI_TIME = "11:00 - 14:00 WIB";
-const DEFAULT_RESEPSI_VENUE = "Gedung Serba Guna Mawar";
-const DEFAULT_RESEPSI_ADDRESS = "Jl. Kenanga No. 45, Jakarta";
+const DEFAULT_AKAD_TIME = "08:00 AM - 09:00 AM";
+const DEFAULT_AKAD_VENUE = "The Couple's Residence";
+const DEFAULT_AKAD_ADDRESS = "12 Melati Street, Jakarta";
+const DEFAULT_RESEPSI_TIME = "11:00 AM - 02:00 PM";
+const DEFAULT_RESEPSI_VENUE = "Mawar Multipurpose Hall";
+const DEFAULT_RESEPSI_ADDRESS = "45 Kenanga Street, Jakarta";
 const DEFAULT_MAPS_URL = "https://maps.google.com";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -231,10 +231,10 @@ const cornerOrnaments = [
 ];
 
 const countdownUnits = [
-  { key: "days", label: "Hari" },
-  { key: "hours", label: "Jam" },
-  { key: "minutes", label: "Menit" },
-  { key: "seconds", label: "Detik" },
+  { key: "days", label: "Days" },
+  { key: "hours", label: "Hours" },
+  { key: "minutes", label: "Minutes" },
+  { key: "seconds", label: "Seconds" },
 ] as const;
 
 const ZERO_TIME_LEFT: TimeLeft = { days: 0, hours: 0, minutes: 0, seconds: 0 };
@@ -920,7 +920,7 @@ function EventSectionInner({
           className="font-script mt-4 text-3xl font-semibold text-ink xs:text-4xl sm:mt-5 sm:text-5xl md:text-6xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
-          Sabtu, 12 Desember 2026
+          Saturday, December 12, 2026
         </m.p>
 
         <m.div
@@ -940,7 +940,7 @@ function EventSectionInner({
           <div className="pointer-events-none absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,1)]" />
 
           <EventBlock
-            title="AKAD NIKAH"
+            title="HOLY MATRIMONY"
             time={akadTime}
             venue={akadVenue}
             address={akadAddress}
@@ -951,7 +951,7 @@ function EventSectionInner({
           </div>
 
           <EventBlock
-            title="RESEPSI"
+            title="RECEPTION"
             time={resepsiTime}
             venue={resepsiVenue}
             address={resepsiAddress}
@@ -969,7 +969,7 @@ function EventSectionInner({
           style={GPU_HINT}
         >
           <PinIcon className="h-4 w-4 [&_path]:stroke-white [&_circle]:fill-white" />
-          Buka Lokasi
+          Open Location
         </m.a>
       </m.div>
     </section>

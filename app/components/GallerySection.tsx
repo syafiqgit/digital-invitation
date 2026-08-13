@@ -908,7 +908,7 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
             />
           </m.div>
           <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
-            GALERI KAMI
+            Our Gallery
           </span>
           <m.div
             animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -927,7 +927,7 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
           className="font-script mt-4 text-3xl font-semibold text-ink xs:text-4xl sm:mt-5 sm:text-5xl md:text-6xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
-          Momen Kebersamaan
+          Moment of Togetherness
         </m.p>
 
         <m.div

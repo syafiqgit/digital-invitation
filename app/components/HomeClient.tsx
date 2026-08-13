@@ -6,7 +6,7 @@ import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import CoverPage from "./CoverPage";
 import MainContent from "./MainContent";
 
-const MUSIC_SRC = "/assets/alex-morgan-wedding-garden-ceremony-glow-578500.mp3";
+const MUSIC_SRC = "/assets/Michael Bublé - L.O.V.E. [Official Audio]_1786599652652.mp3";
 
 const BLOOM_ORIGIN = { xPct: 50, yPct: 40 };
 
@@ -207,7 +207,7 @@ type Phase = "cover" | "opening" | "content";
 
 function HomeInner() {
   const searchParams = useSearchParams();
-  const guestName = searchParams.get("to") || "Tamu Undangan";
+  const guestName = searchParams.get("to") || "Syafiq";
 
   const [phase, setPhase] = useState<Phase>("cover");
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
