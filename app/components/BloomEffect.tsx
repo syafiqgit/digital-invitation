@@ -1,9 +1,8 @@
 "use client";
 
 import { memo, useMemo } from "react";
-import { m } from "framer-motion";
 
-const PARTICLES_PER_WAVE = 12; // Dikurangi dari 18 ke 12 (Total 24) agar lebih ringan tanpa mengurangi estetika
+const PARTICLES_PER_WAVE = 12;
 const WAVE_COUNT = 2;
 const PARTICLE_COLORS = [
   "var(--blush-dark)",
@@ -59,41 +58,68 @@ export const BloomParticles = memo(function BloomParticles() {
       className="pointer-events-none absolute z-70"
       style={{ left: `${BLOOM_ORIGIN.xPct}%`, top: `${BLOOM_ORIGIN.yPct}%` }}
     >
-      {/* Efek Glow diserahkan ke Framer Motion, tidak lagi pakai CSS Keyframes */}
-      <m.div
-        className="absolute h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/65 blur-2xl sm:h-40 sm:w-40"
-        initial={{ opacity: 0, scale: 0.35 }}
-        animate={{ opacity: [0, 0.55, 0], scale: [0.35, 2.1, 2.8] }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
+      <style>{`
+        @keyframes bloom-glow {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+          35% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.6); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(2.1); }
+        }
+        @keyframes bloom-particle {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.25);
+          }
+          22% {
+            opacity: 1;
+            transform: translate(-50%, -50%) translate(var(--tx-mid), var(--ty-mid)) rotate(var(--rot-mid)) scale(1);
+          }
+          70% {
+            opacity: 0.9;
+            transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) rotate(var(--rot-end)) scale(0.95);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) translate(var(--tx-final), var(--ty-final)) rotate(var(--rot)) scale(0.65);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .bloom-glow, .bloom-particle {
+            animation-duration: 0.01ms !important;
+          }
+        }
+      `}</style>
+
+      {/* Glow: kept as a plain opacity+scale fade with a fixed, modest blur
+          radius rather than scaling an already-blurred element ~8x — that
+          combination (filter cost + rapid resize) is the single most
+          expensive thing you can animate. */}
+      <div
+        className="bloom-glow absolute left-0 top-0 h-32 w-32 rounded-full bg-mustard/60 blur-xl sm:h-40 sm:w-40"
+        style={{ animation: "bloom-glow 0.9s ease-out forwards" }}
       />
 
-      {/* Partikel dirender menggunakan DIV murni (Pure CSS Shapes) yang jauh lebih cepat dari SVG */}
       {particles.map((p) => (
-        <m.div
+        <div
           key={p.id}
-          className="absolute left-0 top-0 origin-center"
-          style={{
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-            // Membuat bentuk kelopak dan daun hanya dengan border-radius!
-            borderRadius: p.kind === "leaf" ? "0 50% 0 50%" : "50%",
-            marginLeft: -p.size / 2,
-            marginTop: -p.size / 2,
-          }}
-          initial={{ opacity: 0, scale: 0.25, x: 0, y: 0, rotate: 0 }}
-          animate={{
-            opacity: [0, 1, 0.9, 0],
-            x: [0, p.tx * 0.55, p.tx, p.tx * 1.05],
-            y: [0, p.ty * 0.55, p.ty, p.ty * 1.05],
-            rotate: [0, p.rot * 0.45, p.rot * 0.8, p.rot],
-            scale: [0.25, 1, 0.95, 0.65],
-          }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            ease: [0.22, 1, 0.36, 1],
-          }}
+          className="bloom-particle absolute left-0 top-0"
+          style={
+            {
+              width: p.size,
+              height: p.size,
+              backgroundColor: p.color,
+              borderRadius: p.kind === "leaf" ? "0 50% 0 50%" : "50%",
+              "--tx-mid": `${p.tx * 0.55}px`,
+              "--ty-mid": `${p.ty * 0.55}px`,
+              "--tx": `${p.tx}px`,
+              "--ty": `${p.ty}px`,
+              "--tx-final": `${p.tx * 1.05}px`,
+              "--ty-final": `${p.ty * 1.05}px`,
+              "--rot-mid": `${p.rot * 0.45}deg`,
+              "--rot-end": `${p.rot * 0.8}deg`,
+              "--rot": `${p.rot}deg`,
+              animation: `bloom-particle ${p.duration}s cubic-bezier(0.22,1,0.36,1) ${p.delay}s forwards`,
+            } as React.CSSProperties
+          }
         />
       ))}
     </div>
