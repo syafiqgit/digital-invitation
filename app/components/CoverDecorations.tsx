@@ -356,7 +356,7 @@ export const CoverBackground = memo(function CoverBackground() {
         </span>
       </div>
       <m.div
-        className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+        className="pointer-events-none absolute inset-0 z-1 overflow-hidden"
         animate={{ scale: [1, 1.04, 1] }}
         transition={loop(40)}
       >
@@ -373,7 +373,7 @@ export const CoverBackground = memo(function CoverBackground() {
       </m.div>
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.12)_0%,transparent_72%)] blur-2xl sm:h-[420px] sm:w-[420px]"
+        className="pointer-events-none absolute left-1/2 top-1/2 z-3 h-75 w-75 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.12)_0%,transparent_72%)] blur-2xl sm:h-105 sm:w-105"
       />
     </>
   );
@@ -386,20 +386,20 @@ export const CoverOrnaments = memo(function CoverOrnaments() {
         variants={borderFade}
         initial="hidden"
         animate="show"
-        className="pointer-events-none absolute inset-3 z-[2] rounded-2xl border border-mustard/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] sm:inset-6"
+        className="pointer-events-none absolute inset-3 z-2 rounded-2xl border border-mustard/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] sm:inset-6"
       />
       <m.div
         variants={borderFade}
         initial="hidden"
         animate="show"
         transition={{ delay: 0.15 }}
-        className="pointer-events-none absolute inset-5 z-[2] hidden rounded-[1.4rem] border border-dashed border-mustard/20 sm:block sm:inset-8"
+        className="pointer-events-none absolute inset-5 z-2 hidden rounded-[1.4rem] border border-dashed border-mustard/20 sm:block sm:inset-8"
       />
       <m.div
         variants={glowVariant}
         initial="hidden"
         animate="show"
-        className="pointer-events-none absolute left-1/2 top-1/2 z-[2] h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl xs:h-64 xs:w-64 sm:h-72 sm:w-72 lg:h-[26rem] lg:w-[26rem]"
+        className="pointer-events-none absolute left-1/2 top-1/2 z-2 h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl xs:h-64 xs:w-64 sm:h-72 sm:w-72 lg:h-104 lg:w-104"
       >
         <m.div
           className="h-full w-full rounded-full bg-blush/40"
@@ -414,7 +414,7 @@ export const CoverOrnaments = memo(function CoverOrnaments() {
           variants={vineFade}
           initial="hidden"
           animate="show"
-          className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
+          className={`pointer-events-none z-2 ${v.className} ${v.flip}`}
         >
           <m.div
             animate={{ rotate: v.sway.rotate }}
@@ -454,7 +454,7 @@ export const CoverOrnaments = memo(function CoverOrnaments() {
       {cornerOrnaments.map((c, i) => (
         <div
           key={`cf-${i}`}
-          className={`pointer-events-none absolute z-[15] h-14 w-14 opacity-90 sm:h-20 sm:w-20 lg:h-24 lg:w-24 ${c.cls} ${c.rotate}`}
+          className={`pointer-events-none absolute z-15 h-14 w-14 opacity-90 sm:h-20 sm:w-20 lg:h-24 lg:w-24 ${c.cls} ${c.rotate}`}
         >
           <m.div
             animate={c.pulse}
@@ -534,7 +534,7 @@ export const CoverParticles = memo(function CoverParticles() {
         {goldDusts.map((g, i) => (
           <m.div
             key={`gd-${i}`}
-            className="pointer-events-none absolute z-[12]"
+            className="pointer-events-none absolute z-12"
             style={{
               left: g.left,
               bottom: g.bottom,
@@ -548,7 +548,7 @@ export const CoverParticles = memo(function CoverParticles() {
             }}
             transition={loop(g.duration, g.delay, "linear")}
           >
-            <div className="h-full w-full rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+            <div className="h-full w-full rounded-full bg-linear-to-tr from-mustard to-yellow-200 blur-[1px] shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
           </m.div>
         ))}
         {butterflies.map((b, i) => (
