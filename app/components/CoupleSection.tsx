@@ -31,7 +31,7 @@ const DEFAULT_BRIDE_PHOTO = "https://picsum.photos/id/1027/600/800";
 const DEFAULT_GROOM_PHOTO = "https://picsum.photos/id/1005/600/800";
 
 // Custom easing yang sangat smooth dan natural
-const EASE = [0.22, 1, 0.36, 1];
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 // ✅ OPTIMASI: Stagger yang dipercepat dan dipersingkat
 const containerVariants: Variants = {

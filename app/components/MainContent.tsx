@@ -36,7 +36,6 @@ export default function MainContent({
         groomName="Alexander"
         groomParents="Mr. David Sterling & Mrs. Sarah Sterling"
         groomPhotoUrl="https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80"
-        openingAnimation={true}
       />
 
       {/* Komponen-komponen berat ini akan di-render belakangan secara asinkron */}
