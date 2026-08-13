@@ -1,13 +1,8 @@
 "use client";
 
-import { memo, useCallback, useState, useEffect } from "react";
-import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
-import {
-  container,
-  CoverBackground,
-  CoverOrnaments,
-  CoverParticles,
-} from "./CoverDecorations";
+import { memo, useCallback, useState } from "react";
+import { LazyMotion, domAnimation, m } from "framer-motion";
+import { container, CoverBackground, CoverOrnaments } from "./CoverDecorations";
 import { CoverContent } from "./CoverContent";
 
 interface CoverPageProps {
@@ -17,13 +12,6 @@ interface CoverPageProps {
 
 function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
   const [isOpening, setIsOpening] = useState(false);
-  const [showParticles, setShowParticles] = useState(false);
-
-  // Lazy load partikel animasi agar tidak berebut CPU thread dengan animasi elemen utama
-  useEffect(() => {
-    const timer = setTimeout(() => setShowParticles(true), 600);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleOpen = useCallback(() => {
     setIsOpening(true);
@@ -31,39 +19,37 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
   }, [onOpen]);
 
   return (
-    <AnimatePresence>
+    <m.div
+      // Animasi exit akan ditangkap oleh AnimatePresence di komponen parent (Home)
+      exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeOut" } }}
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-ivory"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+        willChange: "opacity", // Hint ke browser untuk optimasi GPU saat exit
+      }}
+    >
+      <CoverBackground />
+      <CoverOrnaments />
+
+      {/* Partikel dihapus: Menghilangkan re-render spike di 600ms dan beban GPU/CPU berlebih */}
+
       <m.div
-        exit={{ opacity: 0, transition: { duration: 0.5 } }}
-        className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-ivory"
-        style={{
-          paddingTop: "env(safe-area-inset-top)",
-          paddingBottom: "env(safe-area-inset-bottom)",
-          paddingLeft: "env(safe-area-inset-left)",
-          paddingRight: "env(safe-area-inset-right)",
-        }}
+        variants={container}
+        initial="hidden"
+        animate="show"
+        style={{ containerType: "inline-size" }}
+        className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 lg:max-w-160"
       >
-        <CoverBackground />
-        <CoverOrnaments />
-
-        {/* Render partikel hanya jika loading tahap awal telah selesai */}
-        {showParticles && <CoverParticles />}
-
-        <m.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          style={{ containerType: "inline-size" }}
-          className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 lg:max-w-160"
-        >
-          {/* Komponen konten utama (Teks, Frame, Tombol) diisolasi di sini */}
-          <CoverContent
-            guestName={guestName}
-            isOpening={isOpening}
-            onOpen={handleOpen}
-          />
-        </m.div>
+        <CoverContent
+          guestName={guestName}
+          isOpening={isOpening}
+          onOpen={handleOpen}
+        />
       </m.div>
-    </AnimatePresence>
+    </m.div>
   );
 }
 

@@ -5,10 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import dynamic from "next/dynamic";
 import CoverPage from "./CoverPage";
-import { BloomParticles, BLOOM_ORIGIN } from "./BloomEffect";
+import { BLOOM_ORIGIN } from "./BloomEffect";
 import { FloatingMusic } from "./FloatingMusic";
 
-// ✅ PRELOAD: Kita gunakan prefetch di latar belakang agar chunk sudah siap sebelum diklik
 const MainContent = dynamic(() => import("./MainContent"), {
   ssr: false,
   loading: () => null,
@@ -19,18 +18,14 @@ const MUSIC_SRC =
 
 const TIMELINE = {
   irisDuration: 850,
-  contentFadeDelay: 520,
-  contentFadeDuration: 500,
-  particleTail: 950,
-  overlayExitDuration: 260,
+  contentFadeDelay: 300,
+  contentFadeDuration: 600,
 } as const;
 
-const TOTAL_MS =
-  Math.max(
-    TIMELINE.irisDuration,
-    TIMELINE.contentFadeDelay + TIMELINE.contentFadeDuration,
-    TIMELINE.particleTail,
-  ) + TIMELINE.overlayExitDuration;
+const TOTAL_MS = Math.max(
+  TIMELINE.irisDuration,
+  TIMELINE.contentFadeDelay + TIMELINE.contentFadeDuration,
+);
 
 type Phase = "cover" | "opening" | "content";
 
@@ -42,10 +37,8 @@ function HomeInner() {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // ✅ Preload script MainContent secara diam-diam begitu halaman cover siap
   useEffect(() => {
     const preloadTimeout = setTimeout(() => {
-      // Memicu Next.js untuk memuat chunk MainContent lebih awal di background
       import("./MainContent");
     }, 1000);
     return () => clearTimeout(preloadTimeout);
@@ -54,8 +47,6 @@ function HomeInner() {
   const handleOpen = useCallback(() => {
     setPhase("opening");
 
-    // ✅ NON-BLOCKING AUDIO: Berikan jeda satu frame (requestAnimationFrame)
-    // agar animasi pembukaan berjalan mulus 60fps terlebih dahulu sebelum audio diputar.
     requestAnimationFrame(() => {
       if (audioRef.current) {
         audioRef.current
@@ -90,7 +81,7 @@ function HomeInner() {
 
   return (
     <>
-      <audio ref={audioRef} src={MUSIC_SRC} loop preload="none" />
+      <audio ref={audioRef} src={MUSIC_SRC} loop preload="auto" />
 
       <AnimatePresence>
         {isOpened && (
@@ -114,8 +105,10 @@ function HomeInner() {
       >
         {isOpened && (
           <m.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={isBlooming ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            // ✅ OPTIMASI FINAL: Hapus `y: 15` dari parent element.
+            // Cukup gunakan opacity agar GPU tidak perlu menggeser seluruh isi website.
+            initial={{ opacity: 0 }}
+            animate={isBlooming ? { opacity: 1 } : { opacity: 0 }}
             transition={{
               duration: TIMELINE.contentFadeDuration / 1000,
               delay: TIMELINE.contentFadeDelay / 1000,
@@ -130,21 +123,6 @@ function HomeInner() {
       <AnimatePresence>
         {phase === "cover" && (
           <CoverPage key="cover" guestName={guestName} onOpen={handleOpen} />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {phase === "opening" && (
-          <m.div
-            key="bloom-fx"
-            className="pointer-events-none fixed inset-0 z-68"
-            exit={{
-              opacity: 0,
-              transition: { duration: TIMELINE.overlayExitDuration / 1000 },
-            }}
-          >
-            <BloomParticles />
-          </m.div>
         )}
       </AnimatePresence>
     </>

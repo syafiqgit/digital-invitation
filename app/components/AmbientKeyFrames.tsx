@@ -1,21 +1,5 @@
 "use client";
 
-// Every ambient/looping animation in CoupleSection runs off these
-// keyframes instead of Framer Motion's `animate={{ repeat: Infinity }}`.
-//
-// Why: the original had ~50 Framer-Motion-driven infinite loops (sparkles,
-// petals, gold dust, butterflies, fireflies, fairy lights, vine/corner
-// sway, corner ornament pulse) that all start within the same short
-// window the moment the section scrolls into view — right as entrance
-// animations and image decode are also happening. That's what "patah-
-// patah saat dibuka" actually was: the cost of ~50 JS-scheduled animation
-// instances landing on the same frames as everything else competing for
-// the main thread.
-//
-// CSS @keyframes animations are handed to the compositor once declared —
-// they don't sit in Framer Motion's JS animation loop, so they don't
-// compete with React's render work or with the entrance-animation
-// scheduling the moment the section appears.
 export function AmbientKeyframes() {
   return (
     <style>{`

@@ -31,44 +31,30 @@ interface CoupleSectionProps {
 const DEFAULT_BRIDE_PHOTO = "https://picsum.photos/id/1027/600/800";
 const DEFAULT_GROOM_PHOTO = "https://picsum.photos/id/1005/600/800";
 
+// Timing function yang smooth
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const GPU_HINT = { willChange: "transform, opacity" } as const;
 
-/* ---------- Entrance-only Framer Motion variants ---------- */
-/* Everything below runs exactly once per section view (`whileInView`,
-   `viewport={{ once: true }}` on the parent) — no infinite repeats live
-   here anymore. Ambient/looping motion is CSS-driven (see
-   AmbientKeyframes, AmbientDecor, FrameLayers, FairyLights). Keeping the
-   entrance sequence on Framer Motion is intentional: staggerChildren
-   orchestration across a dozen elements is exactly what it's good at, and
-   since it only runs once, there's no ongoing cost to worry about. */
-
+/* ---------- ANIMASI ENTRANCE AMAN (Hanya jalan 1x) ---------- */
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.13, delayChildren: 0.05 } },
 };
 
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 22 },
+  hidden: { opacity: 0, y: 15 }, // Jarak diperkecil agar lebih ringan
   visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
 };
 
-const slideFromLeft: Variants = {
-  hidden: { opacity: 0, x: -32 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.85, ease: EASE } },
-};
-
-const slideFromRight: Variants = {
-  hidden: { opacity: 0, x: 32 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.85, ease: EASE } },
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.85, ease: EASE } },
 };
 
 const popIn: Variants = {
-  hidden: { opacity: 0, scale: 0.4, rotate: -12 },
+  hidden: { opacity: 0, scale: 0.85 }, // Skala diperkecil agar tidak over render
   visible: {
     opacity: 1,
     scale: 1,
-    rotate: 0,
     transition: { duration: 0.55, ease: EASE, delay: 0.35 },
   },
 };
@@ -85,10 +71,6 @@ function CoupleSectionInner({
   openingAnimation = true,
 }: CoupleSectionProps) {
   const initialState = openingAnimation ? "hidden" : "visible";
-  // Portraits slide in over 0.85s starting after ~staggerChildren delay;
-  // the floating idle animation is timed to begin once that settles,
-  // instead of both starting on the same frame.
-  const portraitFloatDelay = 1;
 
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
@@ -98,25 +80,11 @@ function CoupleSectionInner({
         <BackgroundPattern className="h-full w-full opacity-[0.28]" />
       </div>
 
-      <div
-        className="couple-anim-glow pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem]"
-        style={{
-          animation: "couple-glow-pulse 7.5s ease-in-out infinite",
-          willChange: "opacity",
-        }}
-      />
-      <div
-        className="couple-anim-glow pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72"
-        style={{
-          animation: "couple-glow-pulse 8.5s ease-in-out 1s infinite",
-          willChange: "opacity",
-        }}
-      />
+      {/* Background Glow Statis (Sangat aman) */}
+      <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem] opacity-70" />
+      <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72 opacity-70" />
 
       <AmbientGlow />
-
-      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 hidden h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14] sm:block" />
-
       <FrameLayers />
       <AmbientDecor />
       <FairyLights />
@@ -134,20 +102,19 @@ function CoupleSectionInner({
       >
         <div className="flex w-full flex-col items-center">
           <div className="flex flex-col items-center gap-1 text-center">
-            <m.div variants={fadeUp} style={GPU_HINT}>
+            <m.div variants={fadeUp}>
               <StaticWreathBand className="mb-1 h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
             </m.div>
 
             <m.div
               variants={fadeUp}
-              style={GPU_HINT}
               className="flex items-center gap-2 sm:gap-3"
             >
+              {/* Animasi spin murni rotasi (Aman) */}
               <div
-                className="couple-anim-badge-icon"
                 style={{
-                  animation:
-                    "couple-badge-spin-l 3.4s ease-in-out 0.4s infinite",
+                  animation: "couple-badge-spin-l 3.4s ease-in-out infinite",
+                  transformOrigin: "center",
                 }}
               >
                 <MiniBloom
@@ -159,10 +126,9 @@ function CoupleSectionInner({
                 THE BRIDE &amp; GROOM
               </span>
               <div
-                className="couple-anim-badge-icon"
                 style={{
-                  animation:
-                    "couple-badge-spin-r 3.7s ease-in-out 0.8s infinite",
+                  animation: "couple-badge-spin-r 3.7s ease-in-out infinite",
+                  transformOrigin: "center",
                 }}
               >
                 <MiniBloom
@@ -172,12 +138,12 @@ function CoupleSectionInner({
               </div>
               <style>{`
                 @keyframes couple-badge-spin-l {
-                  0%, 100% { transform: scale(1) rotate(0deg); }
-                  50% { transform: scale(1.12) rotate(6deg); }
+                  0%, 100% { transform: rotate(0deg); }
+                  50% { transform: rotate(15deg); }
                 }
                 @keyframes couple-badge-spin-r {
-                  0%, 100% { transform: scale(1) rotate(0deg); }
-                  50% { transform: scale(1.12) rotate(-6deg); }
+                  0%, 100% { transform: rotate(0deg); }
+                  50% { transform: rotate(-15deg); }
                 }
               `}</style>
             </m.div>
@@ -185,15 +151,12 @@ function CoupleSectionInner({
             <m.p
               variants={fadeUp}
               className="font-script mt-3 max-w-[16rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-base font-semibold leading-snug text-ink backdrop-blur-[2px] xs:text-lg xs:max-w-[18rem] sm:mt-4 sm:max-w-md sm:text-2xl lg:mt-5 lg:text-3xl"
-              style={{
-                textShadow: "0 1px 6px rgba(255,255,255,0.9)",
-                ...GPU_HINT,
-              }}
+              style={{ textShadow: "0 1px 6px rgba(255,255,255,0.9)" }}
             >
               With joyful hearts, we warmly invite you
             </m.p>
 
-            <m.div variants={fadeUp} style={GPU_HINT}>
+            <m.div variants={fadeUp}>
               <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
             </m.div>
           </div>
@@ -203,8 +166,7 @@ function CoupleSectionInner({
             style={{ paddingInline: "clamp(0.75rem, 6vw, 3rem)" }}
           >
             <m.div
-              variants={slideFromLeft}
-              style={GPU_HINT}
+              variants={fadeIn}
               className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]"
             >
               <ArchPortrait
@@ -213,42 +175,16 @@ function CoupleSectionInner({
                 parents={brideParents}
                 photoUrl={bridePhotoUrl}
                 align="left"
-                floatDelay={portraitFloatDelay}
+                floatDelay={0}
                 priority
               />
             </m.div>
 
             <m.div
               variants={popIn}
-              style={GPU_HINT}
               className="relative z-20 mb-6 w-14 shrink-0 sm:mb-10 sm:w-24 lg:mb-12 lg:w-40"
             >
-              <div
-                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl"
-                style={{
-                  animation:
-                    "couple-wreath-glow 4.2s ease-in-out 0.6s infinite",
-                  willChange: "opacity",
-                }}
-              />
-              <style>{`
-                @keyframes couple-wreath-glow {
-                  0%, 100% { opacity: 0.45; }
-                  50% { opacity: 0.9; }
-                }
-                @keyframes couple-amp-scale {
-                  0%, 100% { transform: scale(1); }
-                  50% { transform: scale(1.15); }
-                }
-                @keyframes couple-twinkle-pop {
-                  0%, 100% { opacity: 0; transform: scale(0.5); }
-                  50% { opacity: 1; transform: scale(1); }
-                }
-                @keyframes couple-twinkle-pop-lg {
-                  0%, 100% { opacity: 0; transform: scale(0.5); }
-                  50% { opacity: 1; transform: scale(1.2); }
-                }
-              `}</style>
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl opacity-70" />
 
               <WreathFrame className="relative z-10 w-full" />
 
@@ -263,11 +199,11 @@ function CoupleSectionInner({
                 }}
               >
                 <div className="relative flex items-center justify-center">
+                  {/* Animasi twinkle murni scale & opacity (Aman) */}
                   <div
                     className="absolute -left-2 -top-2"
                     style={{
-                      animation:
-                        "couple-twinkle-pop 2.5s ease-in-out 0.2s infinite",
+                      animation: "couple-twinkle-pop 2.5s ease-in-out infinite",
                     }}
                   >
                     <Sparkle className="h-2 w-2 opacity-80 sm:h-3 sm:w-3" />
@@ -277,10 +213,8 @@ function CoupleSectionInner({
                     className="font-script block font-semibold leading-none text-burgundy text-sm sm:text-2xl lg:text-4xl"
                     style={{
                       textShadow: "0 2px 10px rgba(255,255,255,0.8)",
-                      animation:
-                        "couple-amp-scale 2.6s ease-in-out 1s infinite",
                       display: "inline-block",
-                      ...GPU_HINT,
+                      animation: "couple-amp-scale 3s ease-in-out infinite",
                     }}
                   >
                     &amp;
@@ -297,11 +231,24 @@ function CoupleSectionInner({
                   </div>
                 </div>
               </div>
+              <style>{`
+                @keyframes couple-amp-scale {
+                  0%, 100% { transform: scale(1); }
+                  50% { transform: scale(1.08); }
+                }
+                @keyframes couple-twinkle-pop {
+                  0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }
+                  50% { opacity: 1; transform: scale(1.2) translateZ(0); }
+                }
+                @keyframes couple-twinkle-pop-lg {
+                  0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }
+                  50% { opacity: 1; transform: scale(1.4) translateZ(0); }
+                }
+              `}</style>
             </m.div>
 
             <m.div
-              variants={slideFromRight}
-              style={GPU_HINT}
+              variants={fadeIn}
               className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]"
             >
               <ArchPortrait
@@ -310,16 +257,12 @@ function CoupleSectionInner({
                 parents={groomParents}
                 photoUrl={groomPhotoUrl}
                 align="right"
-                floatDelay={portraitFloatDelay}
+                floatDelay={0}
               />
             </m.div>
           </div>
 
-          <m.div
-            variants={fadeUp}
-            style={GPU_HINT}
-            className="mt-9 sm:mt-12 lg:mt-16"
-          >
+          <m.div variants={fadeUp} className="mt-9 sm:mt-12 lg:mt-16">
             <StaticWreathBand
               flip
               className="h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
