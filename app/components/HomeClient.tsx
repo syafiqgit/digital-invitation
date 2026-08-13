@@ -8,6 +8,7 @@ import CoverPage from "./CoverPage";
 import { BLOOM_ORIGIN } from "./BloomEffect";
 import { FloatingMusic } from "./FloatingMusic";
 
+// ✅ LAZY LOADING: Code-splitting chunk MainContent agar tidak membebani initial bundle
 const MainContent = dynamic(() => import("./MainContent"), {
   ssr: false,
   loading: () => null,
@@ -37,6 +38,7 @@ function HomeInner() {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // ✅ PRELOAD SILENT: Memuat chunk MainContent di latar belakang setelah render pertama stabil
   useEffect(() => {
     const preloadTimeout = setTimeout(() => {
       import("./MainContent");
@@ -47,6 +49,7 @@ function HomeInner() {
   const handleOpen = useCallback(() => {
     setPhase("opening");
 
+    // ✅ NON-BLOCKING AUDIO: Menunda eksekusi audio 1 frame (rAF) agar animasi iris 60fps berjalan tanpa stutter
     requestAnimationFrame(() => {
       if (audioRef.current) {
         audioRef.current
@@ -89,6 +92,8 @@ function HomeInner() {
         )}
       </AnimatePresence>
 
+      {/* ✅ GPU ACCELERATION & PAINT CONTAINMENT: 
+          Mengisolasi area render iris transition menggunakan paint containment dan Biz/Hardware layer acceleration */}
       <m.div
         initial={{ clipPath: clipPathHidden }}
         animate={{ clipPath: isBlooming ? clipPathVisible : clipPathHidden }}
@@ -105,8 +110,7 @@ function HomeInner() {
       >
         {isOpened && (
           <m.div
-            // ✅ OPTIMASI FINAL: Hapus `y: 15` dari parent element.
-            // Cukup gunakan opacity agar GPU tidak perlu menggeser seluruh isi website.
+            // ✅ FADE-IN MURNI: Menghindari layout shift vertikal (y-axis) pada seluruh halaman
             initial={{ opacity: 0 }}
             animate={isBlooming ? { opacity: 1 } : { opacity: 0 }}
             transition={{
