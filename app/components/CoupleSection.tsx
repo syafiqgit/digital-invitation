@@ -113,195 +113,114 @@ const textLift = {
   },
 } as const;
 
-/* ---------- Static decoration data ---------- */
+/* ---------- Static decoration data (trimmed for performance) ---------- */
 
 const scatterItems = [
-  { top: "5%", left: "8%", type: "bloom", color: "var(--burgundy)" },
-  { top: "6%", left: "20%", type: "leaf", rot: -25 },
-  { top: "4%", left: "80%", type: "leaf", rot: 25 },
-  { top: "6%", left: "92%", type: "bloom", color: "var(--coral)" },
-  { top: "80%", left: "3%", type: "bloom", color: "var(--coral)" },
-  { top: "80%", left: "97%", type: "bloom", color: "var(--blush-dark)" },
-  { top: "92%", left: "20%", type: "leaf", rot: 30 },
-  { top: "92%", left: "80%", type: "leaf", rot: -30 },
-  { top: "94%", left: "8%", type: "bloom", color: "var(--burgundy)" },
-  { top: "94%", left: "92%", type: "bloom", color: "var(--coral)" },
-  { top: "32%", left: "4%", type: "bloom", color: "var(--sage-light)" },
-  { top: "32%", left: "96%", type: "bloom", color: "var(--sage-light)" },
-  { top: "45%", left: "2%", type: "leaf", rot: -10 },
-  { top: "45%", left: "98%", type: "leaf", rot: 10 },
-  { top: "58%", left: "4%", type: "bloom", color: "var(--coral)" },
-  { top: "58%", left: "96%", type: "bloom", color: "var(--burgundy)" },
-  { top: "15%", left: "35%", type: "leaf", rot: -35 },
-  { top: "15%", left: "65%", type: "leaf", rot: 35 },
-  { top: "85%", left: "38%", type: "leaf", rot: 40 },
-  { top: "85%", left: "62%", type: "leaf", rot: -40 },
+  { top: "6%", left: "10%", type: "bloom", color: "var(--burgundy)" },
+  { top: "5%", left: "90%", type: "leaf", rot: 25 },
+  { top: "88%", left: "6%", type: "bloom", color: "var(--coral)" },
+  { top: "88%", left: "94%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "34%", left: "3%", type: "bloom", color: "var(--sage-light)" },
+  { top: "34%", left: "97%", type: "leaf", rot: -10 },
+  { top: "60%", left: "4%", type: "leaf", rot: 15 },
+  { top: "60%", left: "96%", type: "bloom", color: "var(--coral)" },
 ] as const;
 
 const sparkles = [
-  { top: "12%", left: "45%" },
-  { top: "22%", left: "10%" },
-  { top: "20%", left: "90%" },
-  { top: "40%", left: "85%" },
-  { top: "60%", left: "15%" },
-  { top: "70%", left: "12%" },
-  { top: "72%", left: "88%" },
-  { top: "88%", left: "50%" },
+  { top: "14%", left: "45%" },
+  { top: "22%", left: "12%" },
+  { top: "22%", left: "88%" },
+  { top: "68%", left: "14%" },
+  { top: "70%", left: "86%" },
 ].map((s) => ({ ...s, style: { top: s.top, left: s.left, ...GPU_HINT } }));
 
-// --- UPDATE: Parallax Floating Petals (Lebih Rame & Sinematik) ---
 const floatingPetals = [
-  // Layer Belakang (Kecil, sangat blur, pergerakan lambat di kejauhan)
   {
-    left: "8%",
-    size: 7,
-    duration: 16,
-    delay: 0,
-    color: "var(--blush-dark)",
-    blur: "blur-[3px]",
-    zIndex: "z-[2]",
-  },
-  {
-    left: "35%",
-    size: 6,
-    duration: 18,
-    delay: 2,
-    color: "var(--coral)",
-    blur: "blur-[3px]",
-    zIndex: "z-[2]",
-  },
-  {
-    left: "65%",
-    size: 8,
-    duration: 15,
-    delay: 5,
-    color: "var(--sage-light)",
-    blur: "blur-[4px]",
-    zIndex: "z-[2]",
-  },
-  {
-    left: "88%",
-    size: 7,
-    duration: 17,
+    left: "18%",
+    size: 11,
+    duration: 13,
     delay: 1,
-    color: "var(--burgundy)",
-    blur: "blur-[3px]",
-    zIndex: "z-[2]",
-  },
-
-  // Layer Tengah (Fokus tajam, ukuran medium, melayang di sela-sela konten)
-  {
-    left: "15%",
-    size: 12,
-    duration: 12,
-    delay: 3,
     color: "var(--coral)",
     blur: "blur-none",
-    zIndex: "z-[5]",
+    zIndex: "z-[4]",
   },
   {
-    left: "45%",
+    left: "70%",
     size: 10,
-    duration: 14,
-    delay: 6,
-    color: "var(--burgundy)",
-    blur: "blur-[1px]",
-    zIndex: "z-[5]",
-  },
-  {
-    left: "75%",
-    size: 14,
-    duration: 13,
+    duration: 15,
     delay: 4,
     color: "var(--sage-light)",
     blur: "blur-none",
-    zIndex: "z-[5]",
+    zIndex: "z-[4]",
+  },
+  {
+    left: "45%",
+    size: 12,
+    duration: 12,
+    delay: 6,
+    color: "var(--burgundy)",
+    blur: "blur-[1px]",
+    zIndex: "z-[4]",
+  },
+  {
+    left: "8%",
+    size: 26,
+    duration: 9,
+    delay: 2,
+    color: "var(--blush-dark)",
+    blur: "blur-[4px]",
+    zIndex: "z-[20]",
+  },
+  {
+    left: "58%",
+    size: 24,
+    duration: 10,
+    delay: 5.5,
+    color: "var(--coral)",
+    blur: "blur-[4px]",
+    zIndex: "z-[20]",
   },
   {
     left: "92%",
-    size: 11,
+    size: 28,
     duration: 11,
-    delay: 0.5,
-    color: "var(--blush-dark)",
-    blur: "blur-[1px]",
-    zIndex: "z-[5]",
-  },
-
-  // Layer Depan (Ekstra besar, sangat blur, pergerakan cepat seolah lewat persis di depan lensa)
-  {
-    left: "5%",
-    size: 40,
-    duration: 8,
-    delay: 1.5,
+    delay: 3,
     color: "var(--burgundy)",
-    blur: "blur-[6px]",
-    zIndex: "z-[30]",
-  },
-  {
-    left: "55%",
-    size: 35,
-    duration: 9,
-    delay: 7,
-    color: "var(--coral)",
     blur: "blur-[5px]",
-    zIndex: "z-[30]",
-  },
-  {
-    left: "95%",
-    size: 45,
-    duration: 10,
-    delay: 2.5,
-    color: "var(--blush-dark)",
-    blur: "blur-[8px]",
-    zIndex: "z-[30]",
+    zIndex: "z-[20]",
   },
 ].map((p) => ({
   ...p,
   style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
 }));
 
-// --- UPDATE: Partikel Emas Mewah ---
 const goldDusts = [
-  { left: "15%", bottom: "0%", size: 4, duration: 13, delay: 0 },
-  { left: "45%", bottom: "-5%", size: 6, duration: 16, delay: 2 },
-  { left: "75%", bottom: "5%", size: 3, duration: 11, delay: 1 },
-  { left: "85%", bottom: "-10%", size: 5, duration: 15, delay: 3 },
-  { left: "25%", bottom: "-8%", size: 7, duration: 17, delay: 4 },
+  { left: "18%", bottom: "-4%", size: 5, duration: 14, delay: 0 },
+  { left: "50%", bottom: "0%", size: 6, duration: 16, delay: 2.5 },
+  { left: "82%", bottom: "-6%", size: 4, duration: 12, delay: 1 },
 ];
 
 const butterflies = [
-  { left: "10%", top: "18%", color: "var(--coral)", duration: 16, delay: 0 },
-  { left: "82%", top: "26%", color: "var(--burgundy)", duration: 19, delay: 4 },
-  {
-    left: "48%",
-    top: "68%",
-    color: "var(--blush-dark)",
-    duration: 17,
-    delay: 8,
-  },
+  { left: "12%", top: "20%", color: "var(--coral)", duration: 17, delay: 0 },
+  { left: "84%", top: "24%", color: "var(--burgundy)", duration: 19, delay: 4 },
 ].map((b) => ({ ...b, style: { left: b.left, top: b.top, ...GPU_HINT } }));
 
 const fireflies = [
-  { left: "14%", bottom: "10%", duration: 7, delay: 0 },
-  { left: "30%", bottom: "22%", duration: 8.5, delay: 1.5 },
-  { left: "20%", bottom: "50%", duration: 8, delay: 2.5 },
-  { left: "70%", bottom: "14%", duration: 7.5, delay: 3 },
-  { left: "86%", bottom: "26%", duration: 9, delay: 2 },
-  { left: "80%", bottom: "60%", duration: 7.5, delay: 5 },
-  { left: "50%", bottom: "8%", duration: 8, delay: 4.5 },
+  { left: "16%", bottom: "12%", duration: 7.5, delay: 0 },
+  { left: "82%", bottom: "18%", duration: 8, delay: 1.5 },
+  { left: "22%", bottom: "55%", duration: 8.5, delay: 3 },
+  { left: "78%", bottom: "50%", duration: 7.5, delay: 2 },
 ].map((f) => ({
   ...f,
   style: { left: f.left, bottom: f.bottom, ...GPU_HINT },
 }));
 
 const fairyLights = [
-  { cx: 40, cy: 38 },
-  { cx: 90, cy: 20 },
-  { cx: 140, cy: 13 },
-  { cx: 200, cy: 26 },
-  { cx: 260, cy: 13 },
-  { cx: 310, cy: 20 },
-  { cx: 360, cy: 38 },
+  { cx: 40, cy: 34 },
+  { cx: 110, cy: 14 },
+  { cx: 200, cy: 24 },
+  { cx: 290, cy: 14 },
+  { cx: 360, cy: 34 },
 ] as const;
 
 const cornerOrnaments = [
@@ -615,7 +534,6 @@ const Sparkle = memo(function Sparkle({
   );
 });
 
-// --- UPDATE: Komponen GoldDust & MajesticRay ---
 const GoldDust = memo(function GoldDust({
   className = "",
 }: {
@@ -623,20 +541,19 @@ const GoldDust = memo(function GoldDust({
 }) {
   return (
     <div
-      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] ${className}`}
+      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 ${className}`}
     />
   );
 });
 
-const MajesticRay = memo(function MajesticRay() {
+/* Static, non-animated ambient glow — replaces the previous continuously  */
+/* rotating 600–800px conic-gradient, the biggest performance cost.        */
+const AmbientGlow = memo(function AmbientGlow() {
   return (
-    <m.div
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] -translate-x-1/2 -translate-y-1/2 opacity-60"
-      animate={{ rotate: 360 }}
-      transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-    >
-      <div className="h-[600px] w-[600px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.06)_60deg,transparent_120deg,rgba(212,175,55,0.06)_180deg,transparent_240deg,rgba(212,175,55,0.06)_300deg,transparent_360deg)] blur-3xl lg:h-[800px] lg:w-[800px]" />
-    </m.div>
+    <div
+      aria-hidden
+      className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.10)_0%,transparent_70%)] blur-2xl lg:h-[620px] lg:w-[620px]"
+    />
   );
 });
 
@@ -792,14 +709,12 @@ const ArchPortrait = memo(function ArchPortrait({
 }) {
   return (
     <div className="relative flex w-full flex-col items-center text-center">
-      {/* Container foto melayang tipis (levitation effect) */}
       <m.div
         animate={{ y: [-3, 3, -3] }}
         transition={loop(6, align === "left" ? 0 : 1)}
         className="relative w-full"
         style={GPU_HINT}
       >
-        {/* Layer luar bingkai dengan Luxurious Glow */}
         <div className="absolute -inset-[7px] rounded-t-[3.6rem] rounded-b-xl border-[1.5px] border-mustard shadow-[0_0_15px_rgba(212,175,55,0.3)] sm:-inset-2.5 sm:rounded-t-[4.3rem] lg:-inset-3 lg:rounded-t-[6.6rem] lg:rounded-b-3xl" />
         <div className="absolute -inset-[3px] rounded-t-[3.4rem] rounded-b-lg border border-mustard/70 sm:-inset-1 sm:rounded-t-[4rem] lg:-inset-1.5 lg:rounded-t-[6.3rem] lg:rounded-b-2xl" />
 
@@ -816,10 +731,7 @@ const ArchPortrait = memo(function ArchPortrait({
           ) : (
             <Monogram name={displayName} />
           )}
-          {/* Inner Vignette / Shadow agar foto lebih dramatis */}
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/40 via-transparent to-ink/10" />
-          <div className="absolute inset-0 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] mix-blend-overlay" />
-
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/35 via-transparent to-transparent" />
           <div className="pointer-events-none absolute inset-1 rounded-t-[3rem] rounded-b-lg border border-white/50 sm:rounded-t-[3.7rem] lg:inset-2 lg:rounded-t-[5.7rem] lg:rounded-b-2xl" />
         </div>
 
@@ -871,11 +783,12 @@ const ArchPortrait = memo(function ArchPortrait({
 });
 
 /* ---------- Ambient decoration groups ---------- */
+/* Heavy decorative particles only render from md breakpoint upward. */
 
 const AmbientDecor = memo(function AmbientDecor() {
   return (
     <>
-      <div className="hidden sm:contents">
+      <div className="hidden md:contents">
         {scatterItems.map((item, i) => (
           <div
             key={`scatter-${i}`}
@@ -889,6 +802,7 @@ const AmbientDecor = memo(function AmbientDecor() {
             )}
           </div>
         ))}
+
         {sparkles.map((s, i) => (
           <m.div
             key={`sparkle-${i}`}
@@ -901,7 +815,6 @@ const AmbientDecor = memo(function AmbientDecor() {
           </m.div>
         ))}
 
-        {/* --- UPDATE: Render Parallax Petals --- */}
         {floatingPetals.map((p, i) => (
           <m.div
             key={`petal-${i}`}
@@ -909,9 +822,9 @@ const AmbientDecor = memo(function AmbientDecor() {
             style={p.style}
             animate={{
               y: ["0vh", "115vh"],
-              x: [0, p.size > 20 ? 45 : 20, -15, 0],
+              x: [0, p.size > 20 ? 40 : 16, -12, 0],
               rotate: [0, 180, 360],
-              opacity: [0, 0.75, 0.75, 0],
+              opacity: [0, 0.7, 0.7, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
@@ -928,7 +841,6 @@ const AmbientDecor = memo(function AmbientDecor() {
           </m.div>
         ))}
 
-        {/* --- UPDATE: Render Gold Dust --- */}
         {goldDusts.map((g, i) => (
           <m.div
             key={`gd-${i}`}
@@ -940,9 +852,9 @@ const AmbientDecor = memo(function AmbientDecor() {
               height: g.size,
             }}
             animate={{
-              y: ["0vh", "-110vh"],
-              x: [0, 15, -10, 5, 0],
-              opacity: [0, 0.8, 0.4, 0.8, 0],
+              y: ["0vh", "-105vh"],
+              x: [0, 12, -8, 0],
+              opacity: [0, 0.8, 0.4, 0],
             }}
             transition={loop(g.duration, g.delay, "linear")}
           >
@@ -956,23 +868,17 @@ const AmbientDecor = memo(function AmbientDecor() {
             className="pointer-events-none absolute z-[2] h-4 w-5 lg:h-6 lg:w-8"
             style={b.style}
             animate={{
-              x: [0, 36, -18, 48, 0],
-              y: [0, -26, -6, -34, 0],
-              rotate: [0, 8, -6, 5, 0],
+              x: [0, 32, -16, 40, 0],
+              y: [0, -22, -6, -28, 0],
+              rotate: [0, 6, -5, 4, 0],
             }}
             transition={loop(b.duration, b.delay)}
           >
-            <m.div
-              animate={{ scaleX: [1, 0.82, 1] }}
-              transition={loop(0.5)}
-              style={GPU_HINT}
-              className="h-full w-full"
-            >
-              <Butterfly className="h-full w-full" color={b.color} />
-            </m.div>
+            <Butterfly className="h-full w-full" color={b.color} />
           </m.div>
         ))}
       </div>
+
       <div className="contents">
         {fireflies.map((f, i) => (
           <m.div
@@ -980,8 +886,8 @@ const AmbientDecor = memo(function AmbientDecor() {
             className="pointer-events-none absolute z-[1] h-1.5 w-1.5 lg:h-2 lg:w-2"
             style={f.style}
             animate={{
-              y: [0, -60, -20, -90, 0],
-              x: [0, 12, -8, 6, 0],
+              y: [0, -55, -18, -80, 0],
+              x: [0, 10, -6, 4, 0],
               opacity: [0, 0.9, 0.4, 0.9, 0],
             }}
             transition={loop(f.duration, f.delay)}
@@ -997,7 +903,7 @@ const AmbientDecor = memo(function AmbientDecor() {
 const FairyLights = memo(function FairyLights() {
   return (
     <svg
-      className="pointer-events-none absolute inset-0 z-[1] h-full w-full opacity-70"
+      className="pointer-events-none absolute inset-0 z-[1] hidden h-full w-full opacity-70 sm:block"
       viewBox="0 0 400 800"
       preserveAspectRatio="none"
     >
@@ -1048,6 +954,7 @@ const FrameLayers = memo(function FrameLayers() {
           </m.div>
         </m.div>
       ))}
+
       {corners.map((c, i) => (
         <m.div
           key={c.key}
@@ -1068,6 +975,7 @@ const FrameLayers = memo(function FrameLayers() {
           </m.div>
         </m.div>
       ))}
+
       {cornerOrnaments.map((c, i) => (
         <div
           key={`cf-${i}`}
@@ -1083,6 +991,7 @@ const FrameLayers = memo(function FrameLayers() {
           </m.div>
         </div>
       ))}
+
       <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
       <div className="pointer-events-none absolute inset-6 z-[1] hidden rounded-[2.5rem] border border-dashed border-mustard/25 sm:block sm:inset-8 lg:inset-12" />
     </>
@@ -1105,51 +1014,38 @@ function CoupleSectionInner({
   const initialState = openingAnimation ? "hidden" : "visible";
 
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 sm:px-6 sm:py-24">
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
       <div className="pointer-events-none absolute inset-0 z-0">
-        <BackgroundPattern className="h-full w-full opacity-[0.32]" />
+        <BackgroundPattern className="h-full w-full opacity-[0.28]" />
       </div>
 
-      {/* Breathing Background Blobs untuk efek Magis */}
       <m.div
         className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem]"
-        animate={{ opacity: [0.35, 0.55, 0.35], scale: [1, 1.15, 1] }}
+        animate={{ opacity: [0.35, 0.55, 0.35] }}
         transition={loop(7.5)}
-        style={GPU_HINT}
+        style={GPU_HINT_OPACITY}
       />
       <m.div
         className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72"
-        animate={{ opacity: [0.4, 0.6, 0.4], scale: [1, 1.1, 1] }}
+        animate={{ opacity: [0.4, 0.6, 0.4] }}
         transition={loop(8.5, 1)}
-        style={GPU_HINT}
-      />
-      <m.div
-        className="pointer-events-none absolute left-1/2 top-8 z-0 h-40 w-40 -translate-x-1/2 rounded-full bg-mustard/15 blur-[70px] lg:h-56 lg:w-56"
-        animate={{ opacity: [0.15, 0.3, 0.15], scale: [1, 1.05, 1] }}
-        transition={loop(6, 2)}
-        style={GPU_HINT}
+        style={GPU_HINT_OPACITY}
       />
 
-      {/* --- UPDATE: Majestic Ray di bagian latar --- */}
-      <MajesticRay />
+      <AmbientGlow />
 
-      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14]" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 hidden h-[85vmin] w-[85vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-burgundy/40 opacity-[0.14] sm:block" />
 
       <FrameLayers />
       <AmbientDecor />
       <FairyLights />
 
-      <m.div
-        className="pointer-events-none absolute bottom-0 left-0 z-[1] h-6 w-full opacity-90 sm:h-8 lg:h-10"
-        style={{ transformOrigin: "bottom center", ...GPU_HINT }}
-        animate={{ skewX: [0, 1.5, 0, -1.5, 0] }}
-        transition={loop(6)}
-      >
+      <div className="pointer-events-none absolute bottom-0 left-0 z-[1] hidden h-6 w-full opacity-90 sm:block sm:h-8 lg:h-10">
         <GrassSilhouette className="h-full w-full" />
-      </m.div>
+      </div>
 
       <m.div
-        className="relative z-10 flex w-full max-w-3xl flex-col items-center"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl"
         initial={initialState}
         whileInView="visible"
         viewport={{ once: true, amount: 0.35 }}
@@ -1158,7 +1054,7 @@ function CoupleSectionInner({
         <div className="flex w-full flex-col items-center">
           <div className="flex flex-col items-center gap-1 text-center">
             <m.div variants={fadeUp} style={GPU_HINT}>
-              <StaticWreathBand className="mb-1 h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
+              <StaticWreathBand className="mb-1 h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
             </m.div>
 
             <m.div
@@ -1176,10 +1072,8 @@ function CoupleSectionInner({
                   color="var(--sage-light)"
                 />
               </m.div>
-              <span className="inline-block rounded-full border border-mustard/60 bg-ivory/95 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-[0_2px_8px_rgba(0,0,0,0.06)] backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
-                {/* Menambah inner glow tipis pada badge */}
-                <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
-                <span className="relative z-10">MEMPELAI</span>
+              <span className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-gradient-to-b from-ivory to-ivory/85 px-3.5 py-1 text-[9px] font-extrabold tracking-[0.3em] text-burgundy shadow-[0_2px_10px_rgba(58,54,48,0.08)] backdrop-blur-sm sm:px-5 sm:py-1.5 sm:text-[11px] sm:tracking-[0.34em]">
+                MEMPELAI
               </span>
               <m.div
                 animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
@@ -1195,7 +1089,7 @@ function CoupleSectionInner({
 
             <m.p
               variants={fadeUp}
-              className="font-script mt-2 max-w-[18rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-lg font-semibold text-ink backdrop-blur-[2px] sm:max-w-md sm:text-2xl lg:mt-3 lg:text-3xl"
+              className="font-script mt-3 max-w-[16rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-base font-semibold leading-snug text-ink backdrop-blur-[2px] xs:text-lg xs:max-w-[18rem] sm:mt-4 sm:max-w-md sm:text-2xl lg:mt-5 lg:text-3xl"
               style={{
                 textShadow: "0 1px 6px rgba(255,255,255,0.9)",
                 ...GPU_HINT,
@@ -1205,13 +1099,13 @@ function CoupleSectionInner({
             </m.p>
 
             <m.div variants={fadeUp} style={GPU_HINT}>
-              <SprigDivider className="mt-1 h-4 w-32 sm:block lg:mt-2 lg:h-5 lg:w-44" />
+              <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
             </m.div>
           </div>
 
           <div
-            className="relative mt-4 flex w-full flex-row items-end justify-center gap-2 sm:mt-6 sm:gap-4 lg:mt-10 lg:gap-6"
-            style={{ paddingInline: "clamp(1rem, 6vw, 3rem)" }}
+            className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 lg:gap-6"
+            style={{ paddingInline: "clamp(0.75rem, 6vw, 3rem)" }}
           >
             <m.div
               variants={slideFromLeft}
@@ -1234,12 +1128,9 @@ function CoupleSectionInner({
             >
               <m.div
                 className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl"
-                animate={{
-                  opacity: [0.45, 0.9, 0.45],
-                  scale: [0.9, 1.08, 0.9],
-                }}
+                animate={{ opacity: [0.45, 0.9, 0.45] }}
                 transition={loop(4.2, 0.6)}
-                style={GPU_HINT}
+                style={GPU_HINT_OPACITY}
               />
 
               <WreathFrame className="relative z-10 w-full" />
@@ -1254,7 +1145,6 @@ function CoupleSectionInner({
                   transform: "translate(-50%, -50%)",
                 }}
               >
-                {/* Magical Ampersand with Sparkles */}
                 <m.div className="relative flex items-center justify-center">
                   <m.div
                     className="absolute -left-2 -top-2"
@@ -1305,11 +1195,11 @@ function CoupleSectionInner({
           <m.div
             variants={fadeUp}
             style={GPU_HINT}
-            className="mt-8 sm:mt-12 lg:mt-16"
+            className="mt-9 sm:mt-12 lg:mt-16"
           >
             <StaticWreathBand
               flip
-              className="h-4 w-40 opacity-70 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
+              className="h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
             />
           </m.div>
         </div>

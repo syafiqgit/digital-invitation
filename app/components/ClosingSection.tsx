@@ -582,6 +582,7 @@ const FrameLayers = memo(function FrameLayers() {
       ))}
 
       <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
+      <div className="pointer-events-none absolute inset-4 z-[1] rounded-[1.8rem] border border-mustard/10 sm:inset-6 lg:inset-10" />
     </>
   );
 });
@@ -594,13 +595,13 @@ function ClosingSectionInner({
   couplePhotoUrl = DEFAULT_COUPLE_PHOTO,
 }: ClosingSectionProps) {
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-20 sm:px-6 sm:py-28 text-center">
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 xs:px-5 sm:px-8 sm:py-24 md:py-28 text-center">
       <div className="pointer-events-none absolute inset-0 z-0">
         <BackgroundPattern className="h-full w-full opacity-[0.26]" />
       </div>
 
       <m.div
-        className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/40 blur-[120px] sm:h-96 sm:w-96"
+        className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/40 blur-[100px] xs:h-80 xs:w-80 sm:h-[26rem] sm:w-[26rem] sm:blur-[140px]"
         style={GPU_HINT}
       />
 
@@ -608,12 +609,13 @@ function ClosingSectionInner({
       <AmbientDecor />
 
       <m.div
-        className="relative z-10 flex w-full max-w-xl flex-col items-center px-2"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center px-1 xs:max-w-md sm:max-w-xl sm:px-2 md:max-w-2xl"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.2 }}
         variants={containerVariants}
       >
+        {/* Badge */}
         <m.div
           variants={fadeUp}
           style={GPU_HINT}
@@ -629,7 +631,7 @@ function ClosingSectionInner({
               color="var(--sage-light)"
             />
           </m.div>
-          <span className="inline-block rounded-full border border-mustard/50 bg-ivory/90 px-3 py-0.5 text-[9px] font-extrabold tracking-[0.28em] text-burgundy shadow-sm backdrop-blur-sm sm:px-4 sm:py-1 sm:text-[11px] sm:tracking-[0.32em]">
+          <span className="inline-block rounded-full border border-mustard/50 bg-gradient-to-b from-ivory to-ivory/80 px-3.5 py-1 text-[9px] font-extrabold tracking-[0.3em] text-burgundy shadow-[0_2px_10px_rgba(58,54,48,0.08)] backdrop-blur-sm sm:px-5 sm:py-1.5 sm:text-[11px] sm:tracking-[0.34em]">
             TERIMA KASIH
           </span>
           <m.div
@@ -644,70 +646,101 @@ function ClosingSectionInner({
           </m.div>
         </m.div>
 
+        {/* Heading */}
         <m.p
           variants={fadeUp}
-          className="font-script mt-4 text-3xl font-semibold text-ink sm:mt-5 sm:text-5xl"
+          className="font-script mt-5 px-2 text-[2.1rem] leading-tight font-semibold text-ink xs:text-4xl sm:mt-6 sm:text-5xl md:text-[3.4rem]"
           style={{ ...textLift, ...GPU_HINT }}
         >
           Merupakan Suatu Kehormatan
         </m.p>
 
-        <m.div variants={fadeUp} style={GPU_HINT} className="mt-2 mb-6 sm:mb-8">
-          <SprigDivider className="h-4 w-36 sm:w-44" />
+        <m.div
+          variants={fadeUp}
+          style={GPU_HINT}
+          className="mt-3 mb-7 sm:mt-4 sm:mb-9"
+        >
+          <SprigDivider className="h-4 w-32 xs:w-40 sm:w-48" />
         </m.div>
 
         {/* Gorgeous Arch Photo Showcase */}
-        <m.div
-          variants={fadeUp}
-          className="relative mb-6 aspect-[4/5] w-48 overflow-hidden rounded-t-[10rem] rounded-b-3xl border-2 border-mustard/60 bg-ivory/95 p-2 shadow-[0_16px_40px_rgba(58,54,48,0.15)] sm:w-56"
-        >
-          <div className="absolute inset-0 rounded-t-[10rem] rounded-b-3xl shadow-[inset_0_0_20px_rgba(255,255,255,0.8)] pointer-events-none z-10" />
-          <div className="relative h-full w-full overflow-hidden rounded-t-[9.5rem] rounded-b-2xl">
-            <img
-              src={couplePhotoUrl}
-              alt="Mempelai"
-              className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-            />
-          </div>
+        <m.div variants={fadeUp} className="relative mb-7 sm:mb-9">
+          <div className="pointer-events-none absolute -inset-3 rounded-t-[11rem] rounded-b-[2.2rem] bg-gradient-to-b from-mustard/25 via-transparent to-blush/25 blur-xl sm:-inset-4" />
+          <m.div
+            animate={{
+              boxShadow: [
+                "0 0 0 0 rgba(212,175,55,0.0)",
+                "0 0 0 6px rgba(212,175,55,0.12)",
+                "0 0 0 0 rgba(212,175,55,0.0)",
+              ],
+            }}
+            transition={loop(4.5, 0.5)}
+            className="relative aspect-[4/5] w-44 overflow-hidden rounded-t-[9rem] rounded-b-3xl border-[3px] border-mustard/70 bg-gradient-to-b from-ivory to-ivory/90 p-2 shadow-[0_18px_48px_rgba(58,54,48,0.18)] xs:w-52 sm:w-60 md:w-64"
+          >
+            <div className="absolute inset-[6px] rounded-t-[8.4rem] rounded-b-[1.4rem] border border-mustard/30 pointer-events-none z-10" />
+            <div className="absolute inset-0 rounded-t-[9rem] rounded-b-3xl shadow-[inset_0_0_24px_rgba(255,255,255,0.85)] pointer-events-none z-10" />
+            <div className="relative h-full w-full overflow-hidden rounded-t-[8.6rem] rounded-b-2xl">
+              <img
+                src={couplePhotoUrl}
+                alt="Mempelai"
+                className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.08]"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/10 via-transparent to-transparent" />
+            </div>
+          </m.div>
         </m.div>
 
+        {/* Message */}
         <m.p
           variants={fadeUp}
-          className="text-xs text-ink/80 leading-relaxed max-w-md mx-auto mb-8 sm:text-sm"
+          className="mx-auto mb-8 max-w-xs px-1 text-[13px] leading-relaxed text-ink/80 xs:max-w-sm sm:mb-10 sm:max-w-md sm:text-[15px]"
         >
           Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila
           Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu kepada
           kedua mempelai.
         </m.p>
 
+        {/* Names Card */}
         <m.div
           variants={fadeUp}
-          className="relative w-full rounded-3xl border border-mustard/50 bg-ivory/95 p-8 shadow-[0_16px_45px_rgba(58,54,48,0.1)] overflow-hidden"
+          className="relative w-full max-w-sm rounded-[1.75rem] border border-mustard/50 bg-gradient-to-b from-ivory/98 to-ivory/90 px-6 py-9 shadow-[0_20px_55px_rgba(58,54,48,0.14)] overflow-hidden sm:max-w-md sm:rounded-[2rem] sm:px-10 sm:py-12"
         >
-          <div className="absolute inset-0 rounded-3xl shadow-[inset_0_0_20px_rgba(255,255,255,0.8)] pointer-events-none" />
+          <div className="absolute inset-0 rounded-[1.75rem] shadow-[inset_0_0_24px_rgba(255,255,255,0.85)] pointer-events-none sm:rounded-[2rem]" />
+          <div className="absolute inset-[10px] rounded-[1.4rem] border border-mustard/25 pointer-events-none sm:inset-[14px] sm:rounded-[1.6rem]" />
+
+          <CornerFlourish className="pointer-events-none absolute left-2 top-2 h-8 w-8 opacity-60 sm:left-3 sm:top-3 sm:h-10 sm:w-10" />
+          <CornerFlourish className="pointer-events-none absolute bottom-2 right-2 h-8 w-8 rotate-180 opacity-60 sm:bottom-3 sm:right-3 sm:h-10 sm:w-10" />
 
           <p
-            className="font-script text-2xl font-semibold text-ink sm:text-4xl"
+            className="font-script text-3xl font-semibold text-ink sm:text-[2.7rem]"
             style={textLift}
           >
             {brideName}
           </p>
-          <span className="font-script text-xl text-burgundy my-1 block">
-            &amp;
-          </span>
+          <div className="my-2 flex items-center justify-center gap-3 sm:my-3">
+            <span className="h-px w-8 bg-sage/40 sm:w-12" />
+            <span className="font-script text-xl text-burgundy sm:text-2xl">
+              &amp;
+            </span>
+            <span className="h-px w-8 bg-sage/40 sm:w-12" />
+          </div>
           <p
-            className="font-script text-2xl font-semibold text-ink sm:text-4xl"
+            className="font-script text-3xl font-semibold text-ink sm:text-[2.7rem]"
             style={textLift}
           >
             {groomName}
           </p>
         </m.div>
 
+        {/* Footer */}
         <m.div
           variants={fadeUp}
-          className="mt-10 text-[10px] tracking-[0.2em] text-ink/50 uppercase"
+          className="mt-9 flex items-center gap-3 text-[9px] tracking-[0.22em] text-ink/50 uppercase sm:mt-12 sm:text-[10px]"
         >
-          &copy; 2026 Wedding Garden Invitation. All Rights Reserved.
+          <span className="h-px w-5 bg-ink/20 sm:w-8" />
+          <span>&copy; 2026 Wedding Garden Invitation</span>
+          <span className="h-px w-5 bg-ink/20 sm:w-8" />
         </m.div>
       </m.div>
     </section>

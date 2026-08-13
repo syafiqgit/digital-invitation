@@ -85,8 +85,13 @@ const containerVariants: Variants = {
 };
 
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
+  hidden: { opacity: 0, y: 30, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.8, ease: EASE },
+  },
 };
 
 const vineFade: Variants = {
@@ -105,45 +110,66 @@ const cornerFade: Variants = {
 
 const textLift = {
   textShadow:
-    "0 1px 8px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.9)",
+    "0 2px 10px rgba(255,255,255,0.9), 0 1px 3px rgba(255,255,255,0.9)",
 } as const;
 
 /* ---------- Static decoration data ---------- */
 
+// UPDATE: Ekstra Elemen Dekorasi untuk Efek "Rame & Mewah"
 const scatterItems = [
-  { top: "12%", left: "10%", type: "bloom", color: "var(--burgundy)" },
-  { top: "28%", left: "88%", type: "leaf", rot: 25 },
-  { top: "52%", left: "6%", type: "bloom", color: "var(--coral)" },
-  { top: "78%", left: "92%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "8%", left: "8%", type: "bloom", color: "var(--burgundy)" },
+  { top: "15%", left: "90%", type: "leaf", rot: 25 },
+  { top: "35%", left: "5%", type: "bloom", color: "var(--coral)" },
+  { top: "45%", left: "95%", type: "leaf", rot: -20 },
+  { top: "60%", left: "10%", type: "leaf", rot: 45 },
+  { top: "72%", left: "88%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "85%", left: "5%", type: "bloom", color: "var(--sage-light)" },
+  { top: "92%", left: "92%", type: "bloom", color: "var(--burgundy)" },
 ] as const;
 
 const sparkles = [
-  { top: "18%", left: "22%" },
-  { top: "45%", left: "80%" },
-  { top: "75%", left: "18%" },
+  { top: "12%", left: "20%" },
+  { top: "28%", left: "78%" },
+  { top: "45%", left: "15%" },
+  { top: "60%", left: "85%" },
+  { top: "80%", left: "25%" },
 ].map((s) => ({ ...s, style: { top: s.top, left: s.left, ...GPU_HINT } }));
 
 const fireflies = [
-  { left: "22%", bottom: "18%", duration: 7, delay: 0 },
-  { left: "78%", bottom: "32%", duration: 8.5, delay: 1.5 },
+  { left: "18%", bottom: "20%", duration: 7, delay: 0 },
+  { left: "82%", bottom: "35%", duration: 8.5, delay: 1.5 },
+  { left: "12%", bottom: "60%", duration: 7.5, delay: 3 },
+  { left: "88%", bottom: "75%", duration: 9, delay: 2 },
 ].map((f) => ({
   ...f,
   style: { left: f.left, bottom: f.bottom, ...GPU_HINT },
 }));
 
 const petals = [
-  { left: "12%", size: 6, duration: 12, delay: 1, color: "var(--sage-light)" },
+  { left: "15%", size: 6, duration: 12, delay: 1, color: "var(--sage-light)" },
+  { left: "45%", size: 12, duration: 15, delay: 5, color: "var(--coral)" },
   {
-    left: "65%",
+    left: "85%",
     size: 7,
     duration: 10.5,
-    delay: 4,
+    delay: 3,
     color: "var(--blush-dark)",
   },
 ].map((p) => ({
   ...p,
   style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
 }));
+
+const goldDusts = [
+  { left: "12%", bottom: "10%", size: 4, duration: 14, delay: 0 },
+  { left: "50%", bottom: "25%", size: 6, duration: 17, delay: 2 },
+  { left: "85%", bottom: "5%", size: 5, duration: 15, delay: 1 },
+];
+
+const butterflies = [
+  { left: "10%", top: "22%", color: "var(--coral)", duration: 16, delay: 0 },
+  { left: "88%", top: "68%", color: "var(--burgundy)", duration: 18, delay: 3 },
+].map((b) => ({ ...b, style: { left: b.left, top: b.top, ...GPU_HINT } }));
 
 const vines = [
   {
@@ -362,6 +388,66 @@ const Firefly = memo(function Firefly({
   );
 });
 
+// UPDATE: Komponen Majestic Ray & Gold Dust
+const GoldDust = memo(function GoldDust({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] ${className}`}
+    />
+  );
+});
+
+const MajesticRay = memo(function MajesticRay() {
+  return (
+    <m.div
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] -translate-x-1/2 -translate-y-1/2 opacity-50"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 70, repeat: Infinity, ease: "linear" }}
+    >
+      <div className="h-[600px] w-[600px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.06)_60deg,transparent_120deg,rgba(212,175,55,0.06)_180deg,transparent_240deg,rgba(212,175,55,0.06)_300deg,transparent_360deg)] blur-3xl lg:h-[800px] lg:w-[800px]" />
+    </m.div>
+  );
+});
+
+const Butterfly = memo(function Butterfly({
+  className = "",
+  color = "var(--coral)",
+}: {
+  className?: string;
+  color?: string;
+}) {
+  return (
+    <svg viewBox="0 0 32 24" className={className} fill="none">
+      <line
+        x1="16"
+        y1="3"
+        x2="16"
+        y2="21"
+        stroke="var(--ink)"
+        strokeWidth="1.1"
+        opacity="0.55"
+      />
+      <ellipse cx="8" cy="9" rx="7.5" ry="6" fill={color} opacity="0.85" />
+      <ellipse cx="8.5" cy="16" rx="5.5" ry="4.5" fill={color} opacity="0.65" />
+      <ellipse cx="24" cy="9" rx="7.5" ry="6" fill={color} opacity="0.85" />
+      <ellipse
+        cx="23.5"
+        cy="16"
+        rx="5.5"
+        ry="4.5"
+        fill={color}
+        opacity="0.65"
+      />
+      <circle cx="8" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
+      <circle cx="24" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
+    </svg>
+  );
+});
+
 const SprigDivider = memo(function SprigDivider({
   className = "",
 }: {
@@ -421,8 +507,8 @@ const GiftIcon = memo(function GiftIcon({
         rx="2"
         stroke="var(--burgundy)"
         strokeWidth="1.5"
-        fill="var(--blush)"
-        fillOpacity="0.3"
+        fill="var(--mustard)"
+        fillOpacity="0.2"
       />
       <path d="M3 12h18" stroke="var(--burgundy)" strokeWidth="1.5" />
       <path d="M12 8v13" stroke="var(--burgundy)" strokeWidth="1.5" />
@@ -435,6 +521,12 @@ const GiftIcon = memo(function GiftIcon({
         d="M12 8c0-2 2-4 4-3s2 3 0 3h-4Z"
         stroke="var(--burgundy)"
         strokeWidth="1.5"
+      />
+      {/* Sparkle di atas gift */}
+      <path
+        d="M18 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"
+        fill="var(--mustard)"
+        opacity="0.8"
       />
     </svg>
   );
@@ -478,10 +570,10 @@ const AmbientDecor = memo(function AmbientDecor() {
             className="pointer-events-none absolute top-[-5%] z-[1]"
             style={p.style}
             animate={{
-              y: ["0vh", "108vh"],
-              x: [0, -14, 10, 0],
+              y: ["0vh", "115vh"],
+              x: [0, -20, 15, 0],
               rotate: [0, -180, -360],
-              opacity: [0, 0.5, 0.5, 0],
+              opacity: [0, 0.6, 0.6, 0],
             }}
             transition={loop(p.duration, p.delay, "linear")}
           >
@@ -495,6 +587,43 @@ const AmbientDecor = memo(function AmbientDecor() {
                 opacity="0.7"
               />
             </svg>
+          </m.div>
+        ))}
+
+        {butterflies.map((b, i) => (
+          <m.div
+            key={`butterfly-${i}`}
+            className="pointer-events-none absolute z-[2] h-5 w-6 lg:h-7 lg:w-9"
+            style={b.style}
+            animate={{
+              x: [0, 30, -15, 40, 0],
+              y: [0, -20, -5, -30, 0],
+              rotate: [0, 6, -5, 4, 0],
+            }}
+            transition={loop(b.duration, b.delay)}
+          >
+            <Butterfly className="h-full w-full" color={b.color} />
+          </m.div>
+        ))}
+
+        {goldDusts.map((g, i) => (
+          <m.div
+            key={`gd-${i}`}
+            className="pointer-events-none absolute z-[15]"
+            style={{
+              left: g.left,
+              bottom: g.bottom,
+              width: g.size,
+              height: g.size,
+            }}
+            animate={{
+              y: ["0vh", "-110vh"],
+              x: [0, 15, -10, 5, 0],
+              opacity: [0, 0.8, 0.4, 0.8, 0],
+            }}
+            transition={loop(g.duration, g.delay, "linear")}
+          >
+            <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
           </m.div>
         ))}
       </div>
@@ -619,14 +748,16 @@ function DigitalEnvelopeSectionInner({
         style={GPU_HINT}
       />
 
+      <MajesticRay />
       <FrameLayers />
       <AmbientDecor />
 
+      {/* max-w-4xl agar grid 2 kolom bisa napas dengan lega di Desktop */}
       <m.div
-        className="relative z-10 flex w-full max-w-2xl flex-col items-center px-2 text-center"
+        className="relative z-10 flex w-full max-w-4xl flex-col items-center px-2 text-center"
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        viewport={{ once: true, amount: 0.15 }}
         variants={containerVariants}
       >
         <m.div
@@ -661,7 +792,7 @@ function DigitalEnvelopeSectionInner({
 
         <m.p
           variants={fadeUp}
-          className="font-script mt-4 text-3xl font-semibold text-ink sm:mt-5 sm:text-5xl"
+          className="font-script mt-4 text-4xl font-semibold text-ink sm:mt-5 sm:text-5xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
           Kado &amp; Angpao Digital
@@ -670,90 +801,113 @@ function DigitalEnvelopeSectionInner({
         <m.div
           variants={fadeUp}
           style={GPU_HINT}
-          className="mt-2 mb-8 sm:mb-12"
+          className="mt-4 mb-8 sm:mb-10"
         >
-          <SprigDivider className="h-4 w-36 sm:w-44" />
+          <SprigDivider className="h-4 w-36 sm:w-44 opacity-80" />
         </m.div>
 
         <m.p
           variants={fadeUp}
-          className="text-xs text-ink/80 max-w-md mx-auto mb-8 leading-relaxed sm:text-sm"
+          className="text-xs text-ink/80 max-w-lg mx-auto mb-10 leading-relaxed sm:text-sm"
         >
           Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Namun
-          jika Anda ingin mengirimkan tanda kasih secara cashless atau kado
+          jika Anda ingin mengirimkan tanda kasih secara{" "}
+          <span className="font-semibold italic">cashless</span> atau kado
           fisik, silakan melalui informasi di bawah ini:
         </m.p>
 
-        {/* Bank Accounts Grid */}
-        <m.div variants={fadeUp} className="w-full flex flex-col gap-4 mb-6">
+        {/* UPDATE: Grid layout Responsif untuk Bank Accounts (2 Kolom di Tablet/Desktop) */}
+        <m.div
+          variants={containerVariants}
+          className="w-full grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8"
+        >
           {accounts.map((acc) => (
-            <div
+            <m.div
+              variants={fadeUp}
               key={acc.id}
-              className="relative rounded-3xl border border-mustard/40 bg-ivory/95 p-6 shadow-[0_12px_40px_rgba(58,54,48,0.08)] text-left sm:p-7 overflow-hidden"
+              className="group relative flex flex-col justify-between rounded-[2rem] border-[1.5px] border-mustard/40 bg-gradient-to-br from-ivory/95 to-white/90 p-6 shadow-[0_15px_40px_rgba(212,175,55,0.08)] backdrop-blur-md text-left transition-all duration-500 hover:shadow-[0_20px_50px_rgba(212,175,55,0.15)] hover:border-mustard/70 hover:-translate-y-1"
             >
-              <div className="absolute inset-0 rounded-3xl shadow-[inset_0_0_15px_rgba(255,255,255,0.7)] pointer-events-none" />
+              <div className="absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,1)] pointer-events-none" />
 
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-serif font-bold text-lg text-burgundy tracking-wide">
-                  {acc.bankName}
-                </span>
-                <GiftIcon className="h-6 w-6" />
-              </div>
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-serif font-bold text-xl text-burgundy tracking-wide">
+                    {acc.bankName}
+                  </span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mustard/10 group-hover:bg-mustard/20 transition-colors">
+                    <GiftIcon className="h-5 w-5" />
+                  </div>
+                </div>
 
-              <div className="mb-4">
-                <p className="text-[11px] uppercase tracking-wider text-ink/60">
-                  No. Rekening
-                </p>
-                <p className="font-mono text-lg font-bold text-ink sm:text-xl tracking-wider">
-                  {acc.accountNumber}
-                </p>
-                <p className="text-xs text-ink/80 mt-0.5">
-                  a.n. {acc.accountHolder}
-                </p>
+                <div className="mb-6">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink/50 mb-1">
+                    No. Rekening
+                  </p>
+                  <p className="font-mono text-xl font-bold text-ink sm:text-2xl tracking-[0.1em]">
+                    {acc.accountNumber}
+                  </p>
+                  <p className="text-xs font-semibold text-ink/80 mt-1">
+                    a.n. {acc.accountHolder}
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => handleCopy(acc.accountNumber, acc.id)}
-                className="w-full rounded-full border border-mustard/60 bg-ivory py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-burgundy shadow-sm transition-colors hover:bg-burgundy hover:text-white"
+                className={`relative w-full rounded-full border py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
+                  copiedId === acc.id
+                    ? "border-sage bg-sage/10 text-sage-dark shadow-inner"
+                    : "border-mustard/60 bg-white/80 text-burgundy shadow-sm hover:bg-gradient-to-r hover:from-burgundy hover:to-[#5e1927] hover:text-white hover:border-transparent hover:shadow-[0_8px_20px_rgba(94,25,39,0.3)]"
+                }`}
               >
                 {copiedId === acc.id
-                  ? "Berhasil Disalin!"
+                  ? "Berhasil Disalin ✓"
                   : "Salin No. Rekening"}
               </button>
-            </div>
+            </m.div>
           ))}
         </m.div>
 
-        {/* Physical Gift Address Card */}
+        {/* UPDATE: Physical Gift Address Card (Full Width) */}
         <m.div
           variants={fadeUp}
-          className="relative w-full rounded-3xl border border-mustard/40 bg-ivory/95 p-6 shadow-[0_12px_40px_rgba(58,54,48,0.08)] text-left sm:p-7 overflow-hidden"
+          className="group relative w-full rounded-[2rem] border-[1.5px] border-mustard/40 bg-gradient-to-b from-white/90 to-ivory/95 p-6 sm:p-8 shadow-[0_15px_40px_rgba(212,175,55,0.08)] backdrop-blur-md text-left transition-all duration-500 hover:shadow-[0_20px_50px_rgba(212,175,55,0.15)] hover:border-mustard/70"
         >
-          <div className="absolute inset-0 rounded-3xl shadow-[inset_0_0_15px_rgba(255,255,255,0.7)] pointer-events-none" />
+          <div className="absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,1)] pointer-events-none" />
 
-          <h4 className="font-serif text-base font-bold text-ink mb-2">
-            Kirim Kado Fisik
-          </h4>
-          <p className="text-xs text-ink/80 leading-relaxed mb-4">
-            <span className="font-semibold text-ink">
-              {giftAddress.recipient}
-            </span>
-            <br />
-            No. HP: {giftAddress.phone}
-            <br />
-            {giftAddress.address}
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div className="flex-1">
+              <h4 className="font-serif text-lg font-bold text-ink mb-3 group-hover:text-burgundy transition-colors">
+                Kirim Kado Fisik
+              </h4>
+              <p className="text-xs text-ink/80 leading-relaxed">
+                <span className="font-semibold text-ink text-sm">
+                  {giftAddress.recipient}
+                </span>
+                <br />
+                <span className="inline-block mt-1 mb-1 opacity-70">
+                  No. HP: {giftAddress.phone}
+                </span>
+                <br />
+                {giftAddress.address}
+              </p>
+            </div>
 
-          <button
-            type="button"
-            onClick={handleCopyAddress}
-            className="w-full rounded-full border border-mustard/60 bg-ivory py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-burgundy shadow-sm transition-colors hover:bg-burgundy hover:text-white"
-          >
-            {copiedAddress
-              ? "Alamat Berhasil Disalin!"
-              : "Salin Alamat Pengiriman"}
-          </button>
+            <div className="shrink-0 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleCopyAddress}
+                className={`relative w-full sm:w-auto rounded-full border px-8 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
+                  copiedAddress
+                    ? "border-sage bg-sage/10 text-sage-dark shadow-inner"
+                    : "border-mustard/60 bg-white/80 text-burgundy shadow-sm hover:bg-gradient-to-r hover:from-burgundy hover:to-[#5e1927] hover:text-white hover:border-transparent hover:shadow-[0_8px_20px_rgba(94,25,39,0.3)]"
+                }`}
+              >
+                {copiedAddress ? "Alamat Disalin ✓" : "Salin Alamat"}
+              </button>
+            </div>
+          </div>
         </m.div>
       </m.div>
     </section>

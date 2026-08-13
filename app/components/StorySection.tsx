@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import Image from "next/image";
 import {
   LazyMotion,
   domAnimation,
@@ -49,6 +50,7 @@ const DEFAULT_MILESTONES: StoryMilestone[] = [
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const GPU_HINT = { willChange: "transform, opacity" } as const;
+const GPU_HINT_OPACITY = { willChange: "opacity" } as const;
 const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
 
@@ -79,8 +81,13 @@ const containerVariants: Variants = {
 };
 
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
+  hidden: { opacity: 0, y: 30, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.8, ease: EASE },
+  },
 };
 
 const vineFade: Variants = {
@@ -99,100 +106,44 @@ const cornerFade: Variants = {
 
 const textLift = {
   textShadow:
-    "0 1px 8px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.9)",
+    "0 2px 10px rgba(255,255,255,0.9), 0 1px 3px rgba(255,255,255,0.9)",
 } as const;
 
-/* ---------- Static decoration data ---------- */
+/* ---------- Static decoration data (trimmed for performance) ---------- */
 
 const scatterItems = [
-  // Membingkai kartu pertama
-  { top: "18%", left: "5%", type: "bloom", color: "var(--burgundy)" },
-  { top: "25%", left: "95%", type: "leaf", rot: 25 },
-
-  // Membingkai kartu kedua (area tengah)
-  { top: "48%", left: "8%", type: "bloom", color: "var(--coral)" },
-  { top: "52%", left: "92%", type: "leaf", rot: -30 },
-
-  // Membingkai kartu ketiga (area bawah)
-  { top: "75%", left: "5%", type: "bloom", color: "var(--blush-dark)" },
-  { top: "82%", left: "95%", type: "leaf", rot: 40 },
-
-  // Tambahan kecil untuk mengisi celah antar kartu
-  { top: "35%", left: "15%", type: "leaf", rot: -10 },
-  { top: "65%", left: "85%", type: "bloom", color: "var(--sage-light)" },
+  { top: "10%", left: "5%", type: "bloom", color: "var(--burgundy)" },
+  { top: "20%", left: "90%", type: "leaf", rot: 25 },
+  { top: "70%", left: "6%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "85%", left: "90%", type: "bloom", color: "var(--sage-light)" },
 ] as const;
 
 const sparkles = [
-  { top: "15%", left: "25%" },
-  { top: "35%", left: "80%" },
-  { top: "65%", left: "18%" },
-  { top: "88%", left: "78%" },
-].map((s) => ({ ...s, style: { top: s.top, left: s.left, ...GPU_HINT } }));
+  { top: "12%", left: "20%", duration: 3.2, delay: 0 },
+  { top: "62%", left: "18%", duration: 3.4, delay: 1 },
+  { top: "82%", left: "78%", duration: 4, delay: 0.3 },
+];
 
 const fireflies = [
-  { left: "20%", bottom: "15%", duration: 7, delay: 0 },
-  { left: "80%", bottom: "30%", duration: 8.5, delay: 1.5 },
+  { left: "18%", bottom: "10%", duration: 7, delay: 0 },
+  { left: "82%", bottom: "35%", duration: 8.5, delay: 1.5 },
   { left: "15%", bottom: "65%", duration: 7.5, delay: 3 },
-  { left: "85%", bottom: "55%", duration: 9, delay: 2 },
-].map((f) => ({
-  ...f,
-  style: { left: f.left, bottom: f.bottom, ...GPU_HINT },
-}));
+];
 
-// --- UPDATE: Parallax Floating Petals 3D ---
 const floatingPetals = [
-  {
-    left: "8%",
-    size: 7,
-    duration: 16,
-    delay: 0,
-    color: "var(--blush-dark)",
-    blur: "blur-[3px]",
-    zIndex: "z-[2]",
-  },
-  {
-    left: "35%",
-    size: 6,
-    duration: 18,
-    delay: 2,
-    color: "var(--coral)",
-    blur: "blur-[3px]",
-    zIndex: "z-[2]",
-  },
-  {
-    left: "75%",
-    size: 14,
-    duration: 13,
-    delay: 4,
-    color: "var(--sage-light)",
-    blur: "blur-none",
-    zIndex: "z-[5]",
-  },
-  {
-    left: "90%",
-    size: 42,
-    duration: 9,
-    delay: 1.5,
-    color: "var(--burgundy)",
-    blur: "blur-[6px]",
-    zIndex: "z-[30]",
-  },
-].map((p) => ({
-  ...p,
-  style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
-}));
+  { left: "8%", size: 7, duration: 16, delay: 0, color: "var(--blush-dark)" },
+  { left: "75%", size: 14, duration: 13, delay: 4, color: "var(--sage-light)" },
+  { left: "15%", size: 25, duration: 11, delay: 5, color: "var(--coral)" },
+];
 
-// --- UPDATE: Partikel Emas Mewah ---
 const goldDusts = [
-  { left: "15%", bottom: "10%", size: 4, duration: 13, delay: 0 },
-  { left: "50%", bottom: "5%", size: 6, duration: 16, delay: 2 },
-  { left: "85%", bottom: "15%", size: 5, duration: 14, delay: 3 },
+  { left: "12%", bottom: "5%", size: 4, duration: 14, delay: 0 },
+  { left: "88%", bottom: "10%", size: 5, duration: 15, delay: 3 },
 ];
 
 const butterflies = [
-  { left: "12%", top: "28%", color: "var(--coral)", duration: 16, delay: 0 },
-  { left: "84%", top: "62%", color: "var(--burgundy)", duration: 18, delay: 3 },
-].map((b) => ({ ...b, style: { left: b.left, top: b.top, ...GPU_HINT } }));
+  { left: "12%", top: "22%", color: "var(--coral)", duration: 16, delay: 0 },
+];
 
 const vines = [
   {
@@ -270,30 +221,18 @@ const cornerOrnaments = [
   {
     cls: "left-2 top-2 sm:left-4 sm:top-4 lg:left-8 lg:top-8",
     rotate: "",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
-    transition: loop(3.6, 0.4),
+    delay: 0.4,
+    duration: 3.6,
   },
   {
     cls: "bottom-2 right-2 sm:bottom-4 sm:right-4 lg:bottom-8 lg:right-8",
     rotate: "rotate-180",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
-    transition: loop(3.9, 0.9),
-  },
-  {
-    cls: "right-2 top-2 sm:right-4 sm:top-4 lg:right-8 lg:top-8",
-    rotate: "rotate-90",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
-    transition: loop(3.3, 1.4),
-  },
-  {
-    cls: "bottom-2 left-2 sm:bottom-4 sm:left-4 lg:bottom-8 lg:left-8",
-    rotate: "-rotate-90",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
-    transition: loop(4.1, 0.2),
+    delay: 0.9,
+    duration: 3.9,
   },
 ];
 
-/* ---------- Small Presentational Pieces ---------- */
+/* ---------- Small presentational pieces ---------- */
 
 const MiniBloom = memo(function MiniBloom({
   className = "",
@@ -401,40 +340,6 @@ const Sparkle = memo(function Sparkle({
   );
 });
 
-const Firefly = memo(function Firefly({
-  className = "",
-}: {
-  className?: string;
-}) {
-  return (
-    <div className={`rounded-full bg-mustard blur-[1.5px] ${className}`} />
-  );
-});
-
-const GoldDust = memo(function GoldDust({
-  className = "",
-}: {
-  className?: string;
-}) {
-  return (
-    <div
-      className={`rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] ${className}`}
-    />
-  );
-});
-
-const MajesticRay = memo(function MajesticRay() {
-  return (
-    <m.div
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] -translate-x-1/2 -translate-y-1/2 opacity-50"
-      animate={{ rotate: 360 }}
-      transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-    >
-      <div className="h-[550px] w-[550px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.06)_60deg,transparent_120deg,rgba(212,175,55,0.06)_180deg,transparent_240deg,rgba(212,175,55,0.06)_300deg,transparent_360deg)] blur-3xl lg:h-[750px] lg:w-[750px]" />
-    </m.div>
-  );
-});
-
 const Butterfly = memo(function Butterfly({
   className = "",
   color = "var(--coral)",
@@ -467,6 +372,16 @@ const Butterfly = memo(function Butterfly({
       <circle cx="8" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
       <circle cx="24" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
     </svg>
+  );
+});
+
+/* Static, non-rotating glow — replaces the previous rotating conic-gradient */
+const AmbientGlow = memo(function AmbientGlow() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.10)_0%,transparent_70%)] blur-2xl lg:h-[620px] lg:w-[620px]"
+    />
   );
 });
 
@@ -526,120 +441,126 @@ const HeartIcon = memo(function HeartIcon({
   );
 });
 
-/* ---------- Ambient Decor & Frames ---------- */
+/* ---------- Ambient decoration ---------- */
 
 const AmbientDecor = memo(function AmbientDecor() {
   return (
-    <>
-      <div className="hidden sm:contents">
-        {scatterItems.map((item, i) => (
-          <div
-            key={`scatter-${i}`}
-            style={{ top: item.top, left: item.left }}
-            className="pointer-events-none absolute z-[1]"
-          >
-            {item.type === "bloom" ? (
-              <MiniBloom className="opacity-80" color={item.color} />
-            ) : (
-              <MiniLeaf className="opacity-70" rot={item.rot} />
-            )}
-          </div>
-        ))}
+    <div className="hidden md:contents">
+      {scatterItems.map((item, i) => (
+        <div
+          key={`scatter-${i}`}
+          style={{ top: item.top, left: item.left }}
+          className="pointer-events-none absolute z-[1]"
+        >
+          {item.type === "bloom" ? (
+            <MiniBloom className="opacity-80" color={item.color} />
+          ) : (
+            <MiniLeaf className="opacity-70" rot={item.rot} />
+          )}
+        </div>
+      ))}
 
-        {sparkles.map((s, i) => (
-          <m.div
-            key={`sparkle-${i}`}
-            className="pointer-events-none absolute z-[1]"
-            style={s.style}
-            animate={{ opacity: [0.15, 0.85, 0.15], scale: [0.6, 1.1, 0.6] }}
-            transition={loop(3 + (i % 3), i * 0.4)}
-          >
-            <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
-          </m.div>
-        ))}
+      {sparkles.map((s, i) => (
+        <div
+          key={`sparkle-${i}`}
+          className="pointer-events-none absolute z-[1] animate-[twinkle_var(--d)_ease-in-out_infinite]"
+          style={
+            {
+              top: s.top,
+              left: s.left,
+              "--d": `${s.duration}s`,
+              animationDelay: `${s.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
+        </div>
+      ))}
 
-        {floatingPetals.map((p, i) => (
-          <m.div
-            key={`petal-${i}`}
-            className={`pointer-events-none absolute top-[-10%] ${p.zIndex} ${p.blur}`}
-            style={p.style}
-            animate={{
-              y: ["0vh", "115vh"],
-              x: [0, p.size > 20 ? 45 : 20, -15, 0],
-              rotate: [0, 180, 360],
-              opacity: [0, 0.75, 0.75, 0],
-            }}
-            transition={loop(p.duration, p.delay, "linear")}
-          >
-            <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
-              <ellipse
-                cx="10"
-                cy="10"
-                rx="6"
-                ry="9"
-                fill={p.color}
-                opacity="0.8"
-              />
-            </svg>
-          </m.div>
-        ))}
+      {floatingPetals.map((p, i) => (
+        <div
+          key={`petal-${i}`}
+          className="pointer-events-none absolute top-[-10%] z-[2] animate-[petal-fall_var(--d)_linear_infinite]"
+          style={
+            {
+              left: p.left,
+              width: p.size,
+              height: p.size,
+              "--d": `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
+            <ellipse
+              cx="10"
+              cy="10"
+              rx="6"
+              ry="9"
+              fill={p.color}
+              opacity="0.8"
+            />
+          </svg>
+        </div>
+      ))}
 
-        {goldDusts.map((g, i) => (
-          <m.div
-            key={`gd-${i}`}
-            className="pointer-events-none absolute z-[15]"
-            style={{
+      {goldDusts.map((g, i) => (
+        <div
+          key={`gd-${i}`}
+          className="pointer-events-none absolute z-[15] animate-[gold-rise_var(--d)_linear_infinite]"
+          style={
+            {
               left: g.left,
               bottom: g.bottom,
               width: g.size,
               height: g.size,
-            }}
-            animate={{
-              y: ["0vh", "-110vh"],
-              x: [0, 15, -10, 5, 0],
-              opacity: [0, 0.8, 0.4, 0.8, 0],
-            }}
-            transition={loop(g.duration, g.delay, "linear")}
-          >
-            <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
-          </m.div>
-        ))}
+              "--d": `${g.duration}s`,
+              animationDelay: `${g.delay}s`,
+            } as React.CSSProperties
+          }
+        >
+          <div className="h-full w-full rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+        </div>
+      ))}
 
-        {butterflies.map((b, i) => (
-          <m.div
-            key={`butterfly-${i}`}
-            className="pointer-events-none absolute z-[2] h-5 w-6 lg:h-7 lg:w-9"
-            style={b.style}
-            animate={{
-              x: [0, 30, -15, 40, 0],
-              y: [0, -20, -5, -30, 0],
-              rotate: [0, 6, -5, 4, 0],
-            }}
-            transition={loop(b.duration, b.delay)}
-          >
-            <Butterfly className="h-full w-full" color={b.color} />
-          </m.div>
-        ))}
-      </div>
+      {fireflies.map((f, i) => (
+        <div
+          key={`firefly-${i}`}
+          className="pointer-events-none absolute z-[1] h-1.5 w-1.5 animate-[firefly-drift_var(--d)_ease-in-out_infinite] lg:h-2 lg:w-2"
+          style={
+            {
+              left: f.left,
+              bottom: f.bottom,
+              "--d": `${f.duration}s`,
+              animationDelay: `${f.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <div className="h-full w-full rounded-full bg-mustard blur-[1.5px]" />
+        </div>
+      ))}
 
-      <div className="contents">
-        {fireflies.map((f, i) => (
-          <m.div
-            key={`firefly-${i}`}
-            className="pointer-events-none absolute z-[1] h-1.5 w-1.5 lg:h-2 lg:w-2"
-            style={f.style}
-            animate={{
-              y: [0, -60, -20, -90, 0],
-              x: [0, 12, -8, 6, 0],
-              opacity: [0, 0.9, 0.4, 0.9, 0],
-            }}
-            transition={loop(f.duration, f.delay)}
-          >
-            <Firefly className="h-full w-full" />
-          </m.div>
-        ))}
-      </div>
-    </>
+      {butterflies.map((b, i) => (
+        <div
+          key={`butterfly-${i}`}
+          className="pointer-events-none absolute z-[2] h-5 w-6 animate-[butterfly-flit_var(--d)_ease-in-out_infinite] lg:h-7 lg:w-9"
+          style={
+            {
+              left: b.left,
+              top: b.top,
+              "--d": `${b.duration}s`,
+              animationDelay: `${b.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <Butterfly className="h-full w-full" color={b.color} />
+        </div>
+      ))}
+    </div>
   );
 });
 
@@ -691,16 +612,16 @@ const FrameLayers = memo(function FrameLayers() {
       {cornerOrnaments.map((c, i) => (
         <div
           key={`cf-${i}`}
-          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
+          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 animate-[ornament-pulse_var(--d)_ease-in-out_infinite] sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
+          style={
+            {
+              "--d": `${c.duration}s`,
+              animationDelay: `${c.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
         >
-          <m.div
-            animate={c.pulse}
-            transition={c.transition}
-            style={GPU_HINT}
-            className="h-full w-full"
-          >
-            <CornerFlourish className="h-full w-full" />
-          </m.div>
+          <CornerFlourish className="h-full w-full" />
         </div>
       ))}
 
@@ -709,31 +630,133 @@ const FrameLayers = memo(function FrameLayers() {
   );
 });
 
-/* ---------- Main Component ---------- */
+/* ---------- Timeline ---------- */
+
+const MilestoneCard = memo(function MilestoneCard({
+  item,
+  isEven,
+}: {
+  item: StoryMilestone;
+  isEven: boolean;
+}) {
+  return (
+    <m.div
+      variants={fadeUp}
+      className={`group relative flex w-full flex-col items-center gap-5 sm:flex-row sm:gap-0 ${
+        isEven ? "sm:flex-row-reverse" : ""
+      }`}
+    >
+      <div
+        className={`ml-14 w-[calc(100%-3.5rem)] rounded-[2rem] border-[1.5px] border-mustard/40 bg-gradient-to-b from-ivory/95 to-white/90 p-5 text-left shadow-[0_15px_40px_rgba(212,175,55,0.08)] backdrop-blur-md transition-shadow duration-500 ease-out hover:shadow-[0_20px_50px_rgba(212,175,55,0.15)] sm:ml-0 sm:w-[calc(50%-3rem)] sm:p-7 ${
+          isEven ? "sm:mr-auto" : "sm:ml-auto"
+        }`}
+      >
+        <div className="pointer-events-none absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,0.9)]" />
+
+        {item.photoUrl && (
+          <div className="relative mb-5 aspect-[16/10] w-full overflow-hidden rounded-2xl border border-mustard/30 shadow-inner">
+            <Image
+              src={item.photoUrl}
+              alt={item.title}
+              fill
+              sizes="(min-width: 640px) 50vw, 90vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/30 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-40" />
+          </div>
+        )}
+
+        <span className="mb-3 inline-block rounded-full border border-mustard/60 bg-white/80 px-4 py-1 text-[9px] font-extrabold tracking-[0.25em] text-burgundy shadow-sm sm:text-[10px]">
+          {item.date}
+        </span>
+        <h3 className="font-serif text-xl font-bold text-ink transition-colors duration-300 group-hover:text-burgundy sm:text-2xl">
+          {item.title}
+        </h3>
+        <p className="mt-2.5 text-xs leading-relaxed text-ink/75 sm:text-sm">
+          {item.description}
+        </p>
+      </div>
+
+      <div className="absolute left-6 z-20 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border-2 border-mustard/70 bg-gradient-to-br from-ivory to-white shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all duration-300 group-hover:scale-110 group-hover:border-burgundy/60 sm:left-1/2 sm:h-14 sm:w-14">
+        <div className="absolute inset-0 rounded-full bg-mustard/20 opacity-0 [.group:hover_&]:animate-[dot-ping_1.6s_ease-out_infinite] [.group:hover_&]:opacity-100" />
+        <HeartIcon className="relative z-10 h-4 w-4 transition-transform group-hover:scale-110 sm:h-5 sm:w-5" />
+      </div>
+    </m.div>
+  );
+});
+
+/* ---------- Main component ---------- */
 
 function StorySectionInner({
   milestones = DEFAULT_MILESTONES,
 }: StorySectionProps) {
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-20 sm:px-6 sm:py-28">
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
+      <style>{`
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.15; transform: scale(0.6); }
+          50% { opacity: 0.85; transform: scale(1.1); }
+        }
+        @keyframes petal-fall {
+          0% { transform: translate3d(0,0,0) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.75; }
+          50% { transform: translate3d(15px, 57vh, 0) rotate(180deg); }
+          90% { opacity: 0.75; }
+          100% { transform: translate3d(0, 115vh, 0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes gold-rise {
+          0% { transform: translate3d(0,0,0); opacity: 0; }
+          15% { opacity: 0.8; }
+          50% { transform: translate3d(8px, -55vh, 0); opacity: 0.4; }
+          85% { opacity: 0.8; }
+          100% { transform: translate3d(0, -110vh, 0); opacity: 0; }
+        }
+        @keyframes firefly-drift {
+          0%, 100% { transform: translate3d(0,0,0); opacity: 0; }
+          25% { transform: translate3d(12px, -60px, 0); opacity: 0.9; }
+          50% { transform: translate3d(-8px, -20px, 0); opacity: 0.4; }
+          75% { transform: translate3d(6px, -90px, 0); opacity: 0.9; }
+        }
+        @keyframes butterfly-flit {
+          0%, 100% { transform: translate3d(0,0,0) rotate(0deg); }
+          25% { transform: translate3d(30px, -20px, 0) rotate(6deg); }
+          50% { transform: translate3d(-15px, -5px, 0) rotate(-5deg); }
+          75% { transform: translate3d(40px, -30px, 0) rotate(4deg); }
+        }
+        @keyframes ornament-pulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.1) rotate(5deg); }
+        }
+        @keyframes dot-ping {
+          0% { transform: scale(1); opacity: 0.75; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          section [style*="animation"], section [class*="animate-"] {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+          }
+        }
+      `}</style>
+
       <div className="pointer-events-none absolute inset-0 z-0">
         <BackgroundPattern className="h-full w-full opacity-[0.26]" />
       </div>
 
-      <m.div
+      <div
         className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-[100px] sm:h-80 sm:w-80"
-        style={GPU_HINT}
+        style={GPU_HINT_OPACITY}
       />
 
-      <MajesticRay />
+      <AmbientGlow />
       <FrameLayers />
       <AmbientDecor />
 
       <m.div
-        className="relative z-10 flex w-full max-w-4xl flex-col items-center px-2 text-center"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        viewport={{ once: true, amount: 0.15 }}
         variants={containerVariants}
       >
         <m.div
@@ -768,7 +791,7 @@ function StorySectionInner({
 
         <m.p
           variants={fadeUp}
-          className="font-script mt-4 text-3xl font-semibold text-ink sm:mt-5 sm:text-5xl"
+          className="font-script mt-4 text-3xl font-semibold text-ink xs:text-4xl sm:mt-5 sm:text-5xl md:text-6xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
           Perjalanan Menuju Halal
@@ -777,68 +800,21 @@ function StorySectionInner({
         <m.div
           variants={fadeUp}
           style={GPU_HINT}
-          className="mt-2 mb-10 sm:mb-14"
+          className="mb-10 mt-4 sm:mb-16"
         >
-          <SprigDivider className="h-4 w-36 sm:w-44" />
+          <SprigDivider className="h-4 w-36 opacity-80 sm:w-44" />
         </m.div>
 
-        {/* Timeline Container dengan Asimetris & Organic Layout */}
-        <div className="relative flex w-full flex-col gap-10 sm:gap-16">
-          {/* Garis Tengah Timeline dengan Gradient Emas */}
-          <div className="absolute bottom-6 left-6 sm:left-1/2 top-6 w-0.5 -translate-x-1/2 bg-gradient-to-b from-mustard/20 via-mustard/70 to-mustard/20" />
+        <div className="relative flex w-full flex-col gap-12 sm:gap-20">
+          <div className="absolute bottom-6 left-6 top-6 w-[2px] -translate-x-1/2 bg-gradient-to-b from-mustard/10 via-mustard/80 to-mustard/10 shadow-[0_0_8px_rgba(212,175,55,0.4)] sm:left-1/2" />
 
-          {milestones.map((item, index) => {
-            const isEven = index % 2 === 0;
-            return (
-              <m.div
-                key={`milestone-${index}`}
-                variants={fadeUp}
-                className={`relative flex flex-col sm:flex-row items-center w-full gap-4 sm:gap-0 ${
-                  isEven ? "sm:flex-row-reverse" : ""
-                }`}
-              >
-                {/* Card Container dengan Efek Rotasi Tipis & Glassmorphism */}
-                <div
-                  className={`w-[calc(100%-3rem)] ml-auto sm:w-[calc(50%-3rem)] rounded-3xl border border-mustard/40 bg-ivory/95 p-5 sm:p-7 shadow-[0_12px_40px_rgba(58,54,48,0.08)] text-left relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
-                    isEven
-                      ? "sm:mr-auto sm:text-left sm:-rotate-1"
-                      : "sm:ml-auto sm:text-left sm:rotate-1"
-                  }`}
-                >
-                  <div className="absolute inset-0 rounded-3xl shadow-[inset_0_0_15px_rgba(255,255,255,0.7)] pointer-events-none" />
-
-                  {/* Foto Arch Mewah di dalam Card */}
-                  {item.photoUrl && (
-                    <div className="relative mb-4 aspect-[16/10] w-full overflow-hidden rounded-2xl border border-mustard/40 shadow-sm">
-                      <img
-                        src={item.photoUrl}
-                        alt={item.title}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-ink/20 via-transparent to-transparent" />
-                    </div>
-                  )}
-
-                  <span className="inline-block rounded-full border border-mustard/50 bg-ivory px-3 py-0.5 text-[9px] font-extrabold tracking-[0.2em] text-burgundy sm:text-[10px] mb-2 shadow-xs">
-                    {item.date}
-                  </span>
-                  <h3 className="font-serif text-lg font-bold text-ink sm:text-xl">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-xs leading-relaxed text-ink/80 sm:text-sm">
-                    {item.description}
-                  </p>
-                </div>
-
-                {/* Central Icon / Dot dengan efek Pulse */}
-                <div className="absolute left-6 sm:left-1/2 -translate-x-1/2 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-mustard/70 bg-ivory shadow-lg z-20">
-                  <div className="absolute inset-0 rounded-full bg-mustard/20 animate-ping opacity-75" />
-                  <HeartIcon className="relative z-10 h-4 w-4 sm:h-5 sm:w-5" />
-                </div>
-              </m.div>
-            );
-          })}
+          {milestones.map((item, index) => (
+            <MilestoneCard
+              key={`milestone-${index}`}
+              item={item}
+              isEven={index % 2 === 0}
+            />
+          ))}
         </div>
       </m.div>
     </section>

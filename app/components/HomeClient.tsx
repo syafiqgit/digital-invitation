@@ -11,11 +11,11 @@ const MUSIC_SRC = "/assets/alex-morgan-wedding-garden-ceremony-glow-578500.mp3";
 const BLOOM_ORIGIN = { xPct: 50, yPct: 40 };
 
 const TIMELINE = {
-  irisDuration: 950,
-  contentFadeDelay: 620,
-  contentFadeDuration: 600,
-  particleTail: 1150,
-  overlayExitDuration: 300,
+  irisDuration: 850,
+  contentFadeDelay: 520,
+  contentFadeDuration: 500,
+  particleTail: 950,
+  overlayExitDuration: 260,
 } as const;
 
 const TOTAL_MS =
@@ -25,29 +25,20 @@ const TOTAL_MS =
     TIMELINE.particleTail,
   ) + TIMELINE.overlayExitDuration;
 
-// Perf: hint transform/opacity (compositor-only) plus clip-path, since the
-// iris-bloom transition animates clip-path directly — without this hint the
-// browser may not promote the layer ahead of time, causing a dropped frame
-// right as the animation starts.
 const gpuLayer: React.CSSProperties = {
   willChange: "transform, opacity, clip-path",
   transform: "translateZ(0)",
   backfaceVisibility: "hidden",
 };
 
-// Perf: both @keyframes blocks used to live inside components that only
-// mount once the user taps "buka undangan" — meaning the browser had to
-// parse fresh CSS at the exact moment the bloom transition needed to run
-// smoothly. Mounting them once, unconditionally, at the root lets the
-// browser parse & cache them well ahead of time.
 const GlobalStyles = memo(function GlobalStyles() {
   return (
     <style>{`
       @keyframes bloomFly {
-        0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.3); }
-        30% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.6), calc(var(--ty) * 0.6), 0) rotate(calc(var(--rot) * 0.5)) scale(1.05); }
-        70% { opacity: 1; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.85)) scale(1); }
-        100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.08), calc(var(--ty) * 1.08), 0) rotate(var(--rot)) scale(0.7); }
+        0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.25); }
+        35% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.55), calc(var(--ty) * 0.55), 0) rotate(calc(var(--rot) * 0.45)) scale(1); }
+        75% { opacity: 0.9; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.8)) scale(0.95); }
+        100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.05), calc(var(--ty) * 1.05), 0) rotate(var(--rot)) scale(0.65); }
       }
       .bloom-particle {
         position: absolute;
@@ -60,9 +51,9 @@ const GlobalStyles = memo(function GlobalStyles() {
         will-change: transform, opacity;
       }
       @keyframes gardenGlowPulse {
-        0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.4); }
-        45% { opacity: 0.6; transform: translate3d(-50%,-50%,0) scale(2.3); }
-        100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(3.1); }
+        0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.35); }
+        50% { opacity: 0.55; transform: translate3d(-50%,-50%,0) scale(2.1); }
+        100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(2.8); }
       }
     `}</style>
   );
@@ -130,7 +121,7 @@ type Particle = {
   size: number;
 };
 
-const PARTICLES_PER_WAVE = 26;
+const PARTICLES_PER_WAVE = 18;
 const WAVE_COUNT = 2;
 
 const PARTICLE_COLORS = [
@@ -146,18 +137,18 @@ function buildWave(waveIndex: number): Particle[] {
       (i / PARTICLES_PER_WAVE) * Math.PI * 2 +
       (i % 2 ? 0.12 : -0.08) +
       waveIndex * 0.18;
-    const distance = 120 + (i % 5) * 60 + waveIndex * 40;
+    const distance = 90 + (i % 5) * 45 + waveIndex * 30;
     const isLeaf = i % 3 !== 1;
     return {
       id: `${waveIndex}-${i}`,
       kind: isLeaf ? "leaf" : "petal",
       tx: Math.cos(angle) * distance,
       ty: Math.sin(angle) * distance,
-      rot: (isLeaf ? 480 : 220) + ((i * 41 + waveIndex * 30) % 120),
-      delay: waveIndex * 0.16 + (i % 7) * 0.018,
-      duration: 0.95 + (i % 3) * 0.08,
+      rot: (isLeaf ? 420 : 200) + ((i * 41 + waveIndex * 30) % 100),
+      delay: waveIndex * 0.14 + (i % 7) * 0.016,
+      duration: 0.85 + (i % 3) * 0.07,
       color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
-      size: isLeaf ? 11 + (i % 3) * 4 : 8 + (i % 4) * 4,
+      size: isLeaf ? 9 + (i % 3) * 3 : 7 + (i % 4) * 3,
     };
   });
 }
@@ -253,7 +244,7 @@ function HomeInner() {
   const isOpened = phase !== "cover";
   const isBlooming = phase === "opening" || phase === "content";
 
-  const clipPathVisible = `circle(150% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
+  const clipPathVisible = `circle(140% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
   const clipPathHidden = `circle(0% at ${BLOOM_ORIGIN.xPct}% ${BLOOM_ORIGIN.yPct}%)`;
 
   return (
@@ -270,10 +261,12 @@ function HomeInner() {
             initial={{ opacity: 0, scale: 0.7 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.7 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.35 }}
             aria-label={isMusicPlaying ? "Matikan musik" : "Putar musik"}
-            className="fixed bottom-4 right-4 z-70 flex h-11 w-11 items-center justify-center rounded-full border border-mustard/60 bg-ivory shadow-md sm:h-12 sm:w-12"
+            className="fixed bottom-3 right-3 z-70 flex h-11 w-11 items-center justify-center rounded-full border border-mustard/60 bg-linear-to-b from-ivory to-ivory/90 shadow-[0_4px_14px_rgba(58,54,48,0.12)] backdrop-blur-sm sm:bottom-4 sm:right-4 sm:h-12 sm:w-12"
             style={gpuLayer}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.95 }}
           >
             <m.span
               animate={isMusicPlaying ? { rotate: 360 } : { rotate: 0 }}
@@ -340,9 +333,9 @@ function HomeInner() {
               style={{
                 left: `${BLOOM_ORIGIN.xPct}%`,
                 top: `${BLOOM_ORIGIN.yPct}%`,
-                animation: "gardenGlowPulse 1s ease-out forwards",
+                animation: "gardenGlowPulse 0.9s ease-out forwards",
               }}
-              className="absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/70 blur-3xl"
+              className="absolute h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/65 blur-2xl sm:h-40 sm:w-40"
             />
 
             <BloomParticles />

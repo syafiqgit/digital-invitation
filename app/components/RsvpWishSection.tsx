@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   LazyMotion,
   domAnimation,
@@ -18,6 +18,18 @@ interface WishItem {
   message: string;
   attendance: "hadir" | "tidak";
   date: string;
+}
+
+interface RsvpPayload {
+  name: string;
+  attendance: "hadir" | "tidak";
+  guestCount: string;
+}
+
+interface WishPayload {
+  name: string;
+  message: string;
+  attendance: "hadir" | "tidak";
 }
 
 const INITIAL_WISHES: WishItem[] = [
@@ -38,6 +50,80 @@ const INITIAL_WISHES: WishItem[] = [
     date: "5 menit lalu",
   },
 ];
+
+const WISHES_STORAGE_KEY = "wedding_wishes_v1";
+
+/* =========================================================================
+   DATA LAYER — SIMULATED. Replace these two functions when a real backend
+   exists (Next.js API route, Supabase, Firebase, whatever). Everything
+   below this block is written against the *contract* (async, can throw,
+   returns a definite result) — the calling components don't need to
+   change when you swap the implementation, only these two functions do.
+
+   Current behavior: localStorage + fake latency, so state survives a
+   refresh on the SAME device/browser. This does NOT make the guestbook
+   shared across guests — two different visitors will not see each
+   other's entries until this is backed by a real shared store. Don't
+   ship this to real guests as-is.
+   ========================================================================= */
+
+function readStoredWishes(): WishItem[] {
+  if (typeof window === "undefined") return INITIAL_WISHES;
+  try {
+    const raw = window.localStorage.getItem(WISHES_STORAGE_KEY);
+    if (!raw) return INITIAL_WISHES;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : INITIAL_WISHES;
+  } catch {
+    return INITIAL_WISHES;
+  }
+}
+
+function writeStoredWishes(wishes: WishItem[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(wishes));
+  } catch {
+    // Storage can fail (quota, private mode) — the UI surfaces this via
+    // the thrown error in submitWish, so we don't need to do anything
+    // here except avoid crashing.
+  }
+}
+
+async function submitRsvp(payload: RsvpPayload): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  // TODO: replace with a real request, e.g.
+  // const res = await fetch("/api/rsvp", { method: "POST", body: JSON.stringify(payload) });
+  // if (!res.ok) throw new Error("Gagal mengirim konfirmasi");
+  if (typeof window !== "undefined") {
+    const existing = JSON.parse(
+      window.localStorage.getItem("wedding_rsvp_v1") || "[]",
+    );
+    existing.push({ ...payload, submittedAt: new Date().toISOString() });
+    window.localStorage.setItem("wedding_rsvp_v1", JSON.stringify(existing));
+  }
+}
+
+async function submitWish(payload: WishPayload): Promise<WishItem> {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  // TODO: replace with a real request, e.g.
+  // const res = await fetch("/api/wishes", { method: "POST", body: JSON.stringify(payload) });
+  // if (!res.ok) throw new Error("Gagal mengirim ucapan");
+  // return res.json();
+  const newWish: WishItem = {
+    id: `${Date.now()}`,
+    name: payload.name,
+    message: payload.message,
+    attendance: payload.attendance,
+    date: "Baru saja",
+  };
+  const current = readStoredWishes();
+  const updated = [newWish, ...current];
+  writeStoredWishes(updated);
+  return newWish;
+}
+
+/* ========================================================================= */
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const GPU_HINT = { willChange: "transform, opacity" } as const;
@@ -63,7 +149,7 @@ const makeSway = (
   duration,
 });
 
-/* ---------- Framer Motion variants ---------- */
+/* ---------- Framer Motion variants (entrance only) ---------- */
 
 const containerVariants: Variants = {
   hidden: {},
@@ -71,8 +157,13 @@ const containerVariants: Variants = {
 };
 
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.8, ease: EASE },
+  },
 };
 
 const vineFade: Variants = {
@@ -89,47 +180,59 @@ const cornerFade: Variants = {
   },
 };
 
+const wishItemFade: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
+};
+
 const textLift = {
   textShadow:
-    "0 1px 8px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.9)",
+    "0 2px 10px rgba(255,255,255,0.9), 0 1px 3px rgba(255,255,255,0.9)",
 } as const;
 
 /* ---------- Static decoration data ---------- */
 
 const scatterItems = [
-  { top: "10%", left: "10%", type: "bloom", color: "var(--burgundy)" },
-  { top: "28%", left: "88%", type: "leaf", rot: 25 },
-  { top: "52%", left: "6%", type: "bloom", color: "var(--coral)" },
-  { top: "75%", left: "92%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "8%", left: "12%", type: "bloom", color: "var(--burgundy)" },
+  { top: "18%", left: "85%", type: "leaf", rot: 25 },
+  { top: "45%", left: "5%", type: "bloom", color: "var(--coral)" },
+  { top: "65%", left: "95%", type: "bloom", color: "var(--blush-dark)" },
+  { top: "88%", left: "10%", type: "leaf", rot: -30 },
 ] as const;
 
 const sparkles = [
-  { top: "15%", left: "20%" },
-  { top: "45%", left: "82%" },
-  { top: "72%", left: "15%" },
-].map((s) => ({ ...s, style: { top: s.top, left: s.left, ...GPU_HINT } }));
+  { top: "15%", left: "20%", duration: 3.2, delay: 0 },
+  { top: "40%", left: "82%", duration: 3.6, delay: 0.5 },
+  { top: "70%", left: "18%", duration: 3.4, delay: 1 },
+  { top: "90%", left: "80%", duration: 4, delay: 0.3 },
+];
 
 const fireflies = [
   { left: "20%", bottom: "15%", duration: 7, delay: 0 },
   { left: "80%", bottom: "25%", duration: 8.5, delay: 1.5 },
-].map((f) => ({
-  ...f,
-  style: { left: f.left, bottom: f.bottom, ...GPU_HINT },
-}));
+  { left: "15%", bottom: "70%", duration: 7.5, delay: 3 },
+];
 
 const petals = [
-  { left: "10%", size: 6, duration: 12, delay: 1, color: "var(--sage-light)" },
+  { left: "12%", size: 6, duration: 12, delay: 1, color: "var(--sage-light)" },
   {
-    left: "60%",
+    left: "88%",
     size: 7,
     duration: 10.5,
-    delay: 4,
+    delay: 2,
     color: "var(--blush-dark)",
   },
-].map((p) => ({
-  ...p,
-  style: { left: p.left, width: p.size, height: p.size, ...GPU_HINT },
-}));
+];
+
+const goldDusts = [
+  { left: "10%", bottom: "5%", size: 4, duration: 14, delay: 0 },
+  { left: "90%", bottom: "10%", size: 5, duration: 15, delay: 1 },
+];
+
+const butterflies = [
+  { left: "8%", top: "25%", color: "var(--coral)", duration: 16, delay: 0 },
+  { left: "85%", top: "65%", color: "var(--burgundy)", duration: 18, delay: 3 },
+];
 
 const vines = [
   {
@@ -207,30 +310,18 @@ const cornerOrnaments = [
   {
     cls: "left-2 top-2 sm:left-4 sm:top-4 lg:left-8 lg:top-8",
     rotate: "",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
-    transition: loop(3.6, 0.4),
+    delay: 0.4,
+    duration: 3.6,
   },
   {
     cls: "bottom-2 right-2 sm:bottom-4 sm:right-4 lg:bottom-8 lg:right-8",
     rotate: "rotate-180",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
-    transition: loop(3.9, 0.9),
-  },
-  {
-    cls: "right-2 top-2 sm:right-4 sm:top-4 lg:right-8 lg:top-8",
-    rotate: "rotate-90",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, 5, 0] },
-    transition: loop(3.3, 1.4),
-  },
-  {
-    cls: "bottom-2 left-2 sm:bottom-4 sm:left-4 lg:bottom-8 lg:left-8",
-    rotate: "-rotate-90",
-    pulse: { scale: [1, 1.1, 1], rotate: [0, -5, 0] },
-    transition: loop(4.1, 0.2),
+    delay: 0.9,
+    duration: 3.9,
   },
 ];
 
-/* ---------- Small Presentational Pieces ---------- */
+/* ---------- Small presentational pieces ---------- */
 
 const MiniBloom = memo(function MiniBloom({
   className = "",
@@ -338,13 +429,49 @@ const Sparkle = memo(function Sparkle({
   );
 });
 
-const Firefly = memo(function Firefly({
+const Butterfly = memo(function Butterfly({
   className = "",
+  color = "var(--coral)",
 }: {
   className?: string;
+  color?: string;
 }) {
   return (
-    <div className={`rounded-full bg-mustard blur-[1.5px] ${className}`} />
+    <svg viewBox="0 0 32 24" className={className} fill="none">
+      <line
+        x1="16"
+        y1="3"
+        x2="16"
+        y2="21"
+        stroke="var(--ink)"
+        strokeWidth="1.1"
+        opacity="0.55"
+      />
+      <ellipse cx="8" cy="9" rx="7.5" ry="6" fill={color} opacity="0.85" />
+      <ellipse cx="8.5" cy="16" rx="5.5" ry="4.5" fill={color} opacity="0.65" />
+      <ellipse cx="24" cy="9" rx="7.5" ry="6" fill={color} opacity="0.85" />
+      <ellipse
+        cx="23.5"
+        cy="16"
+        rx="5.5"
+        ry="4.5"
+        fill={color}
+        opacity="0.65"
+      />
+      <circle cx="8" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
+      <circle cx="24" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
+    </svg>
+  );
+});
+
+const MajesticRay = memo(function MajesticRay() {
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] -translate-x-1/2 -translate-y-1/2 opacity-40 animate-[spin_70s_linear_infinite]"
+      style={GPU_HINT}
+    >
+      <div className="h-[700px] w-[700px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.06)_60deg,transparent_120deg,rgba(212,175,55,0.06)_180deg,transparent_240deg,rgba(212,175,55,0.06)_300deg,transparent_360deg)] blur-3xl lg:h-[900px] lg:w-[900px]" />
+    </div>
   );
 });
 
@@ -392,83 +519,156 @@ const SprigDivider = memo(function SprigDivider({
   );
 });
 
-/* ---------- Ambient Decor & Frames ---------- */
+const SpinnerIcon = memo(function SpinnerIcon({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`animate-spin ${className}`}
+      fill="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeOpacity="0.25"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+});
+
+/* ---------- Ambient decoration ---------- */
+/* Pure CSS keyframes — compositor thread only. */
 
 const AmbientDecor = memo(function AmbientDecor() {
   return (
-    <>
-      <div className="hidden sm:contents">
-        {scatterItems.map((item, i) => (
-          <div
-            key={`scatter-${i}`}
-            style={{ top: item.top, left: item.left }}
-            className="pointer-events-none absolute z-[1]"
-          >
-            {item.type === "bloom" ? (
-              <MiniBloom className="opacity-80" color={item.color} />
-            ) : (
-              <MiniLeaf className="opacity-70" rot={item.rot} />
-            )}
-          </div>
-        ))}
+    <div className="hidden sm:contents">
+      {scatterItems.map((item, i) => (
+        <div
+          key={`scatter-${i}`}
+          style={{ top: item.top, left: item.left }}
+          className="pointer-events-none absolute z-[1]"
+        >
+          {item.type === "bloom" ? (
+            <MiniBloom className="opacity-80" color={item.color} />
+          ) : (
+            <MiniLeaf className="opacity-70" rot={item.rot} />
+          )}
+        </div>
+      ))}
 
-        {sparkles.map((s, i) => (
-          <m.div
-            key={`sparkle-${i}`}
-            className="pointer-events-none absolute z-[1]"
-            style={s.style}
-            animate={{ opacity: [0.15, 0.85, 0.15], scale: [0.6, 1.1, 0.6] }}
-            transition={loop(3 + (i % 3), i * 0.4)}
-          >
-            <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
-          </m.div>
-        ))}
+      {sparkles.map((s, i) => (
+        <div
+          key={`sparkle-${i}`}
+          className="pointer-events-none absolute z-[1] animate-[twinkle_var(--d)_ease-in-out_infinite]"
+          style={
+            {
+              top: s.top,
+              left: s.left,
+              "--d": `${s.duration}s`,
+              animationDelay: `${s.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <Sparkle className="h-2.5 w-2.5 lg:h-3.5 lg:w-3.5" />
+        </div>
+      ))}
 
-        {petals.map((p, i) => (
-          <m.div
-            key={`petal-${i}`}
-            className="pointer-events-none absolute top-[-5%] z-[1]"
-            style={p.style}
-            animate={{
-              y: ["0vh", "108vh"],
-              x: [0, -14, 10, 0],
-              rotate: [0, -180, -360],
-              opacity: [0, 0.5, 0.5, 0],
-            }}
-            transition={loop(p.duration, p.delay, "linear")}
-          >
-            <svg viewBox="0 0 20 20" fill="none">
-              <ellipse
-                cx="10"
-                cy="10"
-                rx="6"
-                ry="9"
-                fill={p.color}
-                opacity="0.7"
-              />
-            </svg>
-          </m.div>
-        ))}
-      </div>
+      {petals.map((p, i) => (
+        <div
+          key={`petal-${i}`}
+          className="pointer-events-none absolute top-[-5%] z-[1] animate-[petal-fall-rev_var(--d)_linear_infinite]"
+          style={
+            {
+              left: p.left,
+              width: p.size,
+              height: p.size,
+              "--d": `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
+            <ellipse
+              cx="10"
+              cy="10"
+              rx="6"
+              ry="9"
+              fill={p.color}
+              opacity="0.7"
+            />
+          </svg>
+        </div>
+      ))}
 
-      <div className="contents">
-        {fireflies.map((f, i) => (
-          <m.div
-            key={`firefly-${i}`}
-            className="pointer-events-none absolute z-[1] h-1.5 w-1.5 lg:h-2 lg:w-2"
-            style={f.style}
-            animate={{
-              y: [0, -60, -20, -90, 0],
-              x: [0, 12, -8, 6, 0],
-              opacity: [0, 0.9, 0.4, 0.9, 0],
-            }}
-            transition={loop(f.duration, f.delay)}
-          >
-            <Firefly className="h-full w-full" />
-          </m.div>
-        ))}
-      </div>
-    </>
+      {butterflies.map((b, i) => (
+        <div
+          key={`butterfly-${i}`}
+          className="pointer-events-none absolute z-[2] h-5 w-6 animate-[butterfly-flit_var(--d)_ease-in-out_infinite] lg:h-7 lg:w-9"
+          style={
+            {
+              left: b.left,
+              top: b.top,
+              "--d": `${b.duration}s`,
+              animationDelay: `${b.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <Butterfly className="h-full w-full" color={b.color} />
+        </div>
+      ))}
+
+      {goldDusts.map((g, i) => (
+        <div
+          key={`gd-${i}`}
+          className="pointer-events-none absolute z-[15] animate-[gold-rise_var(--d)_linear_infinite]"
+          style={
+            {
+              left: g.left,
+              bottom: g.bottom,
+              width: g.size,
+              height: g.size,
+              "--d": `${g.duration}s`,
+              animationDelay: `${g.delay}s`,
+            } as React.CSSProperties
+          }
+        >
+          <div className="h-full w-full rounded-full bg-gradient-to-tr from-mustard to-yellow-200 blur-[1px] shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+        </div>
+      ))}
+
+      {fireflies.map((f, i) => (
+        <div
+          key={`firefly-${i}`}
+          className="pointer-events-none absolute z-[1] h-1.5 w-1.5 animate-[firefly-drift_var(--d)_ease-in-out_infinite] lg:h-2 lg:w-2"
+          style={
+            {
+              left: f.left,
+              bottom: f.bottom,
+              "--d": `${f.duration}s`,
+              animationDelay: `${f.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
+        >
+          <div className="h-full w-full rounded-full bg-mustard blur-[1.5px]" />
+        </div>
+      ))}
+    </div>
   );
 });
 
@@ -520,16 +720,16 @@ const FrameLayers = memo(function FrameLayers() {
       {cornerOrnaments.map((c, i) => (
         <div
           key={`cf-${i}`}
-          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
+          className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 animate-[ornament-pulse_var(--d)_ease-in-out_infinite] sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
+          style={
+            {
+              "--d": `${c.duration}s`,
+              animationDelay: `${c.delay}s`,
+              ...GPU_HINT,
+            } as React.CSSProperties
+          }
         >
-          <m.div
-            animate={c.pulse}
-            transition={c.transition}
-            style={GPU_HINT}
-            className="h-full w-full"
-          >
-            <CornerFlourish className="h-full w-full" />
-          </m.div>
+          <CornerFlourish className="h-full w-full" />
         </div>
       ))}
 
@@ -538,68 +738,434 @@ const FrameLayers = memo(function FrameLayers() {
   );
 });
 
-/* ---------- Main Component ---------- */
+/* ---------- RSVP form ---------- */
 
-function RsvpWishSectionInner() {
-  // RSVP Form State
+function RsvpCard() {
   const [rsvpName, setRsvpName] = useState("");
   const [attendance, setAttendance] = useState<"hadir" | "tidak">("hadir");
   const [guestCount, setGuestCount] = useState("1");
-  const [isRsvpSubmitted, setIsRsvpSubmitted] = useState(false);
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "done" | "error"
+  >("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Wish Form & List State
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!rsvpName.trim()) {
+      setErrorMsg("Nama tidak boleh kosong.");
+      return;
+    }
+    setErrorMsg("");
+    setStatus("submitting");
+    try {
+      await submitRsvp({
+        name: rsvpName.trim(),
+        attendance,
+        guestCount: attendance === "hadir" ? guestCount : "0",
+      });
+      setStatus("done");
+    } catch {
+      setStatus("error");
+      setErrorMsg("Gagal mengirim konfirmasi. Coba lagi.");
+    }
+  };
+
+  return (
+    <m.div
+      variants={fadeUp}
+      className="group relative h-fit w-full rounded-[2rem] border-[1.5px] border-mustard/40 bg-gradient-to-b from-ivory/95 to-white/90 p-6 text-left shadow-[0_15px_40px_rgba(212,175,55,0.08)] backdrop-blur-md transition-shadow duration-500 hover:shadow-[0_20px_50px_rgba(212,175,55,0.15)] sm:p-8"
+    >
+      <div className="pointer-events-none absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,1)]" />
+
+      <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
+        Konfirmasi Kehadiran
+      </h3>
+      <p className="relative z-10 mb-8 text-center text-xs text-ink/70">
+        Merupakan suatu kehormatan bagi kami apabila Anda berkenan hadir.
+      </p>
+
+      <div className="relative z-10">
+        {status === "done" ? (
+          <div className="rounded-2xl border border-mustard/50 bg-gradient-to-r from-blush/20 to-white/50 p-6 text-center shadow-inner">
+            <p className="font-serif text-xl font-bold text-burgundy">
+              Terima Kasih, {rsvpName}!
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-ink/80">
+              Konfirmasi kehadiran Anda (
+              <span className="font-bold">
+                {attendance === "hadir" ? "Hadir" : "Berhalangan"}
+              </span>
+              ) telah tercatat.
+            </p>
+            <button
+              type="button"
+              onClick={() => setStatus("idle")}
+              className="mt-5 rounded-full border border-burgundy/30 bg-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-burgundy transition-all hover:bg-burgundy hover:text-white"
+            >
+              Ubah Konfirmasi
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="flex flex-col gap-5"
+          >
+            <div>
+              <label
+                htmlFor="rsvp-name"
+                className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-ink/70"
+              >
+                Nama Lengkap Tamu
+              </label>
+              <input
+                id="rsvp-name"
+                type="text"
+                value={rsvpName}
+                onChange={(e) => setRsvpName(e.target.value)}
+                placeholder="Ketik nama Anda di sini..."
+                aria-invalid={Boolean(errorMsg)}
+                className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-sm text-ink shadow-inner outline-none transition-all placeholder:text-ink/40 focus:bg-white focus:ring-2 focus:ring-mustard/50"
+              />
+              {errorMsg && (
+                <p
+                  role="alert"
+                  className="mt-1.5 text-[11px] font-medium text-burgundy"
+                >
+                  {errorMsg}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="rsvp-attendance"
+                  className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-ink/70"
+                >
+                  Kehadiran
+                </label>
+                <select
+                  id="rsvp-attendance"
+                  value={attendance}
+                  onChange={(e) =>
+                    setAttendance(e.target.value as "hadir" | "tidak")
+                  }
+                  className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-sm text-ink shadow-inner outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50"
+                >
+                  <option value="hadir">Hadir, insya Allah</option>
+                  <option value="tidak">Maaf, berhalangan</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="rsvp-guest-count"
+                  className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-ink/70"
+                >
+                  Jumlah Tamu
+                </label>
+                <select
+                  id="rsvp-guest-count"
+                  value={guestCount}
+                  onChange={(e) => setGuestCount(e.target.value)}
+                  disabled={attendance === "tidak"}
+                  className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-sm text-ink shadow-inner outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="1">1 Orang</option>
+                  <option value="2">2 Orang</option>
+                  <option value="3">3 Orang</option>
+                </select>
+              </div>
+            </div>
+
+            {status === "error" && (
+              <p
+                role="alert"
+                className="text-center text-[11px] font-medium text-burgundy"
+              >
+                {errorMsg}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={status === "submitting"}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-burgundy to-[#5e1927] py-4 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-[0_8px_20px_rgba(94,25,39,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_25px_rgba(94,25,39,0.4)] active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
+            >
+              {status === "submitting" && <SpinnerIcon className="h-4 w-4" />}
+              {status === "submitting" ? "Mengirim..." : "Kirim Konfirmasi"}
+            </button>
+          </form>
+        )}
+      </div>
+    </m.div>
+  );
+}
+
+/* ---------- Guestbook ---------- */
+
+function WishCard() {
   const [wishes, setWishes] = useState<WishItem[]>(INITIAL_WISHES);
   const [wishName, setWishName] = useState("");
   const [wishMessage, setWishMessage] = useState("");
   const [wishAttendance, setWishAttendance] = useState<"hadir" | "tidak">(
     "hadir",
   );
-  const [isWishSubmitted, setIsWishSubmitted] = useState(false);
+  const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successBanner, setSuccessBanner] = useState(false);
+  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleRsvpSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!rsvpName.trim()) return;
-    setIsRsvpSubmitted(true);
-  };
-
-  const handleWishSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!wishName.trim() || !wishMessage.trim()) return;
-
-    const newWish: WishItem = {
-      id: Date.now().toString(),
-      name: wishName,
-      message: wishMessage,
-      attendance: wishAttendance,
-      date: "Baru saja",
+  useEffect(() => {
+    setWishes(readStoredWishes());
+    // Cleanup any pending "success banner" timeout on unmount so we never
+    // call setState after this component is gone.
+    return () => {
+      if (bannerTimeoutRef.current) clearTimeout(bannerTimeoutRef.current);
     };
+  }, []);
 
-    setWishes([newWish, ...wishes]);
-    setWishName("");
-    setWishMessage("");
-    setIsWishSubmitted(true);
-    setTimeout(() => setIsWishSubmitted(false), 4000);
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!wishName.trim() || !wishMessage.trim()) {
+      setErrorMsg("Nama dan pesan wajib diisi.");
+      return;
+    }
+    setErrorMsg("");
+    setStatus("submitting");
+    try {
+      const newWish = await submitWish({
+        name: wishName.trim(),
+        message: wishMessage.trim(),
+        attendance: wishAttendance,
+      });
+      setWishes((prev) => [newWish, ...prev]);
+      setWishName("");
+      setWishMessage("");
+      setStatus("idle");
+      setSuccessBanner(true);
+      if (bannerTimeoutRef.current) clearTimeout(bannerTimeoutRef.current);
+      bannerTimeoutRef.current = setTimeout(
+        () => setSuccessBanner(false),
+        4000,
+      );
+    } catch {
+      setStatus("error");
+      setErrorMsg("Gagal mengirim ucapan. Coba lagi.");
+    }
   };
 
   return (
+    <m.div
+      variants={fadeUp}
+      className="group relative flex h-full min-h-[500px] flex-col rounded-[2rem] border-[1.5px] border-mustard/40 bg-gradient-to-b from-white/90 to-ivory/95 p-6 text-left shadow-[0_15px_40px_rgba(212,175,55,0.08)] backdrop-blur-md transition-shadow duration-500 hover:shadow-[0_20px_50px_rgba(212,175,55,0.15)] sm:p-8"
+    >
+      <div className="pointer-events-none absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(255,255,255,1)]" />
+
+      <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
+        Buku Tamu
+      </h3>
+      <p className="relative z-10 mb-8 text-center text-xs text-ink/70">
+        Tuliskan pesan dan doa restu terbaik Anda.
+      </p>
+
+      <div className="relative z-10 flex h-full flex-col">
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className="mb-6 flex flex-col gap-4"
+        >
+          {successBanner && (
+            <div
+              role="status"
+              className="rounded-xl border border-mustard/50 bg-blush/20 p-3 text-center text-[11px] font-semibold text-burgundy"
+            >
+              Ucapan berhasil dikirim!
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="wish-name" className="sr-only">
+                Nama Anda
+              </label>
+              <input
+                id="wish-name"
+                type="text"
+                value={wishName}
+                onChange={(e) => setWishName(e.target.value)}
+                placeholder="Nama Anda"
+                aria-invalid={Boolean(errorMsg)}
+                className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3 text-xs text-ink shadow-inner outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
+              />
+            </div>
+            <div>
+              <label htmlFor="wish-attendance" className="sr-only">
+                Status kehadiran
+              </label>
+              <select
+                id="wish-attendance"
+                value={wishAttendance}
+                onChange={(e) =>
+                  setWishAttendance(e.target.value as "hadir" | "tidak")
+                }
+                className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3 text-xs text-ink shadow-inner outline-none transition-all focus:ring-2 focus:ring-mustard/50"
+              >
+                <option value="hadir">Hadir</option>
+                <option value="tidak">Tidak Hadir</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="wish-message" className="sr-only">
+              Doa restu
+            </label>
+            <textarea
+              id="wish-message"
+              rows={3}
+              value={wishMessage}
+              onChange={(e) => setWishMessage(e.target.value)}
+              placeholder="Tuliskan doa restu..."
+              aria-invalid={Boolean(errorMsg)}
+              className="w-full resize-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3 text-xs text-ink shadow-inner outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
+            />
+          </div>
+
+          {errorMsg && (
+            <p
+              role="alert"
+              className="text-center text-[11px] font-medium text-burgundy"
+            >
+              {errorMsg}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={status === "submitting"}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-ink py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white shadow-lg transition-all hover:bg-ink/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
+          >
+            {status === "submitting" && <SpinnerIcon className="h-3.5 w-3.5" />}
+            {status === "submitting" ? "Mengirim..." : "Kirim Pesan"}
+          </button>
+        </form>
+
+        <div className="flex min-h-0 flex-1 flex-col border-t border-mustard/20 pt-5">
+          <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-ink/50">
+            Daftar Ucapan ({wishes.length})
+          </p>
+
+          <div className="custom-scroll flex flex-1 flex-col gap-3 overflow-y-auto pr-2">
+            {wishes.map((item) => (
+              <m.div
+                key={item.id}
+                variants={wishItemFade}
+                initial="hidden"
+                animate="visible"
+                className="rounded-2xl border border-mustard/30 bg-white/70 p-4 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <span className="font-serif text-sm font-bold leading-tight text-ink">
+                    {item.name}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${
+                      item.attendance === "hadir"
+                        ? "bg-sage-light/50 text-burgundy"
+                        : "bg-coral/20 text-ink/60"
+                    }`}
+                  >
+                    {item.attendance === "hadir" ? "Hadir" : "Berhalangan"}
+                  </span>
+                </div>
+                <p className="mb-2 text-[11px] italic leading-relaxed text-ink/80">
+                  &ldquo;{item.message}&rdquo;
+                </p>
+                <p className="flex justify-end text-[9px] text-ink/40">
+                  {item.date}
+                </p>
+              </m.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </m.div>
+  );
+}
+
+/* ---------- Main component ---------- */
+
+function RsvpWishSectionInner() {
+  return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-20 sm:px-6 sm:py-28">
+      <style>{`
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.4); border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.6); }
+
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.15; transform: scale(0.6); }
+          50% { opacity: 0.85; transform: scale(1.1); }
+        }
+        @keyframes petal-fall-rev {
+          0% { transform: translate3d(0,0,0) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.7; }
+          50% { transform: translate3d(-15px, 57vh, 0) rotate(-180deg); }
+          90% { opacity: 0.7; }
+          100% { transform: translate3d(0, 115vh, 0) rotate(-360deg); opacity: 0; }
+        }
+        @keyframes gold-rise {
+          0% { transform: translate3d(0,0,0); opacity: 0; }
+          15% { opacity: 0.8; }
+          50% { transform: translate3d(8px, -55vh, 0); opacity: 0.4; }
+          85% { opacity: 0.8; }
+          100% { transform: translate3d(0, -110vh, 0); opacity: 0; }
+        }
+        @keyframes firefly-drift {
+          0%, 100% { transform: translate3d(0,0,0); opacity: 0; }
+          25% { transform: translate3d(12px, -60px, 0); opacity: 0.9; }
+          50% { transform: translate3d(-8px, -20px, 0); opacity: 0.4; }
+          75% { transform: translate3d(6px, -90px, 0); opacity: 0.9; }
+        }
+        @keyframes butterfly-flit {
+          0%, 100% { transform: translate3d(0,0,0) rotate(0deg); }
+          25% { transform: translate3d(30px, -20px, 0) rotate(6deg); }
+          50% { transform: translate3d(-15px, -5px, 0) rotate(-5deg); }
+          75% { transform: translate3d(40px, -30px, 0) rotate(4deg); }
+        }
+        @keyframes ornament-pulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.1) rotate(5deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          section [style*="animation"], section [class*="animate-"] {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+          }
+        }
+      `}</style>
+
       <div className="pointer-events-none absolute inset-0 z-0">
         <BackgroundPattern className="h-full w-full opacity-[0.26]" />
       </div>
 
-      <m.div
+      <div
         className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-[100px] sm:h-80 sm:w-80"
         style={GPU_HINT}
       />
 
+      <MajesticRay />
       <FrameLayers />
       <AmbientDecor />
 
       <m.div
-        className="relative z-10 flex w-full max-w-2xl flex-col items-center px-2 text-center"
+        className="relative z-10 flex w-full max-w-5xl flex-col items-center px-2 text-center"
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        viewport={{ once: true, amount: 0.15 }}
         variants={containerVariants}
       >
         <m.div
@@ -634,202 +1200,24 @@ function RsvpWishSectionInner() {
 
         <m.p
           variants={fadeUp}
-          className="font-script mt-4 text-3xl font-semibold text-ink sm:mt-5 sm:text-5xl"
+          className="font-script mt-4 text-4xl font-semibold text-ink sm:mt-5 sm:text-5xl md:text-6xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
-          Konfirmasi Kehadiran &amp; Doa
+          Konfirmasi &amp; Doa
         </m.p>
 
         <m.div
           variants={fadeUp}
           style={GPU_HINT}
-          className="mt-2 mb-8 sm:mb-12"
+          className="mb-10 mt-4 sm:mb-14"
         >
-          <SprigDivider className="h-4 w-36 sm:w-44" />
+          <SprigDivider className="h-4 w-36 opacity-80 sm:w-44" />
         </m.div>
 
-        {/* RSVP Card */}
-        <m.div
-          variants={fadeUp}
-          className="relative w-full rounded-3xl border border-mustard/40 bg-ivory/95 p-6 shadow-[0_12px_40px_rgba(58,54,48,0.08)] text-left sm:p-8 mb-8"
-        >
-          <div className="absolute inset-0 rounded-3xl shadow-[inset_0_0_15px_rgba(255,255,255,0.7)] pointer-events-none" />
-
-          <h3 className="font-serif text-xl font-bold text-ink mb-1 text-center sm:text-2xl">
-            Buku Tamu &amp; RSVP
-          </h3>
-          <p className="text-xs text-ink/70 text-center mb-6">
-            Mohon isi form di bawah ini untuk konfirmasi kehadiran Anda.
-          </p>
-
-          {isRsvpSubmitted ? (
-            <div className="rounded-2xl border border-mustard/50 bg-blush/20 p-6 text-center">
-              <p className="font-serif text-lg font-bold text-burgundy">
-                Terima Kasih, {rsvpName}!
-              </p>
-              <p className="mt-1 text-xs text-ink/80">
-                Konfirmasi kehadiran Anda (
-                {attendance === "hadir" ? "Hadir" : "Berhalangan Hadir"}) telah
-                tercatat dalam simulasi ini.
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsRsvpSubmitted(false)}
-                className="mt-4 rounded-full bg-burgundy px-5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white shadow-md"
-              >
-                Ubah Konfirmasi
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleRsvpSubmit} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-[11px] font-bold tracking-[0.1em] text-ink/80 mb-1.5">
-                  Nama Lengkap
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={rsvpName}
-                  onChange={(e) => setRsvpName(e.target.value)}
-                  placeholder="Masukkan nama Anda"
-                  className="w-full rounded-xl border border-mustard/50 bg-white/80 px-4 py-3 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus:ring-2 focus:ring-burgundy/40"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold tracking-[0.1em] text-ink/80 mb-1.5">
-                    Konfirmasi Kehadiran
-                  </label>
-                  <select
-                    value={attendance}
-                    onChange={(e) =>
-                      setAttendance(e.target.value as "hadir" | "tidak")
-                    }
-                    className="w-full rounded-xl border border-mustard/50 bg-white/80 px-4 py-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-burgundy/40"
-                  >
-                    <option value="hadir">Hadir, dengan senang hati</option>
-                    <option value="tidak">Maaf, berhalangan hadir</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold tracking-[0.1em] text-ink/80 mb-1.5">
-                    Jumlah Tamu
-                  </label>
-                  <select
-                    value={guestCount}
-                    onChange={(e) => setGuestCount(e.target.value)}
-                    className="w-full rounded-xl border border-mustard/50 bg-white/80 px-4 py-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-burgundy/40"
-                  >
-                    <option value="1">1 Orang</option>
-                    <option value="2">2 Orang</option>
-                    <option value="3">3 Orang</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="mt-2 w-full rounded-full bg-burgundy py-3.5 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.98]"
-              >
-                Kirim Konfirmasi
-              </button>
-            </form>
-          )}
-        </m.div>
-
-        {/* Wish / Guestbook Form & List Card */}
-        <m.div
-          variants={fadeUp}
-          className="relative w-full rounded-3xl border border-mustard/40 bg-ivory/95 p-6 shadow-[0_12px_40px_rgba(58,54,48,0.08)] text-left sm:p-8"
-        >
-          <div className="absolute inset-0 rounded-3xl shadow-[inset_0_0_15px_rgba(255,255,255,0.7)] pointer-events-none" />
-
-          <h3 className="font-serif text-xl font-bold text-ink mb-1 text-center sm:text-2xl">
-            Kirimkan Ucapan &amp; Doa
-          </h3>
-          <p className="text-xs text-ink/70 text-center mb-6">
-            Tuliskan pesan dan doa restu untuk kedua mempelai.
-          </p>
-
-          {isWishSubmitted && (
-            <div className="mb-4 rounded-xl border border-mustard/50 bg-blush/20 p-3 text-center text-xs text-burgundy font-semibold">
-              Ucapan berhasil dikirim dan ditambahkan ke daftar di bawah!
-            </div>
-          )}
-
-          <form onSubmit={handleWishSubmit} className="flex flex-col gap-4">
-            <div>
-              <label className="block text-[11px] font-bold tracking-[0.1em] text-ink/80 mb-1.5">
-                Nama
-              </label>
-              <input
-                type="text"
-                required
-                value={wishName}
-                onChange={(e) => setWishName(e.target.value)}
-                placeholder="Nama Anda"
-                className="w-full rounded-xl border border-mustard/50 bg-white/80 px-4 py-3 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus:ring-2 focus:ring-burgundy/40"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold tracking-[0.1em] text-ink/80 mb-1.5">
-                Ucapan &amp; Doa Restu
-              </label>
-              <textarea
-                required
-                rows={3}
-                value={wishMessage}
-                onChange={(e) => setWishMessage(e.target.value)}
-                placeholder="Tuliskan doa atau ucapan selamat..."
-                className="w-full rounded-xl border border-mustard/50 bg-white/80 px-4 py-3 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus:ring-2 focus:ring-burgundy/40 resize-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full rounded-full bg-burgundy py-3.5 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.98]"
-            >
-              Kirim Ucapan
-            </button>
-          </form>
-
-          {/* Wishes List (Scrollable) */}
-          <div className="mt-8 flex flex-col gap-3 max-h-72 overflow-y-auto pr-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-ink/60 mb-1">
-              Daftar Ucapan ({wishes.length})
-            </p>
-            {wishes.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-2xl border border-mustard/30 bg-white/60 p-4 shadow-sm"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-serif font-bold text-ink text-sm">
-                    {item.name}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${
-                        item.attendance === "hadir"
-                          ? "bg-sage-light/40 text-burgundy"
-                          : "bg-coral/20 text-ink/70"
-                      }`}
-                    >
-                      {item.attendance === "hadir" ? "Hadir" : "Berhalangan"}
-                    </span>
-                    <span className="text-[10px] text-ink/50">{item.date}</span>
-                  </div>
-                </div>
-                <p className="text-xs leading-relaxed text-ink/80">
-                  {item.message}
-                </p>
-              </div>
-            ))}
-          </div>
-        </m.div>
+        <div className="grid w-full grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+          <RsvpCard />
+          <WishCard />
+        </div>
       </m.div>
     </section>
   );

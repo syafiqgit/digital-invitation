@@ -21,6 +21,7 @@ interface CoverPageProps {
 }
 
 const GPU_HINT = { willChange: "transform, opacity" } as const;
+const GPU_HINT_OPACITY = { willChange: "opacity" } as const;
 
 const loop = (
   duration: number,
@@ -122,26 +123,16 @@ const containerQueryStyle = {
   containerType: "inline-size",
 } as const;
 
-/* ---------- Static Decoration Data ---------- */
+/* ---------- Static decoration data (trimmed for performance) ---------- */
 
 const petals = [
-  // Layer Belakang (Kecil, lambat, agak blur memberikan kesan jauh)
   {
     left: "12%",
     size: 12,
-    duration: 15,
+    duration: 16,
     delay: 0,
     color: "var(--blush-dark)",
     blur: "blur-[2px]",
-    zIndex: "z-[5]",
-  },
-  {
-    left: "45%",
-    size: 10,
-    duration: 17,
-    delay: 3,
-    color: "var(--burgundy)",
-    blur: "blur-[3px]",
     zIndex: "z-[5]",
   },
   {
@@ -153,23 +144,12 @@ const petals = [
     blur: "blur-[2px]",
     zIndex: "z-[5]",
   },
-
-  // Layer Tengah (Ukuran normal, fokus tajam)
   {
     left: "25%",
     size: 18,
     duration: 12,
     delay: 2,
     color: "var(--coral)",
-    blur: "blur-none",
-    zIndex: "z-[10]",
-  },
-  {
-    left: "65%",
-    size: 16,
-    duration: 13,
-    delay: 4,
-    color: "var(--sage-light)",
     blur: "blur-none",
     zIndex: "z-[10]",
   },
@@ -182,35 +162,22 @@ const petals = [
     blur: "blur-none",
     zIndex: "z-[10]",
   },
-
-  // Layer Depan (Ekstra besar, sangat blur, cepat, melayang di atas konten seolah melewati lensa kamera)
   {
-    left: "5%",
-    size: 45,
-    duration: 8,
-    delay: 1.5,
+    left: "50%",
+    size: 40,
+    duration: 9,
+    delay: 3,
     color: "var(--burgundy)",
     blur: "blur-[6px]",
-    zIndex: "z-[60]",
-  },
-  {
-    left: "92%",
-    size: 55,
-    duration: 9,
-    delay: 5,
-    color: "var(--coral)",
-    blur: "blur-[8px]",
-    zIndex: "z-[60]",
+    zIndex: "z-[40]",
   },
 ] as const;
 
 const sparkles = [
   { top: "10%", left: "12%" },
   { top: "18%", left: "88%" },
-  { top: "35%", left: "15%" },
   { top: "45%", left: "85%" },
   { top: "65%", left: "12%" },
-  { top: "78%", left: "18%" },
   { top: "88%", left: "82%" },
 ] as const;
 
@@ -219,15 +186,12 @@ const fireflies = [
   { left: "80%", bottom: "25%", duration: 8.5, delay: 1.5 },
   { left: "15%", bottom: "60%", duration: 8, delay: 3 },
   { left: "85%", bottom: "50%", duration: 9, delay: 2 },
-  { left: "50%", bottom: "15%", duration: 7.5, delay: 4 },
 ];
 
 const goldDusts = [
-  { left: "15%", bottom: "-10%", size: 4, duration: 12, delay: 0 },
-  { left: "45%", bottom: "-5%", size: 6, duration: 15, delay: 2 },
-  { left: "75%", bottom: "-15%", size: 3, duration: 10, delay: 1 },
-  { left: "85%", bottom: "-10%", size: 5, duration: 14, delay: 3 },
-  { left: "25%", bottom: "-20%", size: 7, duration: 16, delay: 4 },
+  { left: "15%", bottom: "-10%", size: 4, duration: 13, delay: 0 },
+  { left: "50%", bottom: "-5%", size: 6, duration: 15, delay: 2 },
+  { left: "82%", bottom: "-12%", size: 5, duration: 14, delay: 3.5 },
 ];
 
 interface ButterflyConfig {
@@ -245,8 +209,8 @@ const butterflies: ButterflyConfig[] = [
   {
     top: "22%",
     left: "6%",
-    size: 22,
-    duration: 14,
+    size: 20,
+    duration: 15,
     delay: 0,
     color: "var(--blush-dark)",
     path: [0, 40, 10, 55, 0],
@@ -261,16 +225,6 @@ const butterflies: ButterflyConfig[] = [
     color: "var(--coral)",
     path: [0, -35, -8, -45, 0],
     yPath: [0, 20, -15, 15, 0],
-  },
-  {
-    top: "45%",
-    left: "92%",
-    size: 16,
-    duration: 12,
-    delay: 6,
-    color: "var(--burgundy)",
-    path: [0, -30, 5, -20, 0],
-    yPath: [0, -20, 15, -10, 0],
   },
 ];
 
@@ -367,7 +321,7 @@ const cornerOrnaments = [
   },
 ];
 
-/* ---------- Small Presentational Components ---------- */
+/* ---------- Small presentational components ---------- */
 
 const Sparkle = memo(function Sparkle({
   className = "",
@@ -403,15 +357,13 @@ const GoldDust = memo(function GoldDust({
   );
 });
 
-const MajesticRay = memo(function MajesticRay() {
+/* Static, non-rotating glow — replaces the previous rotating conic-gradient  */
+const AmbientRayGlow = memo(function AmbientRayGlow() {
   return (
-    <m.div
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
-      animate={{ rotate: 360 }}
-      transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
-    >
-      <div className="h-[350px] w-[350px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(212,175,55,0.08)_60deg,transparent_120deg,rgba(212,175,55,0.08)_180deg,transparent_240deg,rgba(212,175,55,0.08)_300deg,transparent_360deg)] blur-2xl sm:h-[450px] sm:w-[450px]" />
-    </m.div>
+    <div
+      aria-hidden
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.12)_0%,transparent_72%)] blur-2xl sm:h-[420px] sm:w-[420px]"
+    />
   );
 });
 
@@ -619,17 +571,19 @@ function CoverPageInner({
       >
         <BackgroundPattern className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.16]" />
 
-        {/* --- Watermark Monogram --- */}
-        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-[0.03]">
-          <span className="font-script text-[30rem] leading-none text-ink">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden opacity-[0.035]"
+        >
+          <span className="font-script text-[16rem] leading-none text-ink sm:text-[22rem]">
             A
           </span>
         </div>
 
         <m.div
           className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={loop(30)}
+          animate={{ scale: [1, 1.04, 1] }}
+          transition={loop(40)}
           style={GPU_HINT}
         >
           <Image
@@ -637,22 +591,27 @@ function CoverPageInner({
             alt=""
             fill
             priority
-            quality={90}
+            quality={82}
             sizes="100vw"
-            className="pointer-events-none object-cover opacity-100"
-            style={{ filter: "saturate(1.2) contrast(1.1)" }}
+            className="pointer-events-none object-cover"
+            style={{ filter: "saturate(1.15) contrast(1.06)" }}
           />
         </m.div>
 
-        {/* Elegant Inner Border */}
         <m.div
           variants={borderFade}
           initial="hidden"
           animate="show"
           className="pointer-events-none absolute inset-3 z-[2] rounded-2xl border border-mustard/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] sm:inset-6"
         />
+        <m.div
+          variants={borderFade}
+          initial="hidden"
+          animate="show"
+          transition={{ delay: 0.15 }}
+          className="pointer-events-none absolute inset-5 z-[2] hidden rounded-[1.4rem] border border-dashed border-mustard/20 sm:block sm:inset-8"
+        />
 
-        {/* Vines Layer */}
         {vines.map((v, i) => (
           <m.div
             key={v.key}
@@ -665,7 +624,7 @@ function CoverPageInner({
             <m.div
               animate={{ rotate: v.sway.rotate }}
               transition={vineTransitions[i]}
-              style={{ transformOrigin: v.sway.origin }}
+              style={{ transformOrigin: v.sway.origin, ...GPU_HINT }}
               className="h-full w-full"
             >
               <FloralVine
@@ -677,49 +636,97 @@ function CoverPageInner({
           </m.div>
         ))}
 
-        {/* Luxurious Central Glow */}
         <m.div
           variants={glowVariant}
           initial="hidden"
           animate="show"
-          className="pointer-events-none absolute left-1/2 top-1/2 z-[2] h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl sm:h-72 sm:w-72 lg:h-[28rem] lg:w-[28rem]"
+          className="pointer-events-none absolute left-1/2 top-1/2 z-[2] h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl xs:h-64 xs:w-64 sm:h-72 sm:w-72 lg:h-[26rem] lg:w-[26rem]"
         >
           <m.div
             className="h-full w-full rounded-full bg-blush/40"
             animate={{ opacity: [0.4, 0.8, 0.4] }}
             transition={loop(5, 1.7)}
+            style={GPU_HINT_OPACITY}
           />
         </m.div>
 
-        {/* --- Efek Cahaya Memutar Mewah --- */}
-        <MajesticRay />
+        <AmbientRayGlow />
 
-        {/* Ambient Decor: Petals, Sparkles, Fireflies, Gold Dust */}
-        {petals.map((p, i) => (
-          <m.div
-            key={`petal-${i}`}
-            className={`pointer-events-none absolute top-[-10%] ${p.zIndex} ${p.blur}`}
-            style={{ left: p.left, width: p.size, height: p.size }}
-            animate={{
-              y: ["0vh", "110vh"],
-              x: [0, p.size > 20 ? 45 : 20, -15, 0], // Ayunan lebih lebar untuk layer depan
-              rotate: [0, 180, 360],
-              opacity: [0, 0.85, 0.85, 0],
-            }}
-            transition={loop(p.duration, p.delay, "linear")}
-          >
-            <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
-              <ellipse
-                cx="10"
-                cy="10"
-                rx="6"
-                ry="9"
-                fill={p.color}
-                opacity="0.8"
-              />
-            </svg>
-          </m.div>
-        ))}
+        <div className="hidden sm:contents">
+          {petals.map((p, i) => (
+            <m.div
+              key={`petal-${i}`}
+              className={`pointer-events-none absolute top-[-10%] ${p.zIndex} ${p.blur}`}
+              style={{
+                left: p.left,
+                width: p.size,
+                height: p.size,
+                ...GPU_HINT,
+              }}
+              animate={{
+                y: ["0vh", "110vh"],
+                x: [0, p.size > 20 ? 40 : 16, -12, 0],
+                rotate: [0, 180, 360],
+                opacity: [0, 0.8, 0.8, 0],
+              }}
+              transition={loop(p.duration, p.delay, "linear")}
+            >
+              <svg viewBox="0 0 20 20" fill="none" className="h-full w-full">
+                <ellipse
+                  cx="10"
+                  cy="10"
+                  rx="6"
+                  ry="9"
+                  fill={p.color}
+                  opacity="0.8"
+                />
+              </svg>
+            </m.div>
+          ))}
+
+          {goldDusts.map((g, i) => (
+            <m.div
+              key={`gd-${i}`}
+              className="pointer-events-none absolute z-[12]"
+              style={{
+                left: g.left,
+                bottom: g.bottom,
+                width: g.size,
+                height: g.size,
+              }}
+              animate={{
+                y: ["0vh", "-105vh"],
+                x: [0, 12, -8, 0],
+                opacity: [0, 0.8, 0.4, 0],
+              }}
+              transition={loop(g.duration, g.delay, "linear")}
+            >
+              <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+            </m.div>
+          ))}
+
+          {butterflies.map((b, i) => (
+            <m.div
+              key={`bf-${i}`}
+              className="pointer-events-none absolute z-10"
+              style={{ top: b.top, left: b.left, ...GPU_HINT }}
+              animate={{
+                x: b.path,
+                y: b.yPath,
+                opacity: [0, 0.9, 0.9, 0.9, 0],
+              }}
+              transition={{
+                duration: b.duration,
+                delay: b.delay,
+                repeat: Infinity,
+                ease: "easeInOut",
+                times: [0, 0.25, 0.5, 0.75, 1],
+              }}
+            >
+              <Butterfly size={b.size} color={b.color} />
+            </m.div>
+          ))}
+        </div>
 
         {sparkles.map((s, i) => (
           <div
@@ -730,6 +737,7 @@ function CoverPageInner({
             <m.div
               animate={{ opacity: [0.15, 0.9, 0.15], scale: [0.6, 1.2, 0.6] }}
               transition={loop(2.8 + (i % 3), i * 0.35)}
+              style={GPU_HINT}
             >
               <Sparkle className="h-3 w-3 opacity-90 sm:h-4 sm:w-4" />
             </m.div>
@@ -740,7 +748,7 @@ function CoverPageInner({
           <m.div
             key={`ff-${i}`}
             className="pointer-events-none absolute z-10 h-1.5 w-1.5 sm:h-2 sm:w-2"
-            style={{ left: f.left, bottom: f.bottom }}
+            style={{ left: f.left, bottom: f.bottom, ...GPU_HINT }}
             animate={{
               y: [0, -60, -20, -90, 0],
               x: [0, 12, -8, 6, 0],
@@ -752,47 +760,6 @@ function CoverPageInner({
           </m.div>
         ))}
 
-        {/* --- Partikel Emas Mewah --- */}
-        {goldDusts.map((g, i) => (
-          <m.div
-            key={`gd-${i}`}
-            className="pointer-events-none absolute z-[12]"
-            style={{
-              left: g.left,
-              bottom: g.bottom,
-              width: g.size,
-              height: g.size,
-            }}
-            animate={{
-              y: ["0vh", "-110vh"],
-              x: [0, 15, -10, 5, 0],
-              opacity: [0, 0.8, 0.4, 0.8, 0],
-            }}
-            transition={loop(g.duration, g.delay, "linear")}
-          >
-            <GoldDust className="h-full w-full shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
-          </m.div>
-        ))}
-
-        {butterflies.map((b, i) => (
-          <m.div
-            key={i}
-            className="pointer-events-none absolute z-10"
-            style={{ top: b.top, left: b.left }}
-            animate={{ x: b.path, y: b.yPath, opacity: [0, 0.9, 0.9, 0.9, 0] }}
-            transition={{
-              duration: b.duration,
-              delay: b.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-              times: [0, 0.25, 0.5, 0.75, 1],
-            }}
-          >
-            <Butterfly size={b.size} color={b.color} />
-          </m.div>
-        ))}
-
-        {/* Double Cornering: Luxurious Corner Flourish behind FloralCorner */}
         {cornerOrnaments.map((c, i) => (
           <div
             key={`cf-${i}`}
@@ -801,6 +768,7 @@ function CoverPageInner({
             <m.div
               animate={c.pulse}
               transition={c.transition}
+              style={GPU_HINT}
               className="h-full w-full"
             >
               <CornerFlourish className="h-full w-full" />
@@ -820,7 +788,7 @@ function CoverPageInner({
             <m.div
               animate={{ rotate: c.sway.rotate }}
               transition={cornerTransitions[i]}
-              style={{ transformOrigin: c.sway.origin }}
+              style={{ transformOrigin: c.sway.origin, ...GPU_HINT }}
               className="h-full w-full"
             >
               <FloralCorner className="h-full w-full" flip={c.flip} />
@@ -833,11 +801,11 @@ function CoverPageInner({
           initial="hidden"
           animate="show"
           style={containerQueryStyle}
-          className="relative z-20 flex w-full max-w-sm flex-col items-center px-6 text-center sm:max-w-md sm:px-8 lg:max-w-[640px]"
+          className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 lg:max-w-[640px]"
         >
           <m.span
             variants={fadeUp}
-            className="relative inline-block rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.25em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em]"
+            className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.6rem] font-bold tracking-[0.22em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em]"
           >
             <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
             <span className="relative z-10">UNDANGAN PERNIKAHAN</span>
@@ -845,7 +813,7 @@ function CoverPageInner({
 
           <m.div
             variants={wreathVariant}
-            className="relative mt-4 w-[clamp(270px,92cqw,610px)] sm:mt-5"
+            className="relative mt-4 w-[clamp(250px,92cqw,610px)] sm:mt-5"
           >
             <WreathFrame className="w-full drop-shadow-sm" />
 
@@ -862,7 +830,7 @@ function CoverPageInner({
                 style={{
                   ...textLift,
                   ...nameTextStyle,
-                  fontSize: "clamp(1.5rem, 5.9cqw, 2.6rem)",
+                  fontSize: "clamp(1.4rem, 5.9cqw, 2.6rem)",
                 }}
               >
                 Amelia
@@ -872,12 +840,13 @@ function CoverPageInner({
                 className="relative my-1"
                 animate={{ scale: [1, 1.15, 1] }}
                 transition={loop(2.6, 1.5)}
+                style={GPU_HINT}
               >
                 <p
                   className="font-script font-semibold leading-none text-burgundy"
                   style={{
                     ...textLift,
-                    fontSize: "clamp(0.8rem, 2.7cqw, 1.25rem)",
+                    fontSize: "clamp(0.75rem, 2.7cqw, 1.25rem)",
                   }}
                 >
                   &amp;
@@ -892,7 +861,7 @@ function CoverPageInner({
                 style={{
                   ...textLift,
                   ...nameTextStyle,
-                  fontSize: "clamp(1.4rem, 5.5cqw, 2.5rem)",
+                  fontSize: "clamp(1.3rem, 5.5cqw, 2.5rem)",
                 }}
               >
                 Alexander
@@ -908,28 +877,33 @@ function CoverPageInner({
               animate={{ scale: [1, 1.12, 1], rotate: [0, 6, 0] }}
               transition={loop(3.4, 1.2)}
               className="shrink-0"
+              style={GPU_HINT}
             >
               <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
             </m.div>
-            <span className="text-[0.65rem] font-bold tracking-[0.12em] text-ink sm:text-xs sm:tracking-[0.15em]">
+            <span className="text-[0.62rem] font-bold tracking-[0.1em] text-ink sm:text-xs sm:tracking-[0.15em]">
               SABTU
             </span>
             <span className="font-script text-2xl font-bold text-burgundy sm:text-3xl">
               12
             </span>
-            <span className="text-[0.65rem] font-bold tracking-[0.12em] text-ink sm:text-xs sm:tracking-[0.15em]">
+            <span className="text-[0.62rem] font-bold tracking-[0.1em] text-ink sm:text-xs sm:tracking-[0.15em]">
               DESEMBER 2026
             </span>
             <m.div
               animate={{ scale: [1, 1.12, 1], rotate: [0, -6, 0] }}
               transition={loop(3.7, 1.6)}
               className="shrink-0"
+              style={GPU_HINT}
             >
               <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
             </m.div>
           </m.div>
 
-          <m.div variants={fadeUp} className="mt-5 w-32 sm:mt-6 sm:w-40">
+          <m.div
+            variants={fadeUp}
+            className="mt-5 w-28 xs:w-32 sm:mt-6 sm:w-40"
+          >
             <FlourishDivider className="h-4 w-full" />
           </m.div>
 
@@ -939,10 +913,10 @@ function CoverPageInner({
           >
             <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_12px_rgba(255,255,255,0.7)]" />
             <div className="relative z-10">
-              <p className="text-[0.7rem] font-semibold tracking-[0.06em] text-ink/80 sm:text-xs sm:tracking-[0.08em]">
+              <p className="text-[0.68rem] font-semibold tracking-[0.05em] text-ink/80 sm:text-xs sm:tracking-[0.08em]">
                 Kepada Yth. Bapak/Ibu/Saudara/i
               </p>
-              <p className="mt-1.5 wrap-break-word text-lg font-bold leading-snug text-ink sm:text-xl">
+              <p className="mt-1.5 wrap-break-word text-base font-bold leading-snug text-ink xs:text-lg sm:text-xl">
                 {guestName}
               </p>
             </div>
@@ -957,12 +931,13 @@ function CoverPageInner({
                 className="pointer-events-none absolute inset-0 rounded-full bg-burgundy/60 blur-xl"
                 animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={loop(2.4, 1)}
+                style={GPU_HINT_OPACITY}
               />
               <m.button
                 type="button"
                 onClick={handleOpen}
-                className="relative min-h-12 rounded-full border border-mustard/60 bg-gradient-to-r from-blush-dark to-burgundy px-10 py-4 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-lg sm:px-12 sm:text-xs sm:tracking-[0.25em]"
-                whileHover={{ scale: 1.06 }}
+                className="relative min-h-12 rounded-full border border-mustard/60 bg-gradient-to-r from-blush-dark via-burgundy to-blush-dark bg-[length:200%_100%] px-8 py-4 text-[0.62rem] font-bold tracking-[0.18em] text-white shadow-lg xs:px-10 sm:px-12 sm:text-xs sm:tracking-[0.25em]"
+                whileHover={{ scale: 1.06, backgroundPosition: "100% 0" }}
                 whileTap={{ scale: 0.96 }}
                 style={GPU_HINT}
               >
