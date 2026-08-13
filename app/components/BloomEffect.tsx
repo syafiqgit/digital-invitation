@@ -1,8 +1,9 @@
 "use client";
 
 import { memo, useMemo } from "react";
+import { m } from "framer-motion";
 
-const PARTICLES_PER_WAVE = 18;
+const PARTICLES_PER_WAVE = 12; // Dikurangi dari 18 ke 12 (Total 24) agar lebih ringan tanpa mengurangi estetika
 const WAVE_COUNT = 2;
 const PARTICLE_COLORS = [
   "var(--blush-dark)",
@@ -47,76 +48,54 @@ function buildWave(waveIndex: number): Particle[] {
   });
 }
 
-const GlobalStyles = memo(function GlobalStyles() {
-  return (
-    <style>{`
-      @keyframes bloomFly {
-        0% { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.25); }
-        35% { opacity: 1; transform: translate3d(calc(var(--tx) * 0.55), calc(var(--ty) * 0.55), 0) rotate(calc(var(--rot) * 0.45)) scale(1); }
-        75% { opacity: 0.9; transform: translate3d(var(--tx), var(--ty), 0) rotate(calc(var(--rot) * 0.8)) scale(0.95); }
-        100% { opacity: 0; transform: translate3d(calc(var(--tx) * 1.05), calc(var(--ty) * 1.05), 0) rotate(var(--rot)) scale(0.65); }
-      }
-      .bloom-particle {
-        position: absolute; left: 0; top: 0; transform: translate3d(0,0,0);
-        animation-name: bloomFly; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); animation-fill-mode: both;
-      }
-      @keyframes gardenGlowPulse {
-        0% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(0.35); }
-        50% { opacity: 0.55; transform: translate3d(-50%,-50%,0) scale(2.1); }
-        100% { opacity: 0; transform: translate3d(-50%,-50%,0) scale(2.8); }
-      }
-    `}</style>
-  );
-});
-
 export const BloomParticles = memo(function BloomParticles() {
   const particles = useMemo(
     () => Array.from({ length: WAVE_COUNT }, (_, w) => buildWave(w)).flat(),
     [],
   );
+
   return (
-    <>
-      <GlobalStyles />
-      <div
-        className="pointer-events-none absolute z-70"
-        style={{ left: `${BLOOM_ORIGIN.xPct}%`, top: `${BLOOM_ORIGIN.yPct}%` }}
-      >
-        {particles.map((p) => (
-          <svg
-            key={p.id}
-            viewBox="0 0 20 20"
-            width={p.size}
-            height={p.size}
-            className="bloom-particle -translate-x-1/2 -translate-y-1/2"
-            style={
-              {
-                "--tx": `${p.tx}px`,
-                "--ty": `${p.ty}px`,
-                "--rot": `${p.rot}deg`,
-                animationDelay: `${p.delay}s`,
-                animationDuration: `${p.duration}s`,
-              } as React.CSSProperties
-            }
-          >
-            {p.kind === "leaf" ? (
-              <path
-                d="M10 0 C 16 4, 18 12, 10 20 C 2 12, 4 4, 10 0 Z"
-                fill={p.color}
-                opacity="0.85"
-              />
-            ) : (
-              <ellipse
-                cx="10"
-                cy="10"
-                rx="6"
-                ry="9"
-                fill={p.color}
-                opacity="0.9"
-              />
-            )}
-          </svg>
-        ))}
-      </div>
-    </>
+    <div
+      className="pointer-events-none absolute z-70"
+      style={{ left: `${BLOOM_ORIGIN.xPct}%`, top: `${BLOOM_ORIGIN.yPct}%` }}
+    >
+      {/* Efek Glow diserahkan ke Framer Motion, tidak lagi pakai CSS Keyframes */}
+      <m.div
+        className="absolute h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/65 blur-2xl sm:h-40 sm:w-40"
+        initial={{ opacity: 0, scale: 0.35 }}
+        animate={{ opacity: [0, 0.55, 0], scale: [0.35, 2.1, 2.8] }}
+        transition={{ duration: 0.9, ease: "easeOut" }}
+      />
+
+      {/* Partikel dirender menggunakan DIV murni (Pure CSS Shapes) yang jauh lebih cepat dari SVG */}
+      {particles.map((p) => (
+        <m.div
+          key={p.id}
+          className="absolute left-0 top-0 origin-center"
+          style={{
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            // Membuat bentuk kelopak dan daun hanya dengan border-radius!
+            borderRadius: p.kind === "leaf" ? "0 50% 0 50%" : "50%",
+            marginLeft: -p.size / 2,
+            marginTop: -p.size / 2,
+          }}
+          initial={{ opacity: 0, scale: 0.25, x: 0, y: 0, rotate: 0 }}
+          animate={{
+            opacity: [0, 1, 0.9, 0],
+            x: [0, p.tx * 0.55, p.tx, p.tx * 1.05],
+            y: [0, p.ty * 0.55, p.ty, p.ty * 1.05],
+            rotate: [0, p.rot * 0.45, p.rot * 0.8, p.rot],
+            scale: [0.25, 1, 0.95, 0.65],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        />
+      ))}
+    </div>
   );
 });

@@ -88,7 +88,11 @@ function HomeInner() {
           duration: TIMELINE.irisDuration / 1000,
           ease: [0.16, 1.35, 0.3, 1],
         }}
-        style={{ contain: "paint", transform: "translateZ(0)" }}
+        style={{
+          contain: "paint",
+          transform: "translateZ(0)",
+          willChange: isBlooming ? "clip-path" : "auto",
+        }}
         className="relative z-0"
       >
         {isOpened && (
@@ -122,14 +126,6 @@ function HomeInner() {
               transition: { duration: TIMELINE.overlayExitDuration / 1000 },
             }}
           >
-            <div
-              style={{
-                left: `${BLOOM_ORIGIN.xPct}%`,
-                top: `${BLOOM_ORIGIN.yPct}%`,
-                animation: "gardenGlowPulse 0.9s ease-out forwards",
-              }}
-              className="absolute h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-mustard/65 blur-2xl sm:h-40 sm:w-40"
-            />
             <BloomParticles />
           </m.div>
         )}
