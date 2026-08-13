@@ -20,21 +20,22 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
 
   return (
     <m.div
-      // Animasi exit akan ditangkap oleh AnimatePresence di komponen parent (Home)
-      exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeOut" } }}
+      // Exit animation dikoordinasikan secara ringan lewat opacity murni
+      exit={{ opacity: 0, transition: { duration: 0.4, ease: "easeOut" } }}
       className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-ivory"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         paddingLeft: "env(safe-area-inset-left)",
         paddingRight: "env(safe-area-inset-right)",
-        willChange: "opacity", // Hint ke browser untuk optimasi GPU saat exit
+        willChange: "opacity",
+        transform: "translateZ(0)", // Memaksa akselerasi hardware
       }}
     >
       <CoverBackground />
       <CoverOrnaments />
 
-      {/* Partikel dihapus: Menghilangkan re-render spike di 600ms dan beban GPU/CPU berlebih */}
+      {/* Catatan: CoverParticles dihapus total untuk menjaga kestabilan 60fps mutlak di mobile */}
 
       <m.div
         variants={container}

@@ -33,7 +33,7 @@ const DEFAULT_GROOM_PHOTO = "https://picsum.photos/id/1005/600/800";
 // Custom easing yang sangat smooth dan natural
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-// ✅ OPTIMASI: Stagger yang dipercepat dan dipersingkat
+// Stagger efisien untuk mengurangi beban main-thread
 const containerVariants: Variants = {
   hidden: {},
   visible: {
@@ -41,7 +41,7 @@ const containerVariants: Variants = {
   },
 };
 
-// ✅ OPTIMASI: Fade up ringan (hanya 15px, tidak terlalu jauh agar GPU tidak berat)
+// Fade up ringan (15px) khusus untuk GPU compositing
 const blockFadeUp: Variants = {
   hidden: { opacity: 0, y: 15 },
   visible: {
@@ -81,8 +81,7 @@ function CoupleSectionInner({
         <GrassSilhouette className="h-full w-full" />
       </div>
 
-      {/* ✅ BUNGKUS UTAMA ANIMASI: Menggunakan threshold (amount) kecil 
-          agar animasi terpicu lebih awal sebelum user selesai men-scroll */}
+      {/* Kontainer utama dengan viewport threshold optimal */}
       <m.div
         className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl"
         variants={containerVariants}
@@ -91,7 +90,7 @@ function CoupleSectionInner({
         viewport={{ once: true, amount: 0.15, margin: "0px 0px -10% 0px" }}
       >
         <div className="flex w-full flex-col items-center">
-          {/* BLOK 1: Header & Teks (Dianimasi secara bersamaan dalam 1 grup) */}
+          {/* BLOK 1: Header & Teks Sambutan */}
           <m.div
             variants={blockFadeUp}
             className="flex flex-col items-center gap-1 text-center"
@@ -136,7 +135,7 @@ function CoupleSectionInner({
             <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
           </m.div>
 
-          {/* BLOK 2: Area Foto & Bingkai Tengah */}
+          {/* BLOK 2: Area Foto & Simbol Tengah */}
           <m.div
             variants={blockFadeUp}
             className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 lg:gap-6"
@@ -212,7 +211,7 @@ function CoupleSectionInner({
             </div>
           </m.div>
 
-          {/* BLOK 3: Pembatas Bawah */}
+          {/* BLOK 3: Pembatas Wreath Bawah */}
           <m.div variants={blockFadeUp} className="mt-9 sm:mt-12 lg:mt-16">
             <StaticWreathBand
               flip
@@ -222,18 +221,19 @@ function CoupleSectionInner({
         </div>
       </m.div>
 
+      {/* Keyframes Mikro-animasi yang ditarik oleh GPU (translateZ) */}
       <style>{`
         @keyframes couple-badge-spin-l {
-          0%, 100% { transform: rotate(0deg); }
-          50% { transform: rotate(15deg); }
+          0%, 100% { transform: rotate(0deg) translateZ(0); }
+          50% { transform: rotate(15deg) translateZ(0); }
         }
         @keyframes couple-badge-spin-r {
-          0%, 100% { transform: rotate(0deg); }
-          50% { transform: rotate(-15deg); }
+          0%, 100% { transform: rotate(0deg) translateZ(0); }
+          50% { transform: rotate(-15deg) translateZ(0); }
         }
         @keyframes couple-amp-scale {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.08); }
+          0%, 100% { transform: scale(1) translateZ(0); }
+          50% { transform: scale(1.08) translateZ(0); }
         }
         @keyframes couple-twinkle-pop {
           0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }

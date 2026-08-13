@@ -33,10 +33,7 @@ export const FrameLayers = memo(function FrameLayers() {
           viewport={{ once: true }}
           transition={{ delay: v.delay }}
           className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
-          // OPTIMASI: style={GPU_HINT} dihapus sepenuhnya.
-          // Biarkan Framer Motion yang mengatur rendering engine secara native.
         >
-          {/* OPTIMASI: Div animasi looping "couple-anim-sway" dihapus. */}
           <FloralVine orientation={v.orientation} className="h-full w-full" />
         </m.div>
       ))}
@@ -58,15 +55,12 @@ export const FrameLayers = memo(function FrameLayers() {
       {cornerOrnaments.map((c, i) => (
         <div
           key={`cf-${i}`}
-          // Tetap gunakan div HTML biasa karena tidak dikendalikan Framer Motion,
-          // animasi pulse/looping dihapus agar GPU lega.
           className={`pointer-events-none absolute z-[2] h-10 w-10 opacity-90 sm:h-12 sm:w-12 lg:h-16 lg:w-16 ${c.cls} ${c.rotate}`}
         >
           <CornerFlourish className="h-full w-full" />
         </div>
       ))}
 
-      {/* Frame borders */}
       <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
       <div className="pointer-events-none absolute inset-6 z-[1] hidden rounded-[2.5rem] border border-dashed border-mustard/25 sm:block sm:inset-8 lg:inset-12" />
     </>

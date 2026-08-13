@@ -10,7 +10,6 @@ const GPU_HINT = { willChange: "transform, opacity" } as const;
 export const AmbientDecor = memo(function AmbientDecor() {
   return (
     <div className="hidden md:contents">
-      {/* Elemen statis: Sangat aman untuk performa dan terlihat rapi */}
       {scatterItems.map((item, i) => (
         <div
           key={`scatter-${i}`}
@@ -25,7 +24,6 @@ export const AmbientDecor = memo(function AmbientDecor() {
         </div>
       ))}
 
-      {/* Sparkles: Animasi super ringan karena murni opacity & scale */}
       {sparkles.map((s, i) => (
         <div
           key={`sparkle-${i}`}
