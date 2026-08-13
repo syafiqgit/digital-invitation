@@ -1,6 +1,5 @@
 "use client";
 
-import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import WreathFrame, { WREATH_HOLE } from "./WreathFrame";
 import { AmbientDecor } from "./Ambientdecor";
@@ -25,41 +24,13 @@ interface CoupleSectionProps {
   brideParents?: string;
   groomPhotoUrl?: string;
   bridePhotoUrl?: string;
-  openingAnimation?: boolean;
+  openingAnimation?: boolean; // Sudah tidak dipakai karena kita buat statis murni
 }
 
 const DEFAULT_BRIDE_PHOTO = "https://picsum.photos/id/1027/600/800";
 const DEFAULT_GROOM_PHOTO = "https://picsum.photos/id/1005/600/800";
 
-// Timing function yang smooth
-const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-
-/* ---------- ANIMASI ENTRANCE AMAN (Hanya jalan 1x) ---------- */
-const containerVariants: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.13, delayChildren: 0.05 } },
-};
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 15 }, // Jarak diperkecil agar lebih ringan
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
-};
-
-const fadeIn: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.85, ease: EASE } },
-};
-
-const popIn: Variants = {
-  hidden: { opacity: 0, scale: 0.85 }, // Skala diperkecil agar tidak over render
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.55, ease: EASE, delay: 0.35 },
-  },
-};
-
-function CoupleSectionInner({
+export default function CoupleSection({
   groomName = "Alexander",
   groomFullName = "Alexander",
   groomParents = "Mr. ... & Mrs. ...",
@@ -68,10 +39,7 @@ function CoupleSectionInner({
   brideParents = "Mr. ... & Mrs. ...",
   groomPhotoUrl = DEFAULT_GROOM_PHOTO,
   bridePhotoUrl = DEFAULT_BRIDE_PHOTO,
-  openingAnimation = true,
 }: CoupleSectionProps) {
-  const initialState = openingAnimation ? "hidden" : "visible";
-
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
       <AmbientKeyframes />
@@ -80,7 +48,7 @@ function CoupleSectionInner({
         <BackgroundPattern className="h-full w-full opacity-[0.28]" />
       </div>
 
-      {/* Background Glow Statis (Sangat aman) */}
+      {/* Background Glow Statis */}
       <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem] opacity-70" />
       <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72 opacity-70" />
 
@@ -93,24 +61,15 @@ function CoupleSectionInner({
         <GrassSilhouette className="h-full w-full" />
       </div>
 
-      <m.div
-        className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl"
-        initial={initialState}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.35 }}
-        variants={containerVariants}
-      >
+      <div className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl">
         <div className="flex w-full flex-col items-center">
           <div className="flex flex-col items-center gap-1 text-center">
-            <m.div variants={fadeUp}>
+            <div>
               <StaticWreathBand className="mb-1 h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
-            </m.div>
+            </div>
 
-            <m.div
-              variants={fadeUp}
-              className="flex items-center gap-2 sm:gap-3"
-            >
-              {/* Animasi spin murni rotasi (Aman) */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Animasi spin murni rotasi */}
               <div
                 style={{
                   animation: "couple-badge-spin-l 3.4s ease-in-out infinite",
@@ -146,29 +105,25 @@ function CoupleSectionInner({
                   50% { transform: rotate(-15deg); }
                 }
               `}</style>
-            </m.div>
+            </div>
 
-            <m.p
-              variants={fadeUp}
+            <p
               className="font-script mt-3 max-w-[16rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-base font-semibold leading-snug text-ink backdrop-blur-[2px] xs:text-lg xs:max-w-[18rem] sm:mt-4 sm:max-w-md sm:text-2xl lg:mt-5 lg:text-3xl"
               style={{ textShadow: "0 1px 6px rgba(255,255,255,0.9)" }}
             >
               With joyful hearts, we warmly invite you
-            </m.p>
+            </p>
 
-            <m.div variants={fadeUp}>
+            <div>
               <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
-            </m.div>
+            </div>
           </div>
 
           <div
             className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 lg:gap-6"
             style={{ paddingInline: "clamp(0.75rem, 6vw, 3rem)" }}
           >
-            <m.div
-              variants={fadeIn}
-              className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]"
-            >
+            <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]">
               <ArchPortrait
                 displayName={brideName}
                 fullName={brideFullName}
@@ -178,12 +133,9 @@ function CoupleSectionInner({
                 floatDelay={0}
                 priority
               />
-            </m.div>
+            </div>
 
-            <m.div
-              variants={popIn}
-              className="relative z-20 mb-6 w-14 shrink-0 sm:mb-10 sm:w-24 lg:mb-12 lg:w-40"
-            >
+            <div className="relative z-20 mb-6 w-14 shrink-0 sm:mb-10 sm:w-24 lg:mb-12 lg:w-40">
               <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl opacity-70" />
 
               <WreathFrame className="relative z-10 w-full" />
@@ -199,7 +151,6 @@ function CoupleSectionInner({
                 }}
               >
                 <div className="relative flex items-center justify-center">
-                  {/* Animasi twinkle murni scale & opacity (Aman) */}
                   <div
                     className="absolute -left-2 -top-2"
                     style={{
@@ -245,12 +196,9 @@ function CoupleSectionInner({
                   50% { opacity: 1; transform: scale(1.4) translateZ(0); }
                 }
               `}</style>
-            </m.div>
+            </div>
 
-            <m.div
-              variants={fadeIn}
-              className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]"
-            >
+            <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]">
               <ArchPortrait
                 displayName={groomName}
                 fullName={groomFullName}
@@ -259,25 +207,17 @@ function CoupleSectionInner({
                 align="right"
                 floatDelay={0}
               />
-            </m.div>
+            </div>
           </div>
 
-          <m.div variants={fadeUp} className="mt-9 sm:mt-12 lg:mt-16">
+          <div className="mt-9 sm:mt-12 lg:mt-16">
             <StaticWreathBand
               flip
               className="h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
             />
-          </m.div>
+          </div>
         </div>
-      </m.div>
+      </div>
     </section>
-  );
-}
-
-export default function CoupleSection(props: CoupleSectionProps) {
-  return (
-    <LazyMotion features={domAnimation}>
-      <CoupleSectionInner {...props} />
-    </LazyMotion>
   );
 }
