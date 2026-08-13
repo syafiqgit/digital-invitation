@@ -1,13 +1,18 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import dynamic from "next/dynamic";
 import CoverPage from "./CoverPage";
 import { BloomParticles, BLOOM_ORIGIN } from "./BloomEffect";
 import { FloatingMusic } from "./FloatingMusic";
-const MainContent = dynamic(() => import("./MainContent"), { ssr: false });
+
+// ✅ PRELOAD: Kita gunakan prefetch di latar belakang agar chunk sudah siap sebelum diklik
+const MainContent = dynamic(() => import("./MainContent"), {
+  ssr: false,
+  loading: () => null,
+});
 
 const MUSIC_SRC =
   "/assets/Michael Bublé - L.O.V.E. [Official Audio]_1786599652652.mp3";
@@ -37,16 +42,28 @@ function HomeInner() {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // ✅ Preload script MainContent secara diam-diam begitu halaman cover siap
+  useEffect(() => {
+    const preloadTimeout = setTimeout(() => {
+      // Memicu Next.js untuk memuat chunk MainContent lebih awal di background
+      import("./MainContent");
+    }, 1000);
+    return () => clearTimeout(preloadTimeout);
+  }, []);
+
   const handleOpen = useCallback(() => {
     setPhase("opening");
 
-    // Play music immediately on user interaction
-    if (audioRef.current) {
-      audioRef.current
-        .play()
-        .then(() => setIsMusicPlaying(true))
-        .catch(() => setIsMusicPlaying(false));
-    }
+    // ✅ NON-BLOCKING AUDIO: Berikan jeda satu frame (requestAnimationFrame)
+    // agar animasi pembukaan berjalan mulus 60fps terlebih dahulu sebelum audio diputar.
+    requestAnimationFrame(() => {
+      if (audioRef.current) {
+        audioRef.current
+          .play()
+          .then(() => setIsMusicPlaying(true))
+          .catch(() => setIsMusicPlaying(false));
+      }
+    });
 
     window.setTimeout(() => setPhase("content"), TOTAL_MS);
   }, []);
