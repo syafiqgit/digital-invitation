@@ -10,20 +10,20 @@ interface WishItem {
   id: string;
   name: string;
   message: string;
-  attendance: "hadir" | "tidak";
+  attendance: "attending" | "not_attending";
   date: string;
 }
 
 interface RsvpPayload {
   name: string;
-  attendance: "hadir" | "tidak";
+  attendance: "attending" | "not_attending";
   guestCount: string;
 }
 
 interface WishPayload {
   name: string;
   message: string;
-  attendance: "hadir" | "tidak";
+  attendance: "attending" | "not_attending";
 }
 
 const INITIAL_WISHES: WishItem[] = [
@@ -32,7 +32,7 @@ const INITIAL_WISHES: WishItem[] = [
     name: "John & Family",
     message:
       "Wishing you a lifetime of love and happiness! May your marriage be filled with endless joy.",
-    attendance: "hadir",
+    attendance: "attending",
     date: "Just now",
   },
   {
@@ -40,7 +40,7 @@ const INITIAL_WISHES: WishItem[] = [
     name: "Sarah Jenkins",
     message:
       "Congratulations! Wishing both of you a smooth preparation and a wonderful wedding day.",
-    attendance: "hadir",
+    attendance: "attending",
     date: "5 mins ago",
   },
 ];
@@ -48,7 +48,18 @@ const INITIAL_WISHES: WishItem[] = [
 const WISHES_STORAGE_KEY = "wedding_wishes_v1";
 
 /* =========================================================================
-   DATA LAYER — SIMULATED.
+   DATA LAYER — SIMULATED / MOCK.
+
+   ⚠️ ARCHITECTURAL WARNING (not addressed, out of scope for this
+   responsive change): submitRsvp & submitWish write to localStorage,
+   which is per-browser/per-device. For an invitation shared with many
+   different guests, this means:
+   - The host never actually receives guest RSVP data.
+   - The "Wishes List" shown to each guest only contains dummy data plus
+     that guest's own wish — not other guests' wishes from the same link.
+   Before production, replace submitRsvp/submitWish with calls to an
+   API route + database (or at minimum Google Sheets/Airtable) so data
+   is actually collected in one place and visible to all guests.
    ========================================================================= */
 
 function readStoredWishes(): WishItem[] {
@@ -101,9 +112,11 @@ async function submitWish(payload: WishPayload): Promise<WishItem> {
 /* ========================================================================= */
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const GPU_HINT = { willChange: "transform, opacity" } as const;
 
 /* ---------- Framer Motion variants (entrance only) ---------- */
+// NOTE: permanent manual willChange removed — entrance animation only
+// runs once (viewport once: true), Framer Motion already handles
+// will-change automatically while the animation is active.
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -126,25 +139,24 @@ const wishItemFade: Variants = {
 
 /* ---------- Static decoration data (Optimized) ---------- */
 const vines = [
-  // Instruksi: Animasi sway vine vertikal dimatikan (isAnimated: false)
   {
     key: "left",
     orientation: "vertical" as const,
-    className: "left-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "left-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "",
     isAnimated: false,
   },
   {
     key: "right",
     orientation: "vertical" as const,
-    className: "right-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "right-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
     isAnimated: false,
   },
   {
     key: "top",
     orientation: "horizontal" as const,
-    className: "left-0 top-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "left-0 top-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "",
     origin: "left center",
     endDeg: "0.7deg",
@@ -155,7 +167,7 @@ const vines = [
   {
     key: "bottom",
     orientation: "horizontal" as const,
-    className: "bottom-0 left-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "bottom-0 left-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
     endDeg: "-0.7deg",
@@ -297,12 +309,11 @@ const SpinnerIcon = memo(function SpinnerIcon({
   );
 });
 
-/* Statis menggantikan MajesticRay yang berat */
 const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl lg:h-[620px] lg:w-[620px]"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl md:h-[520px] md:w-[520px] lg:h-[620px] lg:w-[620px]"
     />
   );
 });
@@ -337,7 +348,7 @@ const FrameLayers = memo(function FrameLayers() {
       {corners.map((c) => (
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
             className="h-full w-full animate-sway"
@@ -363,7 +374,9 @@ const FrameLayers = memo(function FrameLayers() {
 /* ---------- RSVP form ---------- */
 function RsvpCard() {
   const [rsvpName, setRsvpName] = useState("");
-  const [attendance, setAttendance] = useState<"hadir" | "tidak">("hadir");
+  const [attendance, setAttendance] = useState<"attending" | "not_attending">(
+    "attending",
+  );
   const [guestCount, setGuestCount] = useState("1");
   const [status, setStatus] = useState<
     "idle" | "submitting" | "done" | "error"
@@ -373,7 +386,7 @@ function RsvpCard() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!rsvpName.trim()) {
-      setErrorMsg("Nama tidak boleh kosong.");
+      setErrorMsg("Name cannot be empty.");
       return;
     }
     setErrorMsg("");
@@ -382,46 +395,46 @@ function RsvpCard() {
       await submitRsvp({
         name: rsvpName.trim(),
         attendance,
-        guestCount: attendance === "hadir" ? guestCount : "0",
+        guestCount: attendance === "attending" ? guestCount : "0",
       });
       setStatus("done");
     } catch {
       setStatus("error");
-      setErrorMsg("Gagal mengirim konfirmasi. Silakan coba lagi.");
+      setErrorMsg("Failed to send confirmation. Please try again.");
     }
   };
 
   return (
     <m.div
       variants={fadeUp}
-      className="group relative h-fit w-full rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:p-8"
+      className="group relative h-fit w-full rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:p-8 md:p-9"
     >
       <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
-        Konfirmasi Kehadiran
+        RSVP Confirmation
       </h3>
       <p className="relative z-10 mb-8 text-center text-sm text-ink/70">
-        Merupakan suatu kehormatan jika Anda berkenan hadir.
+        It would be an honor to have you join us.
       </p>
 
       <div className="relative z-10">
         {status === "done" ? (
           <div className="rounded-2xl border border-mustard/30 bg-white/60 p-6 text-center shadow-inner">
             <p className="font-serif text-xl font-bold text-burgundy">
-              Terima Kasih, {rsvpName}!
+              Thank You, {rsvpName}!
             </p>
             <p className="mt-2 text-sm leading-relaxed text-ink/80">
-              Konfirmasi kehadiran Anda (
+              Your RSVP (
               <span className="font-bold">
-                {attendance === "hadir" ? "Hadir" : "Tidak Hadir"}
+                {attendance === "attending" ? "Attending" : "Not Attending"}
               </span>
-              ) telah kami terima.
+              ) has been received.
             </p>
             <button
               type="button"
               onClick={() => setStatus("idle")}
               className="mt-6 rounded-full border border-burgundy/30 bg-white px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-burgundy transition-all hover:bg-burgundy hover:text-white"
             >
-              Ubah Konfirmasi
+              Edit RSVP
             </button>
           </div>
         ) : (
@@ -435,15 +448,14 @@ function RsvpCard() {
                 htmlFor="rsvp-name"
                 className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-ink/70"
               >
-                Nama Lengkap Tamu
+                Guest Full Name
               </label>
-              {/* UI Fix: text-base (16px) untuk input form mencegah auto-zoom di iOS */}
               <input
                 id="rsvp-name"
                 type="text"
                 value={rsvpName}
                 onChange={(e) => setRsvpName(e.target.value)}
-                placeholder="Ketik nama Anda di sini..."
+                placeholder="Type your name here..."
                 aria-invalid={Boolean(errorMsg)}
                 className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:bg-white focus:ring-2 focus:ring-mustard/50"
               />
@@ -463,18 +475,22 @@ function RsvpCard() {
                   htmlFor="rsvp-attendance"
                   className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-ink/70"
                 >
-                  Kehadiran
+                  Attendance
                 </label>
                 <select
                   id="rsvp-attendance"
                   value={attendance}
                   onChange={(e) =>
-                    setAttendance(e.target.value as "hadir" | "tidak")
+                    setAttendance(
+                      e.target.value as "attending" | "not_attending",
+                    )
                   }
                   className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50"
                 >
-                  <option value="hadir">Ya, InsyaAllah hadir</option>
-                  <option value="tidak">Maaf, tidak bisa hadir</option>
+                  <option value="attending">Yes, I will attend</option>
+                  <option value="not_attending">
+                    Sorry, can&apos;t make it
+                  </option>
                 </select>
               </div>
 
@@ -483,18 +499,18 @@ function RsvpCard() {
                   htmlFor="rsvp-guest-count"
                   className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-ink/70"
                 >
-                  Jumlah Tamu
+                  Number of Guests
                 </label>
                 <select
                   id="rsvp-guest-count"
                   value={guestCount}
                   onChange={(e) => setGuestCount(e.target.value)}
-                  disabled={attendance === "tidak"}
+                  disabled={attendance === "not_attending"}
                   className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="1">1 Orang</option>
-                  <option value="2">2 Orang</option>
-                  <option value="3">3 Orang</option>
+                  <option value="1">1 Person</option>
+                  <option value="2">2 People</option>
+                  <option value="3">3 People</option>
                 </select>
               </div>
             </div>
@@ -514,7 +530,7 @@ function RsvpCard() {
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#6B2A36] py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
             >
               {status === "submitting" && <SpinnerIcon className="h-4 w-4" />}
-              {status === "submitting" ? "MENGIRIM..." : "KIRIM KONFIRMASI"}
+              {status === "submitting" ? "SENDING..." : "SEND RSVP"}
             </button>
           </form>
         )}
@@ -528,9 +544,9 @@ function WishCard() {
   const [wishes, setWishes] = useState<WishItem[]>(INITIAL_WISHES);
   const [wishName, setWishName] = useState("");
   const [wishMessage, setWishMessage] = useState("");
-  const [wishAttendance, setWishAttendance] = useState<"hadir" | "tidak">(
-    "hadir",
-  );
+  const [wishAttendance, setWishAttendance] = useState<
+    "attending" | "not_attending"
+  >("attending");
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [successBanner, setSuccessBanner] = useState(false);
@@ -546,7 +562,7 @@ function WishCard() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!wishName.trim() || !wishMessage.trim()) {
-      setErrorMsg("Nama dan ucapan wajib diisi.");
+      setErrorMsg("Name and message are required.");
       return;
     }
     setErrorMsg("");
@@ -569,20 +585,20 @@ function WishCard() {
       );
     } catch {
       setStatus("error");
-      setErrorMsg("Gagal mengirim ucapan. Silakan coba lagi.");
+      setErrorMsg("Failed to send your message. Please try again.");
     }
   };
 
   return (
     <m.div
       variants={fadeUp}
-      className="group relative flex h-full min-h-[500px] flex-col rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:p-8"
+      className="group relative flex h-full min-h-[420px] flex-col rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:min-h-[480px] sm:p-8 md:p-9"
     >
       <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
-        Buku Tamu &amp; Ucapan
+        Guestbook &amp; Wishes
       </h3>
       <p className="relative z-10 mb-8 text-center text-sm text-ink/70">
-        Tinggalkan doa dan harapan terbaik Anda.
+        Leave your prayers and best wishes for us.
       </p>
 
       <div className="relative z-10 flex h-full flex-col">
@@ -596,53 +612,55 @@ function WishCard() {
               role="status"
               className="rounded-xl border border-mustard/40 bg-green-50 p-3 text-center text-xs font-medium text-green-700"
             >
-              Ucapan berhasil dikirim!
+              Your message was sent successfully!
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="wish-name" className="sr-only">
-                Nama Anda
+                Your Name
               </label>
               <input
                 id="wish-name"
                 type="text"
                 value={wishName}
                 onChange={(e) => setWishName(e.target.value)}
-                placeholder="Nama Anda"
+                placeholder="Your name"
                 aria-invalid={Boolean(errorMsg)}
                 className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
               />
             </div>
             <div>
               <label htmlFor="wish-attendance" className="sr-only">
-                Status Kehadiran
+                Attendance Status
               </label>
               <select
                 id="wish-attendance"
                 value={wishAttendance}
                 onChange={(e) =>
-                  setWishAttendance(e.target.value as "hadir" | "tidak")
+                  setWishAttendance(
+                    e.target.value as "attending" | "not_attending",
+                  )
                 }
                 className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all focus:ring-2 focus:ring-mustard/50"
               >
-                <option value="hadir">Hadir</option>
-                <option value="tidak">Tidak Hadir</option>
+                <option value="attending">Attending</option>
+                <option value="not_attending">Not Attending</option>
               </select>
             </div>
           </div>
 
           <div>
             <label htmlFor="wish-message" className="sr-only">
-              Doa &amp; Ucapan
+              Prayers &amp; Wishes
             </label>
             <textarea
               id="wish-message"
               rows={3}
               value={wishMessage}
               onChange={(e) => setWishMessage(e.target.value)}
-              placeholder="Tuliskan doa & harapan Anda..."
+              placeholder="Write your prayers & wishes..."
               aria-invalid={Boolean(errorMsg)}
               className="w-full resize-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
             />
@@ -663,16 +681,20 @@ function WishCard() {
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-ink py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md transition-transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70 hover:-translate-y-0.5"
           >
             {status === "submitting" && <SpinnerIcon className="h-4 w-4" />}
-            {status === "submitting" ? "MENGIRIM..." : "KIRIM UCAPAN"}
+            {status === "submitting" ? "SENDING..." : "SEND WISH"}
           </button>
         </form>
 
+        {/* FIX: max-h added so the wishes list doesn't grow unbounded on
+            short screens (e.g. when the mobile keyboard is open) —
+            overflow scrolls within its own area instead of pushing the
+            whole card out of the viewport. */}
         <div className="flex min-h-[250px] flex-1 flex-col border-t border-mustard/20 pt-6">
           <p className="mb-4 text-center text-[11px] font-bold uppercase tracking-widest text-ink/50">
-            Daftar Ucapan ({wishes.length})
+            Wishes ({wishes.length})
           </p>
 
-          <div className="custom-scroll flex flex-1 flex-col gap-4 overflow-y-auto pr-2">
+          <div className="custom-scroll flex max-h-[320px] flex-1 flex-col gap-4 overflow-y-auto pr-2 sm:max-h-[360px] md:max-h-[400px]">
             {wishes.map((item) => (
               <m.div
                 key={item.id}
@@ -687,12 +709,14 @@ function WishCard() {
                   </span>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider ${
-                      item.attendance === "hadir"
+                      item.attendance === "attending"
                         ? "bg-sage-light/50 text-burgundy"
                         : "bg-gray-100 text-ink/60"
                     }`}
                   >
-                    {item.attendance === "hadir" ? "Hadir" : "Tidak Hadir"}
+                    {item.attendance === "attending"
+                      ? "Attending"
+                      : "Not Attending"}
                   </span>
                 </div>
                 <p className="mb-3 text-sm italic leading-relaxed text-ink/80">
@@ -713,7 +737,7 @@ function WishCard() {
 /* ---------- Main component ---------- */
 function RsvpWishSectionInner() {
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-20 sm:px-6 sm:py-28">
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-20 sm:px-6 sm:py-28 md:py-32">
       <style>{`
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -742,17 +766,13 @@ function RsvpWishSectionInner() {
       <FrameLayers />
 
       <m.div
-        className="relative z-10 flex w-full max-w-5xl flex-col items-center px-2 text-center"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-5xl"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={containerVariants}
       >
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="flex items-center gap-3"
-        >
+        <m.div variants={fadeUp} className="flex items-center gap-3">
           <div
             className="animate-gentle-pulse"
             style={
@@ -791,20 +811,15 @@ function RsvpWishSectionInner() {
         <m.h2
           variants={fadeUp}
           className="font-script mt-5 text-4xl font-semibold text-ink sm:text-5xl md:text-6xl"
-          style={GPU_HINT}
         >
-          Konfirmasi &amp; Doa
+          RSVP &amp; Wishes
         </m.h2>
 
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="mb-12 mt-6 sm:mb-16"
-        >
+        <m.div variants={fadeUp} className="mb-12 mt-6 sm:mb-16 md:mb-20">
           <SprigDivider className="h-3 w-36 opacity-70 sm:w-44" />
         </m.div>
 
-        <div className="grid w-full grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+        <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:gap-9 lg:gap-10">
           <RsvpCard />
           <WishCard />
         </div>

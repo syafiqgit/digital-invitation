@@ -27,10 +27,13 @@ const DEFAULT_PHOTOS = [
 ];
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const GPU_HINT = { willChange: "transform, opacity" } as const;
-const GPU_HINT_OPACITY = { willChange: "opacity" } as const;
 
 /* ---------- Framer Motion variants (Entrance Only) ---------- */
+// NOTE: willChange manual permanen dihapus dari seluruh file ini (termasuk
+// yang sebelumnya dipasang per-PhotoCard — kalikan jumlah foto di galeri,
+// itu banyak compositor layer yang ditahan browser tanpa batas waktu
+// padahal animasinya cuma sekali, once: true). Framer Motion sudah
+// mengelola will-change otomatis selama animasi berjalan.
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -48,25 +51,24 @@ const fadeUp: Variants = {
 
 /* ---------- Static decoration data (Optimized for CSS Animations) ---------- */
 const vines = [
-  // Instruksi: Animasi sway vine vertikal dimatikan (isAnimated: false)
   {
     key: "left",
     orientation: "vertical" as const,
-    className: "left-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "left-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "",
     isAnimated: false,
   },
   {
     key: "right",
     orientation: "vertical" as const,
-    className: "right-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "right-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
     isAnimated: false,
   },
   {
     key: "top",
     orientation: "horizontal" as const,
-    className: "left-0 top-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "left-0 top-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "",
     origin: "left center",
     endDeg: "0.7deg",
@@ -77,7 +79,7 @@ const vines = [
   {
     key: "bottom",
     orientation: "horizontal" as const,
-    className: "bottom-0 left-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "bottom-0 left-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
     endDeg: "-0.7deg",
@@ -246,7 +248,7 @@ const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl lg:h-[620px] lg:w-[620px]"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl md:h-[520px] md:w-[520px] lg:h-[620px] lg:w-[620px]"
     />
   );
 });
@@ -259,7 +261,6 @@ const FrameLayers = memo(function FrameLayers() {
           key={v.key}
           className={`pointer-events-none absolute z-[2] opacity-70 ${v.className} ${v.flip}`}
         >
-          {/* Implementasi CSS Hardware Acceleration */}
           <div
             className={`h-full w-full ${v.isAnimated ? "animate-sway" : ""}`}
             style={
@@ -282,7 +283,7 @@ const FrameLayers = memo(function FrameLayers() {
       {corners.map((c) => (
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
             className="h-full w-full animate-sway"
@@ -321,10 +322,9 @@ const PhotoCard = memo(function PhotoCard({
       variants={fadeUp}
       onClick={() => onOpen(index)}
       aria-label={`Buka foto galeri ${index + 1}`}
-      className={`group relative aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-mustard/30 bg-white/80 p-2 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-300 ease-out hover:shadow-[0_15px_40px_rgba(212,175,55,0.15)] hover:border-mustard/60 sm:p-3 sm:rounded-[2rem] ${
+      className={`group relative aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-mustard/30 bg-white/80 p-2 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-300 ease-out hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.15)] sm:rounded-[2rem] sm:p-3 ${
         index % 2 !== 0 ? "sm:mt-8 md:mt-4" : ""
       }`}
-      style={GPU_HINT}
     >
       <div className="relative h-full w-full overflow-hidden rounded-xl border border-mustard/20 bg-gray-100">
         <Image
@@ -332,7 +332,7 @@ const PhotoCard = memo(function PhotoCard({
           alt={`Galeri ${index + 1}`}
           fill
           loading="lazy"
-          sizes="(min-width: 768px) 33vw, 50vw"
+          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-burgundy/70 via-ink/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -413,7 +413,6 @@ function Lightbox({
 
         {photos.length > 1 && (
           <>
-            {/* UI Fix: Ukuran touch target dinaikkan ke h-12 w-12 untuk mobile */}
             <button
               type="button"
               onClick={() =>
@@ -460,7 +459,7 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
   const closeLightbox = useCallback(() => setSelectedIndex(null), []);
 
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 xs:px-5 sm:px-6 sm:py-24">
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
       <style>{`
         @keyframes sway {
           0%, 100% { transform: rotate(0deg) translate3d(0,0,0); }
@@ -480,26 +479,19 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
         <BackgroundPattern className="h-full w-full" />
       </div>
 
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sage-light/20 blur-[100px] sm:h-80 sm:w-80"
-        style={GPU_HINT_OPACITY}
-      />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sage-light/20 blur-[100px] sm:h-80 sm:w-80" />
 
       <AmbientGlow />
       <FrameLayers />
 
       <m.div
-        className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl lg:max-w-5xl"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={containerVariants}
       >
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="flex items-center gap-3"
-        >
+        <m.div variants={fadeUp} className="flex items-center gap-3">
           <div
             className="animate-gentle-pulse"
             style={
@@ -538,23 +530,19 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
         <m.h2
           variants={fadeUp}
           className="font-script mt-5 text-4xl font-semibold text-ink sm:text-5xl md:text-6xl"
-          style={GPU_HINT}
         >
           Moment of Togetherness
         </m.h2>
 
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="mb-12 mt-6 sm:mb-16"
-        >
+        <m.div variants={fadeUp} className="mb-12 mt-6 sm:mb-16 md:mb-20">
           <SprigDivider className="h-3 w-36 opacity-70 sm:w-44" />
         </m.div>
 
-        {/* Gallery Grid */}
+        {/* Gallery Grid — ditambah xl:grid-cols-4 supaya di desktop besar
+            foto tidak membesar tanpa kontrol saat container melebar ke xl */}
         <m.div
           variants={containerVariants}
-          className="grid w-full grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:gap-8"
+          className="grid w-full grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 md:gap-7 lg:gap-8 xl:grid-cols-4"
         >
           {photos.map((url, index) => (
             <PhotoCard

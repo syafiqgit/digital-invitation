@@ -25,12 +25,23 @@ interface TimeLeft {
   seconds: number;
 }
 
+interface EventBlockProps {
+  title: string;
+  time: string;
+  venue?: string;
+  address?: string;
+}
+
 // --- CONSTANTS ---
 const DEFAULT_TARGET_DATE = "2026-12-12T08:00:00+07:00";
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const GPU_HINT = { willChange: "transform, opacity" } as const;
 
 // --- FRAMER MOTION VARIANTS (Only for 1-time entrance) ---
+// NOTE: willChange permanen dihapus dari semua elemen statis di bawah ini.
+// Framer Motion sudah otomatis mengelola will-change selama animasi aktif
+// (initial -> whileInView berjalan sekali), jadi override manual permanen
+// di 6 elemen sekaligus cuma memaksa browser menahan compositor layer
+// tanpa batas waktu meski animasi entrance sudah lama selesai.
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -41,31 +52,26 @@ const fadeUp: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
 };
 
-const digitPop: Variants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: EASE } },
-};
-
-// --- STATIC DECORATION DATA (Moved animation logic to CSS vars) ---
+// --- STATIC DECORATION DATA ---
 const vines = [
   {
     key: "left",
     orientation: "vertical" as const,
-    className: "left-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "left-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "",
     isAnimated: false,
   },
   {
     key: "right",
     orientation: "vertical" as const,
-    className: "right-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "right-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
     isAnimated: false,
   },
   {
     key: "top",
     orientation: "horizontal" as const,
-    className: "left-0 top-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "left-0 top-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "",
     origin: "left center",
     endDeg: "0.7deg",
@@ -76,7 +82,7 @@ const vines = [
   {
     key: "bottom",
     orientation: "horizontal" as const,
-    className: "bottom-0 left-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "bottom-0 left-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
     endDeg: "-0.7deg",
@@ -167,7 +173,6 @@ const SprigDivider = memo(function SprigDivider({
   );
 });
 
-// (Asumsikan CalendarIcon dan PinIcon ada, disederhanakan untuk layout)
 const CalendarIcon = memo(() => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none">
     <rect
@@ -229,7 +234,7 @@ const FrameLayers = memo(function FrameLayers() {
       {corners.map((c) => (
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
             className="h-full w-full animate-sway"
@@ -247,12 +252,13 @@ const FrameLayers = memo(function FrameLayers() {
           </div>
         </div>
       ))}
-      <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/20 sm:inset-5" />
+      <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/20 sm:inset-5 md:inset-6" />
     </>
   );
 });
 
-/* ---------- COUNTDOWN ---------- */
+/* ---------- COUNTDOWN (diisolasi supaya tick per detik tidak
+   me-re-render seluruh EventSection, cuma sub-tree ini) ---------- */
 function useCountdown(target: string): TimeLeft {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
@@ -289,8 +295,8 @@ const CountdownDigit = memo(function CountdownDigit({
 }) {
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-mustard/40 bg-white/60 shadow-sm backdrop-blur-sm sm:h-20 sm:w-20">
-        <span className="font-serif relative z-10 text-2xl font-semibold tabular-nums text-burgundy sm:text-3xl">
+      <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-mustard/40 bg-white/60 shadow-sm backdrop-blur-sm sm:h-20 sm:w-20 md:h-24 md:w-24">
+        <span className="font-serif relative z-10 text-2xl font-semibold tabular-nums text-burgundy sm:text-3xl md:text-4xl">
           {String(value).padStart(2, "0")}
         </span>
       </div>
@@ -301,15 +307,32 @@ const CountdownDigit = memo(function CountdownDigit({
   );
 });
 
+// Sub-tree terisolasi: hanya bagian ini yang re-render tiap detik,
+// bukan seluruh EventSectionInner (yang berisi banyak decoration m.div).
+const CountdownTimer = memo(function CountdownTimer({
+  targetDate,
+}: {
+  targetDate: string;
+}) {
+  const timeLeft = useCountdown(targetDate);
+  return (
+    <div className="flex justify-center gap-3 sm:gap-5 md:gap-6">
+      {countdownUnits.map((u) => (
+        <CountdownDigit key={u.key} value={timeLeft[u.key]} label={u.label} />
+      ))}
+    </div>
+  );
+});
+
 /* ---------- EVENT BLOCK ---------- */
 const EventBlock = memo(function EventBlock({
   title,
   time,
   venue,
   address,
-}: any) {
+}: EventBlockProps) {
   return (
-    <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">
+    <div className="flex flex-col items-center gap-3 px-6 py-8 text-center md:px-8 md:py-9">
       <span className="rounded-full border border-mustard/50 bg-white/50 px-5 py-1.5 text-[10px] font-bold tracking-[0.2em] text-burgundy sm:text-xs">
         {title}
       </span>
@@ -330,8 +353,6 @@ function EventSectionInner({
   targetDate = DEFAULT_TARGET_DATE,
   ...props
 }: EventSectionProps) {
-  const timeLeft = useCountdown(targetDate);
-
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-20 sm:px-6">
       {/* 
@@ -356,14 +377,14 @@ function EventSectionInner({
       <FrameLayers />
 
       <m.div
-        className="relative z-10 flex w-full max-w-sm flex-col items-center text-center xs:max-w-md sm:max-w-2xl"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center text-center xs:max-w-md sm:max-w-2xl md:max-w-3xl"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.2 }}
         variants={containerVariants}
       >
         {/* Title */}
-        <m.div variants={fadeUp} style={GPU_HINT}>
+        <m.div variants={fadeUp}>
           <span className="inline-block rounded-full border border-mustard/40 bg-white/60 px-5 py-1.5 text-[10px] font-bold tracking-[0.25em] text-burgundy backdrop-blur-sm sm:px-6 sm:text-xs">
             SAVE THE DATE
           </span>
@@ -372,34 +393,22 @@ function EventSectionInner({
         <m.h2
           variants={fadeUp}
           className="font-script mt-6 text-4xl font-medium text-ink sm:text-5xl md:text-6xl"
-          style={GPU_HINT}
         >
           Saturday, December 12, 2026
         </m.h2>
 
-        <m.div variants={fadeUp} style={GPU_HINT} className="my-6">
+        <m.div variants={fadeUp} className="my-6">
           <SprigDivider className="h-3 w-32 opacity-70" />
         </m.div>
 
         {/* Countdown Timer */}
-        <m.div
-          variants={fadeUp}
-          className="flex justify-center gap-3 sm:gap-5"
-          style={GPU_HINT}
-        >
-          {countdownUnits.map((u) => (
-            <CountdownDigit
-              key={u.key}
-              value={timeLeft[u.key]}
-              label={u.label}
-            />
-          ))}
+        <m.div variants={fadeUp}>
+          <CountdownTimer targetDate={targetDate} />
         </m.div>
 
         {/* Event Card Container */}
         <m.div
           variants={fadeUp}
-          style={GPU_HINT}
           className="mt-12 flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-mustard/30 bg-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md"
         >
           <EventBlock
@@ -430,7 +439,6 @@ function EventSectionInner({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#6B2A36] px-8 py-3.5 text-xs font-bold uppercase tracking-[0.15em] text-white shadow-lg transition-transform"
-          style={GPU_HINT}
         >
           <PinIcon />
           Open Location

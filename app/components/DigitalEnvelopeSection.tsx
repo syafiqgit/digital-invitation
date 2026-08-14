@@ -103,25 +103,27 @@ const textLift = {
 /* ---------- Static decoration data (Decluttered for performance) ---------- */
 
 const vines = [
-  // Instruksi: Animasi sway vine vertikal dimatikan (isAnimated: false)
   {
     key: "left",
     orientation: "vertical" as const,
-    className: "absolute left-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
+    className:
+      "absolute left-0 top-0 h-full w-5 opacity-70 xs:w-6 sm:w-10 lg:w-14",
     flip: "",
     isAnimated: false,
   },
   {
     key: "right",
     orientation: "vertical" as const,
-    className: "absolute right-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
+    className:
+      "absolute right-0 top-0 h-full w-5 opacity-70 xs:w-6 sm:w-10 lg:w-14",
     flip: "-scale-x-100",
     isAnimated: false,
   },
   {
     key: "top",
     orientation: "horizontal" as const,
-    className: "absolute left-0 top-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
+    className:
+      "absolute left-0 top-0 h-5 w-full opacity-70 xs:h-6 sm:h-10 lg:h-14",
     flip: "",
     origin: "left center",
     endDeg: "0.7deg",
@@ -132,7 +134,8 @@ const vines = [
   {
     key: "bottom",
     orientation: "horizontal" as const,
-    className: "absolute bottom-0 left-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
+    className:
+      "absolute bottom-0 left-0 h-5 w-full opacity-70 xs:h-6 sm:h-10 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
     endDeg: "-0.7deg",
@@ -259,7 +262,7 @@ const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl lg:h-[620px] lg:w-[620px]"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl xs:h-[340px] xs:w-[340px] sm:h-[420px] sm:w-[420px] lg:h-[620px] lg:w-[620px]"
     />
   );
 });
@@ -371,7 +374,6 @@ const FrameLayers = memo(function FrameLayers() {
           key={v.key}
           className={`pointer-events-none absolute z-[2] ${v.className} ${v.flip}`}
         >
-          {/* Hardware-accelerated CSS Animation. Sesuai instruksi, vine kiri & kanan statis (isAnimated: false) */}
           <div
             className={`h-full w-full ${v.isAnimated ? "animate-sway" : ""}`}
             style={
@@ -394,7 +396,7 @@ const FrameLayers = memo(function FrameLayers() {
       {corners.map((c) => (
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-[3] h-12 w-12 opacity-90 xs:h-16 xs:w-16 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
             className="h-full w-full animate-sway"
@@ -413,7 +415,7 @@ const FrameLayers = memo(function FrameLayers() {
         </div>
       ))}
 
-      <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
+      <div className="pointer-events-none absolute inset-2.5 z-[1] rounded-[1.5rem] border border-sage/25 xs:inset-3 sm:inset-5 sm:rounded-[2rem] lg:inset-8" />
     </>
   );
 });
@@ -441,7 +443,7 @@ function DigitalEnvelopeSectionInner({
   };
 
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-20 sm:px-6 sm:py-28">
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-3 py-16 xs:px-4 sm:px-6 sm:py-24 lg:py-28">
       <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
         <BackgroundPattern className="h-full w-full" />
       </div>
@@ -450,7 +452,7 @@ function DigitalEnvelopeSectionInner({
       <FrameLayers />
 
       <m.div
-        className="relative z-10 flex w-full max-w-4xl flex-col items-center px-2 text-center"
+        className="relative z-10 flex w-full max-w-4xl flex-col items-center px-3 text-center xs:px-4 sm:px-6"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.15 }}
@@ -459,10 +461,10 @@ function DigitalEnvelopeSectionInner({
         <m.div
           variants={fadeUp}
           style={GPU_HINT}
-          className="flex items-center gap-3"
+          className="flex items-center gap-2 xs:gap-3"
         >
           <div
-            className="animate-gentle-pulse"
+            className="animate-gentle-pulse shrink-0"
             style={
               {
                 "--rot": "6deg",
@@ -471,17 +473,17 @@ function DigitalEnvelopeSectionInner({
             }
           >
             <MiniBloom
-              className="h-4 w-4 opacity-70"
+              className="h-3.5 w-3.5 opacity-70 xs:h-4 xs:w-4"
               color="var(--sage-light)"
             />
           </div>
 
-          <span className="inline-block rounded-full border border-mustard/40 bg-white/80 px-4 py-1.5 text-[10px] font-bold tracking-[0.25em] text-burgundy shadow-sm backdrop-blur-sm sm:text-xs">
+          <span className="inline-block whitespace-nowrap rounded-full border border-mustard/40 bg-white/80 px-3 py-1.5 text-[9px] font-bold tracking-[0.2em] text-burgundy shadow-sm backdrop-blur-sm xs:px-4 xs:text-[10px] xs:tracking-[0.25em] sm:text-xs">
             WEDDING GIFT
           </span>
 
           <div
-            className="animate-gentle-pulse"
+            className="animate-gentle-pulse shrink-0"
             style={
               {
                 "--rot": "-6deg",
@@ -490,7 +492,7 @@ function DigitalEnvelopeSectionInner({
             }
           >
             <MiniBloom
-              className="h-4 w-4 opacity-70"
+              className="h-3.5 w-3.5 opacity-70 xs:h-4 xs:w-4"
               color="var(--sage-light)"
             />
           </div>
@@ -498,7 +500,7 @@ function DigitalEnvelopeSectionInner({
 
         <m.p
           variants={fadeUp}
-          className="font-script mt-5 text-4xl font-semibold text-ink sm:text-5xl"
+          className="font-script mt-4 text-[2rem] leading-tight font-semibold text-ink xs:mt-5 xs:text-4xl sm:text-5xl"
           style={{ ...textLift, ...GPU_HINT }}
         >
           Digital Envelope &amp; Gifts
@@ -507,14 +509,14 @@ function DigitalEnvelopeSectionInner({
         <m.div
           variants={fadeUp}
           style={GPU_HINT}
-          className="mt-6 mb-10 sm:mb-12"
+          className="mt-5 mb-8 xs:mt-6 sm:mb-12"
         >
-          <SprigDivider className="h-3 w-36 sm:w-44 opacity-70" />
+          <SprigDivider className="h-3 w-32 xs:w-36 sm:w-44 opacity-70" />
         </m.div>
 
         <m.p
           variants={fadeUp}
-          className="text-sm text-ink/80 max-w-lg mx-auto mb-10 leading-relaxed sm:text-base"
+          className="mx-auto mb-8 max-w-lg text-sm leading-relaxed text-ink/80 sm:mb-10 sm:text-base"
         >
           Your prayers and presence are the greatest gifts of all. However, if
           you wish to send a token of love via cashless transfer or physical
@@ -523,45 +525,44 @@ function DigitalEnvelopeSectionInner({
 
         <m.div
           variants={containerVariants}
-          className="w-full grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8"
+          className="mb-6 grid w-full grid-cols-1 gap-4 sm:mb-8 sm:grid-cols-2 sm:gap-6"
         >
           {accounts.map((acc) => (
             <m.div
               variants={fadeUp}
               key={acc.id}
-              className="group relative flex flex-col justify-between rounded-[2rem] border border-mustard/30 bg-white/85 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md text-left transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] hover:border-mustard/60 hover:-translate-y-0.5"
+              className="group relative flex flex-col justify-between rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:-translate-y-0.5 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem]"
             >
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-serif font-bold text-xl text-burgundy tracking-wide">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="font-serif text-lg font-bold tracking-wide text-burgundy xs:text-xl">
                     {acc.bankName}
                   </span>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mustard/10 group-hover:bg-mustard/20 transition-colors">
-                    <GiftIcon className="h-5 w-5" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mustard/10 transition-colors group-hover:bg-mustard/20 xs:h-10 xs:w-10">
+                    <GiftIcon className="h-4.5 w-4.5 xs:h-5 xs:w-5" />
                   </div>
                 </div>
 
                 <div className="mb-6">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/50 mb-1">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-ink/50 xs:text-[11px]">
                     Account Number
                   </p>
-                  <p className="font-mono text-xl font-bold text-ink sm:text-2xl tracking-wider">
+                  <p className="break-all font-mono text-lg font-bold tracking-wider text-ink xs:text-xl sm:text-2xl">
                     {acc.accountNumber}
                   </p>
-                  <p className="text-sm font-semibold text-ink/80 mt-1">
+                  <p className="mt-1 text-sm font-semibold text-ink/80">
                     a.n. {acc.accountHolder}
                   </p>
                 </div>
               </div>
 
-              {/* UI Fix: Touch target tombol copy dibuat minimal 44px (py-3.5) agar ramah jempol */}
               <button
                 type="button"
                 onClick={() => handleCopy(acc.accountNumber, acc.id)}
                 className={`relative w-full rounded-full border py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
                   copiedId === acc.id
                     ? "border-sage bg-sage/10 text-sage-dark shadow-inner"
-                    : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:bg-[#6B2A36] hover:text-white hover:border-transparent hover:shadow-md"
+                    : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:border-transparent hover:bg-[#6B2A36] hover:text-white hover:shadow-md"
                 }`}
               >
                 {copiedId === acc.id
@@ -574,20 +575,19 @@ function DigitalEnvelopeSectionInner({
 
         <m.div
           variants={fadeUp}
-          className="group relative w-full rounded-[2rem] border border-mustard/30 bg-white/85 p-6 sm:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md text-left transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] hover:border-mustard/60"
+          className="group relative w-full rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem] sm:p-8"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div className="flex-1">
-              <h4 className="font-serif text-lg font-bold text-ink mb-3 group-hover:text-burgundy transition-colors">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="flex-1 min-w-0">
+              <h4 className="mb-3 font-serif text-base font-bold text-ink transition-colors group-hover:text-burgundy xs:text-lg">
                 Send a Physical Gift
               </h4>
-              {/* UI Fix: Ukuran font teks alamat diperbesar minimal 14px (text-sm) agar mudah dibaca di mobile */}
-              <p className="text-sm text-ink/80 leading-relaxed">
-                <span className="font-semibold text-ink text-base">
+              <p className="text-sm leading-relaxed text-ink/80">
+                <span className="text-sm font-semibold text-ink xs:text-base">
                   {giftAddress.recipient}
                 </span>
                 <br />
-                <span className="inline-block mt-1 mb-1 opacity-70">
+                <span className="mb-1 mt-1 inline-block opacity-70">
                   Phone: {giftAddress.phone}
                 </span>
                 <br />
@@ -595,14 +595,14 @@ function DigitalEnvelopeSectionInner({
               </p>
             </div>
 
-            <div className="shrink-0 w-full sm:w-auto">
+            <div className="w-full shrink-0 sm:w-auto">
               <button
                 type="button"
                 onClick={handleCopyAddress}
-                className={`relative w-full sm:w-auto rounded-full border px-8 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
+                className={`relative w-full rounded-full border px-8 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 sm:w-auto ${
                   copiedAddress
                     ? "border-sage bg-sage/10 text-sage-dark shadow-inner"
-                    : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:bg-[#6B2A36] hover:text-white hover:border-transparent hover:shadow-md"
+                    : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:border-transparent hover:bg-[#6B2A36] hover:text-white hover:shadow-md"
                 }`}
               >
                 {copiedAddress ? "Address Copied ✓" : "Copy Address"}

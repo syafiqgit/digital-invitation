@@ -44,9 +44,12 @@ const DEFAULT_MILESTONES: StoryMilestone[] = [
 ];
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const GPU_HINT = { willChange: "transform, opacity" } as const;
 
 // --- FRAMER MOTION VARIANTS (Entrance Only) ---
+// NOTE: willChange permanen dihapus. viewport={{ once: true }} berarti
+// animasi ini hanya jalan sekali; menahan compositor layer selamanya
+// setelah itu (via willChange manual) cuma buang-buang GPU memory.
+// Framer Motion sudah otomatis toggle will-change selama animasi aktif.
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.15, delayChildren: 0.1 } },
@@ -64,25 +67,24 @@ const fadeUp: Variants = {
 
 // --- STATIC DECORATION DATA (Optimized for CSS Animations) ---
 const vines = [
-  // Instruksi: Sway animasi kiri & kanan dinonaktifkan (isAnimated: false)
   {
     key: "left",
     orientation: "vertical" as const,
-    className: "left-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "left-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "",
     isAnimated: false,
   },
   {
     key: "right",
     orientation: "vertical" as const,
-    className: "right-0 top-0 h-full w-6 sm:w-10 lg:w-14",
+    className: "right-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
     isAnimated: false,
   },
   {
     key: "top",
     orientation: "horizontal" as const,
-    className: "left-0 top-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "left-0 top-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "",
     origin: "left center",
     endDeg: "0.7deg",
@@ -93,7 +95,7 @@ const vines = [
   {
     key: "bottom",
     orientation: "horizontal" as const,
-    className: "bottom-0 left-0 h-6 w-full sm:h-10 lg:h-14",
+    className: "bottom-0 left-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
     endDeg: "-0.7deg",
@@ -226,7 +228,6 @@ const FrameLayers = memo(function FrameLayers() {
           key={v.key}
           className={`pointer-events-none absolute z-[2] opacity-70 ${v.className} ${v.flip}`}
         >
-          {/* Implementasi CSS Hardware Acceleration. Vine Kiri & Kanan dirender statis tanpa class animasi */}
           <div
             className={`h-full w-full ${v.isAnimated ? "animate-sway" : ""}`}
             style={
@@ -249,7 +250,7 @@ const FrameLayers = memo(function FrameLayers() {
       {corners.map((c) => (
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
             className="h-full w-full animate-sway"
@@ -288,13 +289,12 @@ const MilestoneCard = memo(function MilestoneCard({
       }`}
     >
       <div
-        className={`ml-14 w-[calc(100%-3.5rem)] rounded-[2rem] border border-mustard/30 bg-white/80 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-shadow duration-500 ease-out hover:shadow-[0_15px_40px_rgba(212,175,55,0.12)] sm:ml-0 sm:w-[calc(50%-3rem)] sm:p-7 ${
+        className={`ml-14 w-[calc(100%-3.5rem)] rounded-[2rem] border border-mustard/30 bg-white/80 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-shadow duration-500 ease-out hover:shadow-[0_15px_40px_rgba(212,175,55,0.12)] sm:ml-0 sm:w-[calc(50%-3rem)] sm:p-7 md:w-[calc(50%-3.5rem)] md:p-8 lg:w-[calc(50%-4rem)] lg:p-9 ${
           isEven ? "sm:mr-auto" : "sm:ml-auto"
         }`}
       >
         {item.photoUrl && (
           <div className="relative mb-5 aspect-[16/10] w-full overflow-hidden rounded-2xl border border-mustard/20 bg-gray-100">
-            {/* SEO & Performance Tip: Image tag sudah oke, loading="lazy" disarankan jika diluar viewport */}
             <Image
               src={item.photoUrl}
               alt={item.title}
@@ -306,20 +306,19 @@ const MilestoneCard = memo(function MilestoneCard({
           </div>
         )}
 
-        {/* UI Fix: Font size ditingkatkan untuk mobile readability */}
         <span className="mb-3 inline-block rounded-full border border-mustard/50 bg-white px-4 py-1.5 text-[10px] font-bold tracking-[0.2em] text-burgundy shadow-sm sm:text-xs">
           {item.date}
         </span>
-        <h3 className="font-serif text-xl font-bold text-ink transition-colors duration-300 group-hover:text-burgundy sm:text-2xl">
+        <h3 className="font-serif text-xl font-bold text-ink transition-colors duration-300 group-hover:text-burgundy sm:text-2xl md:text-[1.7rem]">
           {item.title}
         </h3>
-        <p className="mt-2 text-sm leading-relaxed text-ink/75 sm:text-base">
+        <p className="mt-2 text-sm leading-relaxed text-ink/75 sm:text-base md:text-[1.05rem]">
           {item.description}
         </p>
       </div>
 
-      <div className="absolute left-6 z-20 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-mustard/50 bg-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:border-burgundy/60 sm:left-1/2 sm:h-12 sm:w-12">
-        <HeartIcon className="relative z-10 h-4 w-4 transition-transform group-hover:scale-110 sm:h-5 sm:w-5" />
+      <div className="absolute left-6 z-20 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-mustard/50 bg-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:border-burgundy/60 sm:left-1/2 sm:h-12 sm:w-12 md:h-14 md:w-14">
+        <HeartIcon className="relative z-10 h-4 w-4 transition-transform group-hover:scale-110 sm:h-5 sm:w-5 md:h-6 md:w-6" />
       </div>
     </m.div>
   );
@@ -330,12 +329,7 @@ function StorySectionInner({
   milestones = DEFAULT_MILESTONES,
 }: StorySectionProps) {
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 xs:px-5 sm:px-6 sm:py-24">
-      {/* 
-        ENGINEERING NOTE: 
-        Memindahkan infinite loop animasi ke CSS Hardware Acceleration.
-        Menggunakan translate3d untuk bypass main thread JS. 
-      */}
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
       <style>{`
         @keyframes sway {
           0%, 100% { transform: rotate(0deg) translate3d(0,0,0); }
@@ -358,18 +352,13 @@ function StorySectionInner({
       <FrameLayers />
 
       <m.div
-        className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl lg:max-w-4xl"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.15 }}
         variants={containerVariants}
       >
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="flex items-center gap-3"
-        >
-          {/* Animasi m.div loop dihapus, diganti class CSS murni */}
+        <m.div variants={fadeUp} className="flex items-center gap-3">
           <div
             className="animate-gentle-pulse"
             style={
@@ -408,26 +397,25 @@ function StorySectionInner({
         <m.h2
           variants={fadeUp}
           className="font-script mt-5 text-4xl font-semibold text-ink sm:text-5xl md:text-6xl"
-          style={GPU_HINT}
         >
           Our Journey to Forever
         </m.h2>
 
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="mb-12 mt-6 sm:mb-16"
-        >
+        <m.div variants={fadeUp} className="mb-12 mt-6 sm:mb-16 md:mb-20">
           <SprigDivider className="h-3 w-36 opacity-70 sm:w-44" />
         </m.div>
 
-        <div className="relative flex w-full flex-col gap-12 sm:gap-20">
+        <div className="relative flex w-full flex-col gap-12 sm:gap-20 md:gap-24">
           {/* Garis vertikal timeline */}
           <div className="absolute bottom-6 left-6 top-6 w-[2px] -translate-x-1/2 bg-gradient-to-b from-mustard/10 via-mustard/50 to-mustard/10 sm:left-1/2" />
 
           {milestones.map((item, index) => (
             <MilestoneCard
-              key={`milestone-${index}`}
+              // FIX: key sebelumnya pakai index murni — rapuh kalau
+              // milestones nanti di-fetch dinamis (urutan bisa berubah,
+              // React salah reconcile DOM). date+title lebih stabil
+              // selama tidak ada dua milestone dengan kombinasi sama persis.
+              key={`${item.date}-${item.title}`}
               item={item}
               isEven={index % 2 === 0}
             />

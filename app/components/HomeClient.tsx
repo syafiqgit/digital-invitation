@@ -15,7 +15,7 @@ const MainContent = dynamic(() => import("./MainContent"), {
 });
 
 const MUSIC_SRC =
-  "/assets/Michael Bublé - L.O.V.E. [Official Audio]_1786599652652.mp3";
+  "/assets/Christina Perri - A Thousand Years [Official Music Video]_1786688765919.mp3";
 
 const TIMELINE = {
   irisDuration: 850,

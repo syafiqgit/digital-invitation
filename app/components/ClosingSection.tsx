@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import Image from "next/image";
 import {
   LazyMotion,
   domAnimation,
@@ -21,7 +22,6 @@ interface ClosingSectionProps {
 const DEFAULT_COUPLE_PHOTO = "https://picsum.photos/id/1025/800/1000";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const GPU_HINT = { willChange: "transform, opacity" } as const;
 const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
 
@@ -32,6 +32,9 @@ const loop = (
 ): Transition => ({ duration, delay, repeat: Infinity, ease });
 
 /* ---------- Framer Motion variants (Entrance Only) ---------- */
+// NOTE: willChange manual permanen dihapus di seluruh file ini — animasi
+// entrance cuma sekali (viewport once: true), Framer Motion sudah handle
+// will-change otomatis selama animasi aktif.
 
 const containerVariants: Variants = {
   hidden: {},
@@ -70,25 +73,27 @@ const textLift = {
 /* ---------- Static decoration data (Decluttered for 60fps performance) ---------- */
 
 const vines = [
-  // Instruksi: Animasi sway vine vertikal dikunci statis (isAnimated: false)
   {
     key: "left",
     orientation: "vertical" as const,
-    className: "absolute left-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
+    className:
+      "absolute left-0 top-0 h-full w-6 opacity-70 sm:w-10 md:w-12 lg:w-14",
     flip: "",
     isAnimated: false,
   },
   {
     key: "right",
     orientation: "vertical" as const,
-    className: "absolute right-0 top-0 h-full w-6 opacity-70 sm:w-10 lg:w-14",
+    className:
+      "absolute right-0 top-0 h-full w-6 opacity-70 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
     isAnimated: false,
   },
   {
     key: "top",
     orientation: "horizontal" as const,
-    className: "absolute left-0 top-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
+    className:
+      "absolute left-0 top-0 h-6 w-full opacity-70 sm:h-10 md:h-12 lg:h-14",
     flip: "",
     origin: "left center",
     endDeg: "0.7deg",
@@ -99,7 +104,8 @@ const vines = [
   {
     key: "bottom",
     orientation: "horizontal" as const,
-    className: "absolute bottom-0 left-0 h-6 w-full opacity-70 sm:h-10 lg:h-14",
+    className:
+      "absolute bottom-0 left-0 h-6 w-full opacity-70 sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
     endDeg: "-0.7deg",
@@ -265,12 +271,11 @@ const SprigDivider = memo(function SprigDivider({
   );
 });
 
-/* Statis menggantikan MajesticRay untuk menghemat resource GPU mid-range */
 const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-105 w-105 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl lg:h-155 lg:w-155"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-105 w-105 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl md:h-130 md:w-130 lg:h-155 lg:w-155"
     />
   );
 });
@@ -299,7 +304,6 @@ const FrameLayers = memo(function FrameLayers() {
           key={v.key}
           className={`pointer-events-none absolute z-2 ${v.className} ${v.flip}`}
         >
-          {/* Hardware-accelerated CSS Animation. Sesuai instruksi: vine kiri & kanan statis (isAnimated: false) */}
           <div
             className={`h-full w-full ${v.isAnimated ? "animate-sway" : ""}`}
             style={
@@ -322,7 +326,7 @@ const FrameLayers = memo(function FrameLayers() {
       {corners.map((c) => (
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-3 h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-3 h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
             className="h-full w-full animate-sway"
@@ -364,18 +368,14 @@ function ClosingSectionInner({
       <FrameLayers />
 
       <m.div
-        className="relative z-10 flex w-full max-w-sm flex-col items-center px-1 xs:max-w-md sm:max-w-xl sm:px-2 md:max-w-2xl"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center px-1 xs:max-w-md sm:max-w-xl sm:px-2 md:max-w-2xl lg:max-w-3xl"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.2 }}
         variants={containerVariants}
       >
         {/* Badge */}
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="flex items-center gap-3"
-        >
+        <m.div variants={fadeUp} className="flex items-center gap-3">
           <div
             className="animate-gentle-pulse"
             style={
@@ -415,38 +415,41 @@ function ClosingSectionInner({
         <m.p
           variants={fadeUp}
           className="font-script mt-5 px-2 text-[2.1rem] leading-tight font-semibold text-ink xs:text-4xl sm:mt-6 sm:text-5xl md:text-[3.4rem]"
-          style={{ ...textLift, ...GPU_HINT }}
+          style={textLift}
         >
           It Is an Honor
         </m.p>
 
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="mt-3 mb-7 sm:mt-4 sm:mb-9"
-        >
+        <m.div variants={fadeUp} className="mt-3 mb-7 sm:mt-4 sm:mb-9">
           <SprigDivider className="h-3 w-32 xs:w-40 sm:w-48 opacity-70" />
         </m.div>
 
         {/* Gorgeous Arch Photo Showcase */}
         <m.div variants={fadeUp} className="relative mb-7 sm:mb-9">
           <div className="pointer-events-none absolute -inset-3 rounded-t-[11rem] rounded-b-[2.2rem] bg-linear-to-b from-mustard/20 via-transparent to-blush/20 blur-xl sm:-inset-4" />
-          <div className="relative aspect-4/5 w-44 overflow-hidden rounded-t-[9rem] rounded-b-3xl border-[3px] border-mustard/60 bg-white/90 p-2 shadow-[0_12px_36px_rgba(0,0,0,0.06)] xs:w-52 sm:w-60 md:w-64">
+          <div className="relative aspect-4/5 w-44 overflow-hidden rounded-t-[9rem] rounded-b-3xl border-[3px] border-mustard/60 bg-white/90 p-2 shadow-[0_12px_36px_rgba(0,0,0,0.06)] xs:w-52 sm:w-60 md:w-64 lg:w-72">
             <div className="absolute inset-1.5 rounded-t-[8.4rem] rounded-b-[1.4rem] border border-mustard/30 pointer-events-none z-10" />
             <div className="relative h-full w-full overflow-hidden rounded-t-[8.6rem] rounded-b-2xl bg-gray-100">
-              {/* UI Fix: loading="lazy" & ukuran srcset teroptimasi untuk performa aset */}
-              <img
+              {/* FIX: diganti dari <img> native ke next/image. <img> murni
+                  tidak menghasilkan srcset otomatis, jadi foto ini di-load
+                  ukuran penuh sama untuk semua device — kebalikan dari
+                  klaim komentar aslinya. Kalau couplePhotoUrl berasal dari
+                  domain eksternal baru, tambahkan ke images.remotePatterns
+                  di next.config.js, jangan revert ke <img>. */}
+              <Image
                 src={couplePhotoUrl}
                 alt="Couple"
-                className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-105"
+                fill
                 loading="lazy"
+                sizes="(min-width: 1024px) 288px, (min-width: 768px) 256px, (min-width: 640px) 240px, 208px"
+                className="object-cover transition-transform duration-700 ease-out hover:scale-105"
               />
               <div className="absolute inset-0 bg-linear-to-t from-ink/10 via-transparent to-transparent" />
             </div>
           </div>
         </m.div>
 
-        {/* Message (UI Fix: Font minimal 16px / text-base pada breakpoint yang sesuai untuk readability mobile) */}
+        {/* Message */}
         <m.p
           variants={fadeUp}
           className="mx-auto mb-8 max-w-xs px-1 text-sm leading-relaxed text-ink/80 xs:max-w-sm sm:mb-10 sm:max-w-md sm:text-base"
@@ -458,7 +461,7 @@ function ClosingSectionInner({
         {/* Names Card */}
         <m.div
           variants={fadeUp}
-          className="relative w-full max-w-sm rounded-[1.75rem] border border-mustard/30 bg-white/85 px-6 py-9 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden backdrop-blur-md sm:max-w-md sm:rounded-4xl sm:px-10 sm:py-12"
+          className="relative w-full max-w-sm rounded-[1.75rem] border border-mustard/30 bg-white/85 px-6 py-9 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden backdrop-blur-md sm:max-w-md sm:rounded-4xl sm:px-10 sm:py-12 md:max-w-lg lg:max-w-xl lg:px-12 lg:py-14"
         >
           <div className="absolute inset-2.5 rounded-[1.4rem] border border-mustard/20 pointer-events-none sm:inset-3.5 sm:rounded-[1.6rem]" />
 
@@ -466,7 +469,7 @@ function ClosingSectionInner({
           <CornerFlourish className="pointer-events-none absolute bottom-2 right-2 h-8 w-8 rotate-180 opacity-60 sm:bottom-3 sm:right-3 sm:h-10 sm:w-10" />
 
           <p
-            className="font-script text-3xl font-semibold text-ink sm:text-[2.7rem]"
+            className="font-script text-3xl font-semibold text-ink sm:text-[2.7rem] lg:text-[3.1rem]"
             style={textLift}
           >
             {brideName}
@@ -479,7 +482,7 @@ function ClosingSectionInner({
             <span className="h-px w-8 bg-sage/40 sm:w-12" />
           </div>
           <p
-            className="font-script text-3xl font-semibold text-ink sm:text-[2.7rem]"
+            className="font-script text-3xl font-semibold text-ink sm:text-[2.7rem] lg:text-[3.1rem]"
             style={textLift}
           >
             {groomName}
