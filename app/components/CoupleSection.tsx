@@ -69,8 +69,8 @@ function CoupleSectionInner({
         <BackgroundPattern className="h-full w-full opacity-[0.28]" />
       </div>
 
-      <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] lg:h-[22rem] lg:w-[22rem] opacity-70" />
-      <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] lg:h-72 lg:w-72 opacity-70" />
+      <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] opacity-70 lg:h-[22rem] lg:w-[22rem]" />
+      <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] opacity-70 lg:h-72 lg:w-72" />
 
       <AmbientGlow />
       <FrameLayers />
@@ -81,9 +81,10 @@ function CoupleSectionInner({
         <GrassSilhouette className="h-full w-full" />
       </div>
 
-      {/* Kontainer utama dengan viewport threshold optimal */}
+      {/* Kontainer utama — ditambah xl step supaya tidak "mengambang kecil"
+          di monitor lebar (1440px+) sementara dekorasi latar full-width */}
       <m.div
-        className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl xl:max-w-4xl"
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
@@ -126,7 +127,7 @@ function CoupleSectionInner({
             </div>
 
             <p
-              className="font-script mt-3 max-w-[16rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-base font-semibold leading-snug text-ink backdrop-blur-[2px] xs:text-lg xs:max-w-[18rem] sm:mt-4 sm:max-w-md sm:text-2xl lg:mt-5 lg:text-3xl"
+              className="font-script mt-3 max-w-[16rem] rounded-2xl bg-ivory/80 px-3 py-1.5 text-base font-semibold leading-snug text-ink backdrop-blur-[2px] xs:max-w-[18rem] xs:text-lg sm:mt-4 sm:max-w-md sm:text-2xl lg:mt-5 lg:text-3xl"
               style={{ textShadow: "0 1px 6px rgba(255,255,255,0.9)" }}
             >
               With joyful hearts, we warmly invite you
@@ -135,13 +136,16 @@ function CoupleSectionInner({
             <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
           </m.div>
 
-          {/* BLOK 2: Area Foto & Simbol Tengah */}
+          {/* BLOK 2: Area Foto & Simbol Tengah
+              FIX: ditambah md: step pada width foto & gap supaya proporsi
+              mengikuti pelebaran container (sebelumnya loncat sm -> lg,
+              bikin foto kecil "tenggelam" saat container sudah selebar md) */}
           <m.div
             variants={blockFadeUp}
-            className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 lg:gap-6"
+            className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 md:gap-5 lg:gap-6"
             style={{ paddingInline: "clamp(0.75rem, 6vw, 3rem)" }}
           >
-            <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]">
+            <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] md:max-w-[13rem] lg:max-w-[16rem]">
               <ArchPortrait
                 displayName={brideName}
                 fullName={brideFullName}
@@ -153,8 +157,8 @@ function CoupleSectionInner({
               />
             </div>
 
-            <div className="relative z-20 mb-6 w-14 shrink-0 sm:mb-10 sm:w-24 lg:mb-12 lg:w-40">
-              <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 blur-xl opacity-70" />
+            <div className="relative z-20 mb-6 w-14 shrink-0 sm:mb-10 sm:w-24 md:mb-11 md:w-32 lg:mb-12 lg:w-40">
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/30 opacity-70 blur-xl" />
               <WreathFrame className="relative z-10 w-full" />
 
               <div
@@ -177,7 +181,7 @@ function CoupleSectionInner({
                     <Sparkle className="h-2 w-2 opacity-80 sm:h-3 sm:w-3" />
                   </div>
                   <span
-                    className="font-script block font-semibold leading-none text-burgundy text-sm sm:text-2xl lg:text-4xl"
+                    className="font-script block text-sm font-semibold leading-none text-burgundy sm:text-2xl lg:text-4xl"
                     style={{
                       textShadow: "0 2px 10px rgba(255,255,255,0.8)",
                       display: "inline-block",
@@ -199,7 +203,7 @@ function CoupleSectionInner({
               </div>
             </div>
 
-            <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] lg:max-w-[16rem]">
+            <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] md:max-w-[13rem] lg:max-w-[16rem]">
               <ArchPortrait
                 displayName={groomName}
                 fullName={groomFullName}

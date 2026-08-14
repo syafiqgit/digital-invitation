@@ -270,7 +270,7 @@ const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl lg:h-[620px] lg:w-[620px]"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-105 w-105 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl lg:h-155 lg:w-155"
     />
   );
 });
@@ -297,7 +297,7 @@ const FrameLayers = memo(function FrameLayers() {
       {vines.map((v) => (
         <div
           key={v.key}
-          className={`pointer-events-none absolute z-[2] ${v.className} ${v.flip}`}
+          className={`pointer-events-none absolute z-2 ${v.className} ${v.flip}`}
         >
           {/* Hardware-accelerated CSS Animation. Sesuai instruksi: vine kiri & kanan statis (isAnimated: false) */}
           <div
@@ -322,7 +322,7 @@ const FrameLayers = memo(function FrameLayers() {
       {corners.map((c) => (
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-3 h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
             className="h-full w-full animate-sway"
@@ -341,8 +341,8 @@ const FrameLayers = memo(function FrameLayers() {
         </div>
       ))}
 
-      <div className="pointer-events-none absolute inset-3 z-[1] rounded-[2rem] border border-sage/25 sm:inset-5 lg:inset-8" />
-      <div className="pointer-events-none absolute inset-4 z-[1] rounded-[1.8rem] border border-mustard/10 sm:inset-6 lg:inset-10" />
+      <div className="pointer-events-none absolute inset-3 z-1 rounded-4xl border border-sage/25 sm:inset-5 lg:inset-8" />
+      <div className="pointer-events-none absolute inset-4 z-1 rounded-[1.8rem] border border-mustard/10 sm:inset-6 lg:inset-10" />
     </>
   );
 });
@@ -430,9 +430,9 @@ function ClosingSectionInner({
 
         {/* Gorgeous Arch Photo Showcase */}
         <m.div variants={fadeUp} className="relative mb-7 sm:mb-9">
-          <div className="pointer-events-none absolute -inset-3 rounded-t-[11rem] rounded-b-[2.2rem] bg-gradient-to-b from-mustard/20 via-transparent to-blush/20 blur-xl sm:-inset-4" />
-          <div className="relative aspect-[4/5] w-44 overflow-hidden rounded-t-[9rem] rounded-b-3xl border-[3px] border-mustard/60 bg-white/90 p-2 shadow-[0_12px_36px_rgba(0,0,0,0.06)] xs:w-52 sm:w-60 md:w-64">
-            <div className="absolute inset-[6px] rounded-t-[8.4rem] rounded-b-[1.4rem] border border-mustard/30 pointer-events-none z-10" />
+          <div className="pointer-events-none absolute -inset-3 rounded-t-[11rem] rounded-b-[2.2rem] bg-linear-to-b from-mustard/20 via-transparent to-blush/20 blur-xl sm:-inset-4" />
+          <div className="relative aspect-4/5 w-44 overflow-hidden rounded-t-[9rem] rounded-b-3xl border-[3px] border-mustard/60 bg-white/90 p-2 shadow-[0_12px_36px_rgba(0,0,0,0.06)] xs:w-52 sm:w-60 md:w-64">
+            <div className="absolute inset-1.5 rounded-t-[8.4rem] rounded-b-[1.4rem] border border-mustard/30 pointer-events-none z-10" />
             <div className="relative h-full w-full overflow-hidden rounded-t-[8.6rem] rounded-b-2xl bg-gray-100">
               {/* UI Fix: loading="lazy" & ukuran srcset teroptimasi untuk performa aset */}
               <img
@@ -441,7 +441,7 @@ function ClosingSectionInner({
                 className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-105"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/10 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-ink/10 via-transparent to-transparent" />
             </div>
           </div>
         </m.div>
@@ -458,9 +458,9 @@ function ClosingSectionInner({
         {/* Names Card */}
         <m.div
           variants={fadeUp}
-          className="relative w-full max-w-sm rounded-[1.75rem] border border-mustard/30 bg-white/85 px-6 py-9 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden backdrop-blur-md sm:max-w-md sm:rounded-[2rem] sm:px-10 sm:py-12"
+          className="relative w-full max-w-sm rounded-[1.75rem] border border-mustard/30 bg-white/85 px-6 py-9 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden backdrop-blur-md sm:max-w-md sm:rounded-4xl sm:px-10 sm:py-12"
         >
-          <div className="absolute inset-[10px] rounded-[1.4rem] border border-mustard/20 pointer-events-none sm:inset-[14px] sm:rounded-[1.6rem]" />
+          <div className="absolute inset-2.5 rounded-[1.4rem] border border-mustard/20 pointer-events-none sm:inset-3.5 sm:rounded-[1.6rem]" />
 
           <CornerFlourish className="pointer-events-none absolute left-2 top-2 h-8 w-8 opacity-60 sm:left-3 sm:top-3 sm:h-10 sm:w-10" />
           <CornerFlourish className="pointer-events-none absolute bottom-2 right-2 h-8 w-8 rotate-180 opacity-60 sm:bottom-3 sm:right-3 sm:h-10 sm:w-10" />

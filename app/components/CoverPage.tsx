@@ -29,7 +29,8 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
         paddingLeft: "env(safe-area-inset-left)",
         paddingRight: "env(safe-area-inset-right)",
         willChange: "opacity",
-        transform: "translateZ(0)", // Memaksa akselerasi hardware
+        // translateZ(0) dihapus: willChange sudah cukup untuk promote compositor
+        // layer di browser modern, dua-duanya sekaligus cuma overhead ganda.
       }}
     >
       <CoverBackground />
@@ -42,7 +43,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
         initial="hidden"
         animate="show"
         style={{ containerType: "inline-size" }}
-        className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 lg:max-w-160"
+        className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 md:max-w-lg md:px-10 lg:max-w-160"
       >
         <CoverContent
           guestName={guestName}

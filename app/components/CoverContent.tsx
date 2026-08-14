@@ -23,10 +23,14 @@ const textLift = {
     "0 1px 3px rgba(255,255,255,0.9), 0 2px 14px rgba(255,255,255,0.7)",
 } as const;
 
+// FIX: whiteSpace "nowrap" sebelumnya bisa memaksa nama overflow keluar
+// wreath hole di viewport sangat sempit (<340px) atau kalau nama diganti
+// jadi lebih panjang. clamp() sudah menyusutkan font-size, jadi wrap
+// alami dengan keep-all (tidak memotong di tengah kata) jauh lebih aman.
 const nameTextStyle = {
   overflowWrap: "normal",
-  wordBreak: "normal",
-  whiteSpace: "nowrap",
+  wordBreak: "keep-all",
+  whiteSpace: "normal",
 } as const;
 
 export const CoverContent = memo(function CoverContent({
@@ -38,7 +42,7 @@ export const CoverContent = memo(function CoverContent({
     <>
       <m.span
         variants={fadeUp}
-        className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.22em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em]"
+        className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.22em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em] md:px-6 md:text-[0.8rem]"
       >
         <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
         <span className="relative z-10">WEDDING INVITATION</span>
@@ -46,7 +50,7 @@ export const CoverContent = memo(function CoverContent({
 
       <m.div
         variants={wreathVariant}
-        className="relative mt-4 w-[clamp(250px,92cqw,610px)] sm:mt-5"
+        className="relative mt-4 w-[clamp(250px,92cqw,610px)] sm:mt-5 md:mt-6"
       >
         <WreathFrame className="w-full drop-shadow-sm" />
         <div
@@ -100,18 +104,18 @@ export const CoverContent = memo(function CoverContent({
 
       <m.div
         variants={fadeUp}
-        className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)] sm:mt-4 sm:gap-x-3 sm:px-5"
+        className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)] sm:mt-4 sm:gap-x-3 sm:px-5 md:mt-5 md:px-6 md:py-3.5"
       >
         <div className="shrink-0">
           <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
-        <span className="text-[0.65rem] font-bold tracking-widest text-ink sm:text-xs sm:tracking-[0.15em]">
+        <span className="text-[0.65rem] font-bold tracking-widest text-ink sm:text-xs sm:tracking-[0.15em] md:text-sm">
           SATURDAY
         </span>
-        <span className="font-script text-2xl font-bold text-burgundy sm:text-3xl">
+        <span className="font-script text-2xl font-bold text-burgundy sm:text-3xl md:text-4xl">
           12
         </span>
-        <span className="text-[0.65rem] font-bold tracking-widest text-ink sm:text-xs sm:tracking-[0.15em]">
+        <span className="text-[0.65rem] font-bold tracking-widest text-ink sm:text-xs sm:tracking-[0.15em] md:text-sm">
           DECEMBER 2026
         </span>
         <div className="shrink-0">
@@ -119,20 +123,23 @@ export const CoverContent = memo(function CoverContent({
         </div>
       </m.div>
 
-      <m.div variants={fadeUp} className="mt-5 w-28 xs:w-32 sm:mt-6 sm:w-40">
+      <m.div
+        variants={fadeUp}
+        className="mt-5 w-28 xs:w-32 sm:mt-6 sm:w-40 md:w-44"
+      >
         <FlourishDivider className="h-4 w-full" />
       </m.div>
 
       <m.div
         variants={fadeUp}
-        className="relative mt-5 w-full rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] sm:mt-6 sm:px-5"
+        className="relative mt-5 w-full rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] sm:mt-6 sm:px-5 md:px-6 md:py-5"
       >
         <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_12px_rgba(255,255,255,0.7)]" />
         <div className="relative z-10">
-          <p className="text-[0.7rem] font-semibold tracking-wider text-ink/80 sm:text-xs sm:tracking-[0.08em]">
+          <p className="text-[0.7rem] font-semibold tracking-wider text-ink/80 sm:text-xs sm:tracking-[0.08em] md:text-sm">
             To Our Respected Guest,
           </p>
-          <p className="mt-1.5 wrap-break-word text-base font-bold leading-snug text-ink xs:text-lg sm:text-xl">
+          <p className="mt-1.5 wrap-break-word text-base font-bold leading-snug text-ink xs:text-lg sm:text-xl md:text-2xl">
             {guestName}
           </p>
         </div>
@@ -141,13 +148,13 @@ export const CoverContent = memo(function CoverContent({
       {!isOpening && (
         <m.div
           variants={fadeUp}
-          className="relative mt-8 inline-block sm:mt-10"
+          className="relative mt-8 inline-block sm:mt-10 md:mt-12"
         >
           <div className="pointer-events-none absolute inset-0 rounded-full bg-burgundy/50 blur-lg" />
           <m.button
             type="button"
             onClick={onOpen}
-            className="relative min-h-12 rounded-full border border-mustard/60 bg-linear-to-r from-blush-dark via-burgundy to-blush-dark bg-size-[200%_100%] px-8 py-4 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-lg xs:px-10 sm:px-12 sm:text-xs sm:tracking-[0.25em]"
+            className="relative min-h-12 rounded-full border border-mustard/60 bg-linear-to-r from-blush-dark via-burgundy to-blush-dark bg-size-[200%_100%] px-8 py-4 text-[0.65rem] font-bold tracking-[0.2em] text-white shadow-lg xs:px-10 sm:px-12 sm:text-xs sm:tracking-[0.25em] md:px-14 md:py-4.5 md:text-sm"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
           >
