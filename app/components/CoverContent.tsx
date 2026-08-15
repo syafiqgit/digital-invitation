@@ -23,15 +23,33 @@ const textLift = {
     "0 1px 3px rgba(255,255,255,0.9), 0 2px 14px rgba(255,255,255,0.7)",
 } as const;
 
-// FIX: whiteSpace "nowrap" sebelumnya bisa memaksa nama overflow keluar
-// wreath hole di viewport sangat sempit (<340px) atau kalau nama diganti
-// jadi lebih panjang. clamp() sudah menyusutkan font-size, jadi wrap
-// alami dengan keep-all (tidak memotong di tengah kata) jauh lebih aman.
 const nameTextStyle = {
   overflowWrap: "normal",
   wordBreak: "keep-all",
   whiteSpace: "normal",
 } as const;
+
+// Titik sparkle di sekitar lingkar wreath, dihitung sebagai offset dari
+// WREATH_HOLE center supaya ikut proporsional di semua breakpoint (wreath
+// pakai clamp width, jadi posisi absolute biasa akan salah di ukuran lain).
+// Radius dalam % dari lebar wreath container, sudut dalam derajat (0 = atas).
+const wreathSparkles = [
+  {
+    angleDeg: -35,
+    radiusPct: 46,
+    size: "h-2.5 w-2.5",
+    duration: 2.4,
+    delay: 0,
+  },
+  { angleDeg: 100, radiusPct: 44, size: "h-2 w-2", duration: 2.8, delay: 0.9 },
+  {
+    angleDeg: 205,
+    radiusPct: 47,
+    size: "h-2.5 w-2.5",
+    duration: 2.6,
+    delay: 1.7,
+  },
+];
 
 export const CoverContent = memo(function CoverContent({
   guestName,
@@ -45,7 +63,13 @@ export const CoverContent = memo(function CoverContent({
         className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.22em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em] md:px-6 md:text-[0.8rem]"
       >
         <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
-        <span className="relative z-10">WEDDING INVITATION</span>
+        <m.div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1/4 bg-gradient-to-r from-transparent via-white/60 to-transparent"
+          initial={{ x: "-150%" }}
+          animate={{ x: "500%" }}
+          transition={{ duration: 1.1, delay: 0.6, ease: "easeInOut" }}
+        />
+        <span className="relative z-20">WEDDING INVITATION</span>
       </m.span>
 
       <m.div
@@ -53,6 +77,31 @@ export const CoverContent = memo(function CoverContent({
         className="relative mt-4 w-[clamp(250px,92cqw,610px)] sm:mt-5 md:mt-6"
       >
         <WreathFrame className="w-full drop-shadow-sm" />
+
+        {/* Sparkle mengitari lingkar wreath — posisi dihitung dari titik
+            tengah wreath (WREATH_HOLE) dengan trigonometri sederhana, supaya
+            tetap proporsional di semua ukuran layar (wreath pakai clamp()
+            width, absolute px akan salah). */}
+        {wreathSparkles.map((s, i) => {
+          const rad = (s.angleDeg * Math.PI) / 180;
+          const left = 50 + s.radiusPct * Math.sin(rad);
+          const top = 50 - s.radiusPct * Math.cos(rad);
+          return (
+            <m.div
+              key={i}
+              className={`pointer-events-none absolute z-15 -translate-x-1/2 -translate-y-1/2 ${s.size}`}
+              style={{ left: `${left}%`, top: `${top}%` }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0.6, 1.2, 0.6],
+              }}
+              transition={loop(s.duration, s.delay + 1.2)}
+            >
+              <Sparkle className="h-full w-full opacity-90" />
+            </m.div>
+          );
+        })}
+
         <div
           className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center text-center"
           style={{
@@ -104,8 +153,13 @@ export const CoverContent = memo(function CoverContent({
 
       <m.div
         variants={fadeUp}
-        className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)] sm:mt-4 sm:gap-x-3 sm:px-5 md:mt-5 md:px-6 md:py-3.5"
+        className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)] sm:mt-4 sm:gap-x-3 sm:px-5 md:mt-5 md:px-6 md:py-3.5"
       >
+        <m.div
+          className="pointer-events-none absolute inset-0 rounded-2xl border border-mustard/60"
+          animate={{ opacity: [0.3, 0.9, 0.3] }}
+          transition={loop(3.2, 1.8)}
+        />
         <div className="shrink-0">
           <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
@@ -132,9 +186,15 @@ export const CoverContent = memo(function CoverContent({
 
       <m.div
         variants={fadeUp}
-        className="relative mt-5 w-full rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] sm:mt-6 sm:px-5 md:px-6 md:py-5"
+        className="relative mt-5 w-full overflow-hidden rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] sm:mt-6 sm:px-5 md:px-6 md:py-5"
       >
         <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_12px_rgba(255,255,255,0.7)]" />
+        <m.div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+          initial={{ x: "-120%" }}
+          animate={{ x: "320%" }}
+          transition={{ duration: 1.4, delay: 1.1, ease: "easeInOut" }}
+        />
         <div className="relative z-10">
           <p className="text-[0.7rem] font-semibold tracking-wider text-ink/80 sm:text-xs sm:tracking-[0.08em] md:text-sm">
             To Our Respected Guest,

@@ -77,8 +77,6 @@ export const wreathVariant: Variants = {
 };
 
 /* ---------- DATA STATIS ORNAMEN ---------- */
-// NOTE: breakpoint disamakan dengan CoverContent (sm -> md -> lg) supaya
-// proporsi ornamen vs konten tidak "lompat" sendiri-sendiri di tablet.
 const vines = [
   {
     key: "left",
@@ -86,6 +84,8 @@ const vines = [
     className:
       "absolute left-0 top-0 h-full w-8 opacity-90 sm:w-10 md:w-12 lg:w-14",
     flip: "",
+    swayOrigin: "top",
+    swayRange: 1.2,
   },
   {
     key: "right",
@@ -93,6 +93,8 @@ const vines = [
     className:
       "absolute right-0 top-0 h-full w-8 opacity-90 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
+    swayOrigin: "top",
+    swayRange: 1.2,
   },
   {
     key: "top",
@@ -100,6 +102,8 @@ const vines = [
     className:
       "absolute left-0 top-0 h-8 w-full opacity-90 sm:h-10 md:h-12 lg:h-14",
     flip: "",
+    swayOrigin: "left",
+    swayRange: 1,
   },
   {
     key: "bottom",
@@ -107,6 +111,8 @@ const vines = [
     className:
       "absolute bottom-0 left-0 h-8 w-full opacity-90 sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
+    swayOrigin: "left",
+    swayRange: 1,
   },
 ];
 
@@ -116,24 +122,28 @@ const corners = [
     position: "bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4",
     flip: "",
     fadeDelay: 0,
+    swayOrigin: "bottom left",
   },
   {
     key: "br",
     position: "bottom-2 right-2 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4",
     flip: "-scale-x-100",
     fadeDelay: 0.05,
+    swayOrigin: "bottom right",
   },
   {
     key: "tl",
     position: "top-2 left-2 sm:top-3 sm:left-3 md:top-4 md:left-4",
     flip: "-scale-y-100",
     fadeDelay: 0.1,
+    swayOrigin: "top left",
   },
   {
     key: "tr",
     position: "top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4",
     flip: "-scale-x-100 -scale-y-100",
     fadeDelay: 0.15,
+    swayOrigin: "top right",
   },
 ];
 
@@ -143,6 +153,47 @@ const sparkles = [
   { top: "45%", left: "85%" },
   { top: "65%", left: "12%" },
   { top: "88%", left: "82%" },
+];
+
+// Kupu-kupu: sekarang pakai asset gambar (bukan SVG generated), jadi tiap
+// entry butuh src eksplisit. Titik awal & jarak tempuh (x/y/rotate range)
+// dijaga kecil supaya tetap terasa "di background", tidak menutupi konten
+// utama di tengah. src bergantian antara 2 varian supaya tidak identik.
+const butterflies = [
+  {
+    key: "bf-1",
+    src: "/assets/butterfly-1.png",
+    top: "22%",
+    left: "16%",
+    size: 26,
+    duration: 9,
+    delay: 0,
+    xRange: [0, 14, -6, 0],
+    yRange: [0, -10, -4, 0],
+    rotateRange: [0, 6, -4, 0],
+  },
+  {
+    key: "bf-2",
+    src: "/assets/butterfly-2.png",
+    top: "70%",
+    left: "82%",
+    size: 22,
+    duration: 11,
+    delay: 1.5,
+    xRange: [0, -12, 8, 0],
+    yRange: [0, -8, 6, 0],
+    rotateRange: [0, -5, 5, 0],
+  },
+];
+
+// Kelopak jatuh: posisi horizontal & timing di-variasikan per item supaya
+// tidak terlihat serentak/mekanis. Animasi tetap CSS keyframes murni (bukan
+// Framer Motion), cuma elemen visual di dalamnya sekarang <Image>.
+const petals = [
+  { left: "8%", size: 16, duration: 9, delay: 0, drift: 18 },
+  { left: "30%", size: 13, duration: 11, delay: 2.5, drift: -14 },
+  { left: "68%", size: 17, duration: 10, delay: 1, drift: 12 },
+  { left: "90%", size: 14, duration: 12, delay: 4, drift: -20 },
 ];
 
 /* ---------- SVGs (Shared) ---------- */
@@ -270,7 +321,7 @@ export const CoverOrnaments = memo(function CoverOrnaments() {
         <div className="h-full w-full rounded-full bg-blush/40" />
       </m.div>
 
-      {vines.map((v) => (
+      {vines.map((v, i) => (
         <m.div
           key={v.key}
           variants={vineFade}
@@ -278,13 +329,18 @@ export const CoverOrnaments = memo(function CoverOrnaments() {
           animate="show"
           className={`pointer-events-none z-2 ${v.className} ${v.flip}`}
         >
-          <div className="h-full w-full">
+          <m.div
+            className="h-full w-full"
+            style={{ transformOrigin: v.swayOrigin }}
+            animate={{ rotate: [0, v.swayRange, 0, -v.swayRange, 0] }}
+            transition={loop(7 + i * 0.6, i * 0.4)}
+          >
             <FloralVine
               orientation={v.orientation}
               className="h-full w-full"
               tileSize={360}
             />
-          </div>
+          </m.div>
         </m.div>
       ))}
 
@@ -297,10 +353,86 @@ export const CoverOrnaments = memo(function CoverOrnaments() {
           transition={{ delay: c.fadeDelay }}
           className={`pointer-events-none absolute z-20 h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-48 lg:w-48 ${c.position}`}
         >
-          <div className="h-full w-full">
+          <m.div
+            className="h-full w-full"
+            style={{ transformOrigin: c.swayOrigin }}
+            animate={{ rotate: [0, 1.5, 0, -1.5, 0] }}
+            transition={loop(6, c.fadeDelay * 2)}
+          >
             <FloralCorner className="h-full w-full" flip={c.flip} />
-          </div>
+          </m.div>
         </m.div>
+      ))}
+
+      {/* Kupu-kupu: posisi absolute di titik awal, gerak lewat translate+rotate
+          keyframes pada m.div wrapper. Sekarang pakai <Image> statis (bukan
+          SVG dengan flap animation terpisah) — lihat catatan di bawah soal
+          kenapa flap dihilangkan. z-4: di atas vine/corner, di bawah konten
+          utama (z-20). */}
+      {butterflies.map((b) => (
+        <m.div
+          key={b.key}
+          className="pointer-events-none absolute z-4"
+          style={{ top: b.top, left: b.left, width: b.size, height: b.size }}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0, 0.9, 0.9, 0],
+            x: b.xRange,
+            y: b.yRange,
+            rotate: b.rotateRange,
+          }}
+          transition={loop(b.duration, b.delay)}
+        >
+          {/* Wrapper terpisah khusus untuk flap sayap (scaleY), supaya tidak
+              bentrok dengan animate x/y/rotate di wrapper luar (posisi
+              terbang). transformOrigin di tengah supaya scaleY terlihat
+              seperti "mengepak" dari badan, bukan menyusut dari salah satu
+              sisi. Ini simulasi kasar (bukan flap sayap kiri/kanan
+              independen) — lihat catatan di respons sebelumnya soal
+              trade-off vs sprite sheet. */}
+          <m.div
+            className="h-full w-full"
+            style={{ transformOrigin: "center" }}
+            animate={{ scaleY: [1, 0.55, 1] }}
+            transition={loop(0.5, b.delay * 0.3)}
+          >
+            <Image
+              src={b.src}
+              alt=""
+              fill
+              sizes={`${b.size}px`}
+              className="pointer-events-none select-none object-contain"
+              draggable={false}
+            />
+          </m.div>
+        </m.div>
+      ))}
+
+      {/* Kelopak jatuh: CSS keyframes murni (bukan Framer Motion) — sama pola
+          seperti sparkle, supaya tidak nambah beban JS thread. Sekarang pakai
+          <Image> statis, animasi transform/opacity tidak berubah. */}
+      {petals.map((p, i) => (
+        <div
+          key={`petal-${i}`}
+          className="pointer-events-none absolute top-0 z-4"
+          style={{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            animation: `cover-petal-fall ${p.duration}s linear ${p.delay}s infinite`,
+            willChange: "transform, opacity",
+            ["--petal-drift" as string]: `${p.drift}px`,
+          }}
+        >
+          <Image
+            src="/assets/flower-petal.png"
+            alt=""
+            fill
+            sizes={`${p.size}px`}
+            className="pointer-events-none select-none object-contain"
+            draggable={false}
+          />
+        </div>
       ))}
 
       {/* Sparkles statis dengan keyframes CSS murni agar GPU tidak terbebani loop JS */}
@@ -322,6 +454,12 @@ export const CoverOrnaments = memo(function CoverOrnaments() {
         @keyframes cover-twinkle {
           0%, 100% { opacity: 0.2; transform: scale(0.7); }
           50% { opacity: 1; transform: scale(1.25); }
+        }
+        @keyframes cover-petal-fall {
+          0% { opacity: 0; transform: translate(0, -10%) rotate(0deg); }
+          10% { opacity: 0.8; }
+          90% { opacity: 0.6; }
+          100% { opacity: 0; transform: translate(var(--petal-drift), 115vh) rotate(340deg); }
         }
       `}</style>
     </>
