@@ -5,25 +5,45 @@ import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
+import AmbientLayer from "./AmbientLayer";
+
+/* =========================================================================
+   TYPE ALIASES
+
+   Sengaja dipecah jadi alias pendek, bukan union inline di dalam generic.
+   Penyebabnya konkret: formatter yang memproses file ini sebagai JavaScript
+   (bukan TypeScript) akan membaca "<" pada useState<...> sebagai operator
+   perbandingan, lalu memotong ekspresinya jadi dua statement rusak —
+   `const [status, setStatus] = useState;` diikuti baris berisi `|` dan `>`.
+   Generic satu kata seperti useState<RsvpStatus>("idle") jauh lebih sulit
+   dirusak dengan cara itu.
+
+   Kalau kerusakan seperti ini muncul lagi, periksa parser Prettier
+   (harus "typescript", bukan "babel") dan pastikan ekstensi file .tsx.
+   ========================================================================= */
+type Attendance = "attending" | "not_attending";
+type RsvpStatus = "idle" | "submitting" | "done" | "error";
+type WishStatus = "idle" | "submitting" | "error";
+type TimeoutId = ReturnType<typeof setTimeout>;
 
 interface WishItem {
   id: string;
   name: string;
   message: string;
-  attendance: "attending" | "not_attending";
+  attendance: Attendance;
   date: string;
 }
 
 interface RsvpPayload {
   name: string;
-  attendance: "attending" | "not_attending";
+  attendance: Attendance;
   guestCount: string;
 }
 
 interface WishPayload {
   name: string;
   message: string;
-  attendance: "attending" | "not_attending";
+  attendance: Attendance;
 }
 
 const INITIAL_WISHES: WishItem[] = [
@@ -50,16 +70,15 @@ const WISHES_STORAGE_KEY = "wedding_wishes_v1";
 /* =========================================================================
    DATA LAYER — SIMULATED / MOCK.
 
-   ⚠️ ARCHITECTURAL WARNING (not addressed, out of scope for this
-   responsive change): submitRsvp & submitWish write to localStorage,
-   which is per-browser/per-device. For an invitation shared with many
-   different guests, this means:
-   - The host never actually receives guest RSVP data.
-   - The "Wishes List" shown to each guest only contains dummy data plus
-     that guest's own wish — not other guests' wishes from the same link.
-   Before production, replace submitRsvp/submitWish with calls to an
-   API route + database (or at minimum Google Sheets/Airtable) so data
-   is actually collected in one place and visible to all guests.
+   ⚠️ ARCHITECTURAL WARNING (masih berlaku, di luar cakupan perubahan ini):
+   submitRsvp & submitWish menulis ke localStorage, yang per-browser
+   dan per-device. Untuk undangan yang dibagikan ke banyak tamu:
+   - Tuan rumah TIDAK PERNAH benar-benar menerima data RSVP tamu.
+   - Daftar "Wishes" yang dilihat tiap tamu hanya berisi data dummy plus
+     ucapan tamu itu sendiri — bukan ucapan tamu lain dari link yang sama.
+   Sebelum produksi, ganti submitRsvp/submitWish dengan API route +
+   database (atau minimal Google Sheets/Airtable) supaya data benar-benar
+   terkumpul di satu tempat dan terlihat oleh semua tamu.
    ========================================================================= */
 
 function readStoredWishes(): WishItem[] {
@@ -112,11 +131,12 @@ async function submitWish(payload: WishPayload): Promise<WishItem> {
 /* ========================================================================= */
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const MAX_WISH_LENGTH = 300;
 
 /* ---------- Framer Motion variants (entrance only) ---------- */
-// NOTE: permanent manual willChange removed — entrance animation only
-// runs once (viewport once: true), Framer Motion already handles
-// will-change automatically while the animation is active.
+// NOTE: willChange manual permanen dihapus — animasi entrance hanya jalan
+// sekali (viewport once: true), dan Framer Motion sudah mengelola
+// will-change otomatis selama animasi aktif.
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -132,26 +152,61 @@ const fadeUp: Variants = {
   },
 };
 
+// Kartu masuk dari sisi masing-masing (RSVP dari kiri, Guestbook dari
+// kanan) supaya grid dua kolom terasa hidup, bukan dua blok yang naik
+// bersamaan. Offset kecil (20px) karena di mobile keduanya menumpuk.
+const cardVariants: Variants = {
+  hidden: (fromLeft: boolean) => ({
+    opacity: 0,
+    y: 24,
+    x: fromLeft ? -20 : 20,
+    scale: 0.98,
+  }),
+  visible: {
+    opacity: 1,
+    y: 0,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.75, ease: EASE },
+  },
+};
+
 const wishItemFade: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
 };
 
 /* ---------- Static decoration data (Optimized) ---------- */
+//
+// endDeg vertikal 0.9deg dengan durasi 6.5s — sama seperti GallerySection.
+// RsvpWishSection tingginya moderat (dua kartu form, ~1600px di mobile),
+// jadi simpangan ujung vine = tinggi x tan(0.9deg) ≈ 25px, masih wajar
+// terhadap lebar strip 24px.
+//
+// KALAU DAFTAR WISHES DIBUAT TIDAK SCROLLABLE (max-h dilepas): tinggi
+// section bisa meledak mengikuti jumlah ucapan, dan angka ini harus
+// diturunkan. Selama max-h di daftar wishes dipertahankan, tinggi
+// section stabil dan 0.9deg aman.
 const vines = [
   {
     key: "left",
     orientation: "vertical" as const,
     className: "left-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "",
-    isAnimated: false,
+    origin: "top center",
+    endDeg: "0.9deg",
+    duration: "6.5s",
+    delay: "0s",
   },
   {
     key: "right",
     orientation: "vertical" as const,
     className: "right-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
-    isAnimated: false,
+    origin: "top center",
+    endDeg: "0.9deg",
+    duration: "7s",
+    delay: "0.4s",
   },
   {
     key: "top",
@@ -159,10 +214,9 @@ const vines = [
     className: "left-0 top-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "",
     origin: "left center",
-    endDeg: "0.7deg",
-    duration: "8.6s",
+    endDeg: "1deg",
+    duration: "7.4s",
     delay: "0.2s",
-    isAnimated: true,
   },
   {
     key: "bottom",
@@ -170,13 +224,15 @@ const vines = [
     className: "bottom-0 left-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
-    endDeg: "-0.7deg",
-    duration: "9.2s",
+    endDeg: "1deg",
+    duration: "7.9s",
     delay: "0.3s",
-    isAnimated: true,
   },
 ];
 
+// endDeg positif semua. Pada keyframe dua-arah, tanda minus cuma membalik
+// fase (mulai ke kiri dulu), bukan mengubah amplitudo — variasi antar-sudut
+// sudah dihasilkan oleh delay yang berbeda.
 const corners = [
   {
     key: "top-left",
@@ -184,7 +240,7 @@ const corners = [
     flip: "",
     origin: "top left",
     endDeg: "1.8deg",
-    duration: "6.6s",
+    duration: "6s",
     delay: "0s",
   },
   {
@@ -192,8 +248,8 @@ const corners = [
     position: "top-2 right-2 sm:top-4 sm:right-4",
     flip: "-scale-x-100",
     origin: "top right",
-    endDeg: "-1.8deg",
-    duration: "7.1s",
+    endDeg: "1.8deg",
+    duration: "6.4s",
     delay: "0.1s",
   },
   {
@@ -202,7 +258,7 @@ const corners = [
     flip: "-scale-y-100",
     origin: "bottom left",
     endDeg: "1.8deg",
-    duration: "6.9s",
+    duration: "6.2s",
     delay: "0.2s",
   },
   {
@@ -210,8 +266,8 @@ const corners = [
     position: "bottom-2 right-2 sm:bottom-4 sm:right-4",
     flip: "-scale-x-100 -scale-y-100",
     origin: "bottom right",
-    endDeg: "-1.8deg",
-    duration: "7.4s",
+    endDeg: "1.8deg",
+    duration: "6.7s",
     delay: "0.3s",
   },
 ];
@@ -309,11 +365,74 @@ const SpinnerIcon = memo(function SpinnerIcon({
   );
 });
 
+const CheckIcon = memo(function CheckIcon({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+});
+
+// Chevron untuk <select>: appearance-none menghapus panah bawaan browser,
+// dan sebelumnya tidak ada penggantinya — select tidak terbaca sebagai
+// dropdown sama sekali.
+const SelectChevron = memo(function SelectChevron({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+});
+
+const QuoteMark = memo(function QuoteMark({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="currentColor">
+      <path d="M12 8c-4.4 0-8 3.6-8 8 0 4.4 3.6 8 8 8v-4c-2.2 0-4-1.8-4-4h4V8zm16 0c-4.4 0-8 3.6-8 8 0 4.4 3.6 8 8 8v-4c-2.2 0-4-1.8-4-4h4V8z" />
+    </svg>
+  );
+});
+
+// Satu elemen dengan dua gradient stop — bukan dua radial gradient besar
+// yang ditumpuk di titik sama, karena masing-masing kena blur berat dan
+// biaya rasterisasinya nyata di HP low-end.
 const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl md:h-[520px] md:w-[520px] lg:h-[620px] lg:w-[620px]"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl md:h-[520px] md:w-[520px] lg:h-[620px] lg:w-[620px]"
+      style={{
+        background:
+          "radial-gradient(circle, rgba(212,175,55,0.10) 0%, rgba(168,181,160,0.08) 45%, transparent 72%)",
+      }}
     />
   );
 });
@@ -327,17 +446,15 @@ const FrameLayers = memo(function FrameLayers() {
           className={`pointer-events-none absolute z-[2] opacity-70 ${v.className} ${v.flip}`}
         >
           <div
-            className={`h-full w-full ${v.isAnimated ? "animate-sway" : ""}`}
+            className="h-full w-full animate-rsvp-sway"
             style={
-              v.isAnimated
-                ? ({
-                    transformOrigin: v.origin,
-                    "--end-deg": v.endDeg,
-                    animationDuration: v.duration,
-                    animationDelay: v.delay,
-                    willChange: "transform",
-                  } as React.CSSProperties)
-                : undefined
+              {
+                transformOrigin: v.origin,
+                "--end-deg": v.endDeg,
+                animationDuration: v.duration,
+                animationDelay: v.delay,
+                willChange: "transform",
+              } as React.CSSProperties
             }
           >
             <FloralVine orientation={v.orientation} className="h-full w-full" />
@@ -351,7 +468,7 @@ const FrameLayers = memo(function FrameLayers() {
           className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
-            className="h-full w-full animate-sway"
+            className="h-full w-full animate-rsvp-sway"
             style={
               {
                 transformOrigin: c.origin,
@@ -371,16 +488,28 @@ const FrameLayers = memo(function FrameLayers() {
   );
 });
 
+// Aksen sudut emas untuk kartu — muncul saat hover, murni opacity.
+const CardCornerAccents = memo(function CardCornerAccents() {
+  return (
+    <>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-4 top-4 h-6 w-6 rounded-tl-xl border-l border-t border-mustard opacity-0 transition-opacity duration-500 group-hover:opacity-70"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-4 right-4 h-6 w-6 rounded-br-xl border-b border-r border-mustard opacity-0 transition-opacity duration-500 group-hover:opacity-70"
+      />
+    </>
+  );
+});
+
 /* ---------- RSVP form ---------- */
 function RsvpCard() {
   const [rsvpName, setRsvpName] = useState("");
-  const [attendance, setAttendance] = useState<"attending" | "not_attending">(
-    "attending",
-  );
+  const [attendance, setAttendance] = useState<Attendance>("attending");
   const [guestCount, setGuestCount] = useState("1");
-  const [status, setStatus] = useState<
-    "idle" | "submitting" | "done" | "error"
-  >("idle");
+  const [status, setStatus] = useState<RsvpStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e: FormEvent) => {
@@ -406,9 +535,17 @@ function RsvpCard() {
 
   return (
     <m.div
-      variants={fadeUp}
-      className="group relative h-fit w-full rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:p-8 md:p-9"
+      variants={cardVariants}
+      custom={true}
+      className="group relative h-fit w-full overflow-hidden rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:p-8 md:p-9"
     >
+      {/* Garis emas tipis di bibir atas kartu */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
+      />
+      <CardCornerAccents />
+
       <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
         RSVP Confirmation
       </h3>
@@ -418,7 +555,10 @@ function RsvpCard() {
 
       <div className="relative z-10">
         {status === "done" ? (
-          <div className="rounded-2xl border border-mustard/30 bg-white/60 p-6 text-center shadow-inner">
+          <div className="animate-rsvp-reveal rounded-2xl border border-mustard/30 bg-white/60 p-6 text-center shadow-inner">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-mustard/40 bg-sage-light/30">
+              <CheckIcon className="animate-rsvp-check h-6 w-6 text-burgundy" />
+            </div>
             <p className="font-serif text-xl font-bold text-burgundy">
               Thank You, {rsvpName}!
             </p>
@@ -456,8 +596,9 @@ function RsvpCard() {
                 value={rsvpName}
                 onChange={(e) => setRsvpName(e.target.value)}
                 placeholder="Type your name here..."
+                autoComplete="name"
                 aria-invalid={Boolean(errorMsg)}
-                className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:bg-white focus:ring-2 focus:ring-mustard/50"
+                className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:border-mustard focus:bg-white focus:ring-2 focus:ring-mustard/50"
               />
               {errorMsg && (
                 <p
@@ -477,21 +618,25 @@ function RsvpCard() {
                 >
                   Attendance
                 </label>
-                <select
-                  id="rsvp-attendance"
-                  value={attendance}
-                  onChange={(e) =>
-                    setAttendance(
-                      e.target.value as "attending" | "not_attending",
-                    )
-                  }
-                  className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50"
-                >
-                  <option value="attending">Yes, I will attend</option>
-                  <option value="not_attending">
-                    Sorry, can&apos;t make it
-                  </option>
-                </select>
+                {/* appearance-none menghapus panah bawaan browser tanpa
+                    penggantinya — chevron ditambahkan + pr-12 supaya teks
+                    tidak menabraknya. */}
+                <div className="relative">
+                  <select
+                    id="rsvp-attendance"
+                    value={attendance}
+                    onChange={(e) =>
+                      setAttendance(e.target.value as Attendance)
+                    }
+                    className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 py-3.5 pl-5 pr-12 text-base text-ink shadow-sm outline-none transition-all focus:border-mustard focus:bg-white focus:ring-2 focus:ring-mustard/50"
+                  >
+                    <option value="attending">Yes, I will attend</option>
+                    <option value="not_attending">
+                      Sorry, can&apos;t make it
+                    </option>
+                  </select>
+                  <SelectChevron className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-burgundy/60" />
+                </div>
               </div>
 
               <div>
@@ -501,17 +646,24 @@ function RsvpCard() {
                 >
                   Number of Guests
                 </label>
-                <select
-                  id="rsvp-guest-count"
-                  value={guestCount}
-                  onChange={(e) => setGuestCount(e.target.value)}
-                  disabled={attendance === "not_attending"}
-                  className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-5 py-3.5 text-base text-ink shadow-sm outline-none transition-all focus:bg-white focus:ring-2 focus:ring-mustard/50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="1">1 Person</option>
-                  <option value="2">2 People</option>
-                  <option value="3">3 People</option>
-                </select>
+                <div className="relative">
+                  <select
+                    id="rsvp-guest-count"
+                    value={guestCount}
+                    onChange={(e) => setGuestCount(e.target.value)}
+                    disabled={attendance === "not_attending"}
+                    className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 py-3.5 pl-5 pr-12 text-base text-ink shadow-sm outline-none transition-all focus:border-mustard focus:bg-white focus:ring-2 focus:ring-mustard/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="1">1 Person</option>
+                    <option value="2">2 People</option>
+                    <option value="3">3 People</option>
+                  </select>
+                  <SelectChevron
+                    className={`pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-burgundy/60 ${
+                      attendance === "not_attending" ? "opacity-40" : ""
+                    }`}
+                  />
+                </div>
               </div>
             </div>
 
@@ -527,10 +679,18 @@ function RsvpCard() {
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#6B2A36] py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
+              className="relative mt-4 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-[#6B2A36] py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
             >
+              {status !== "submitting" && (
+                <span
+                  aria-hidden
+                  className="animate-rsvp-shine pointer-events-none absolute inset-y-0 w-1/3 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)]"
+                />
+              )}
               {status === "submitting" && <SpinnerIcon className="h-4 w-4" />}
-              {status === "submitting" ? "SENDING..." : "SEND RSVP"}
+              <span className="relative z-10">
+                {status === "submitting" ? "SENDING..." : "SEND RSVP"}
+              </span>
             </button>
           </form>
         )}
@@ -544,13 +704,11 @@ function WishCard() {
   const [wishes, setWishes] = useState<WishItem[]>(INITIAL_WISHES);
   const [wishName, setWishName] = useState("");
   const [wishMessage, setWishMessage] = useState("");
-  const [wishAttendance, setWishAttendance] = useState<
-    "attending" | "not_attending"
-  >("attending");
-  const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
+  const [wishAttendance, setWishAttendance] = useState<Attendance>("attending");
+  const [status, setStatus] = useState<WishStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [successBanner, setSuccessBanner] = useState(false);
-  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bannerTimeoutRef = useRef<TimeoutId | null>(null);
 
   useEffect(() => {
     setWishes(readStoredWishes());
@@ -589,11 +747,20 @@ function WishCard() {
     }
   };
 
+  const remaining = MAX_WISH_LENGTH - wishMessage.length;
+
   return (
     <m.div
-      variants={fadeUp}
-      className="group relative flex h-full min-h-[420px] flex-col rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:min-h-[480px] sm:p-8 md:p-9"
+      variants={cardVariants}
+      custom={false}
+      className="group relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-[2rem] border border-mustard/30 bg-white/85 p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] sm:min-h-[480px] sm:p-8 md:p-9"
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
+      />
+      <CardCornerAccents />
+
       <h3 className="font-serif relative z-10 mb-1 text-center text-xl font-bold text-ink transition-colors group-hover:text-burgundy sm:text-2xl">
         Guestbook &amp; Wishes
       </h3>
@@ -610,8 +777,9 @@ function WishCard() {
           {successBanner && (
             <div
               role="status"
-              className="rounded-xl border border-mustard/40 bg-green-50 p-3 text-center text-xs font-medium text-green-700"
+              className="animate-rsvp-reveal flex items-center justify-center gap-2 rounded-xl border border-sage/40 bg-sage-light/25 p-3 text-center text-xs font-medium text-burgundy"
             >
+              <CheckIcon className="h-3.5 w-3.5" />
               Your message was sent successfully!
             </div>
           )}
@@ -627,27 +795,29 @@ function WishCard() {
                 value={wishName}
                 onChange={(e) => setWishName(e.target.value)}
                 placeholder="Your name"
+                autoComplete="name"
                 aria-invalid={Boolean(errorMsg)}
-                className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
+                className="w-full rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:border-mustard focus:bg-white focus:ring-2 focus:ring-mustard/50"
               />
             </div>
             <div>
               <label htmlFor="wish-attendance" className="sr-only">
                 Attendance Status
               </label>
-              <select
-                id="wish-attendance"
-                value={wishAttendance}
-                onChange={(e) =>
-                  setWishAttendance(
-                    e.target.value as "attending" | "not_attending",
-                  )
-                }
-                className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all focus:ring-2 focus:ring-mustard/50"
-              >
-                <option value="attending">Attending</option>
-                <option value="not_attending">Not Attending</option>
-              </select>
+              <div className="relative">
+                <select
+                  id="wish-attendance"
+                  value={wishAttendance}
+                  onChange={(e) =>
+                    setWishAttendance(e.target.value as Attendance)
+                  }
+                  className="w-full appearance-none rounded-2xl border border-mustard/40 bg-white/60 py-3.5 pl-4 pr-11 text-base text-ink shadow-sm outline-none transition-all focus:border-mustard focus:bg-white focus:ring-2 focus:ring-mustard/50"
+                >
+                  <option value="attending">Attending</option>
+                  <option value="not_attending">Not Attending</option>
+                </select>
+                <SelectChevron className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-burgundy/60" />
+              </div>
             </div>
           </div>
 
@@ -659,11 +829,21 @@ function WishCard() {
               id="wish-message"
               rows={3}
               value={wishMessage}
-              onChange={(e) => setWishMessage(e.target.value)}
+              onChange={(e) =>
+                setWishMessage(e.target.value.slice(0, MAX_WISH_LENGTH))
+              }
+              maxLength={MAX_WISH_LENGTH}
               placeholder="Write your prayers & wishes..."
               aria-invalid={Boolean(errorMsg)}
-              className="w-full resize-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:ring-2 focus:ring-mustard/50"
+              className="w-full resize-none rounded-2xl border border-mustard/40 bg-white/60 px-4 py-3.5 text-base text-ink shadow-sm outline-none transition-all placeholder:text-ink/40 focus:border-mustard focus:bg-white focus:ring-2 focus:ring-mustard/50"
             />
+            <p
+              className={`mt-1.5 text-right text-[10px] tabular-nums ${
+                remaining < 40 ? "text-burgundy/70" : "text-ink/40"
+              }`}
+            >
+              {remaining} characters left
+            </p>
           </div>
 
           {errorMsg && (
@@ -678,17 +858,25 @@ function WishCard() {
           <button
             type="submit"
             disabled={status === "submitting"}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-ink py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md transition-transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70 hover:-translate-y-0.5"
+            className="relative mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-ink py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md transition-transform hover:-translate-y-0.5 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
           >
+            {status !== "submitting" && (
+              <span
+                aria-hidden
+                className="animate-rsvp-shine pointer-events-none absolute inset-y-0 w-1/3 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)]"
+                style={{ animationDelay: "2.2s" }}
+              />
+            )}
             {status === "submitting" && <SpinnerIcon className="h-4 w-4" />}
-            {status === "submitting" ? "SENDING..." : "SEND WISH"}
+            <span className="relative z-10">
+              {status === "submitting" ? "SENDING..." : "SEND WISH"}
+            </span>
           </button>
         </form>
 
-        {/* FIX: max-h added so the wishes list doesn't grow unbounded on
-            short screens (e.g. when the mobile keyboard is open) —
-            overflow scrolls within its own area instead of pushing the
-            whole card out of the viewport. */}
+        {/* max-h dipertahankan supaya daftar ucapan tidak tumbuh tanpa batas
+            di layar pendek (mis. saat keyboard mobile terbuka) — scroll di
+            areanya sendiri, bukan mendorong seluruh kartu keluar viewport. */}
         <div className="flex min-h-[250px] flex-1 flex-col border-t border-mustard/20 pt-6">
           <p className="mb-4 text-center text-[11px] font-bold uppercase tracking-widest text-ink/50">
             Wishes ({wishes.length})
@@ -701,9 +889,15 @@ function WishCard() {
                 variants={wishItemFade}
                 initial="hidden"
                 animate="visible"
-                className="rounded-2xl border border-mustard/20 bg-white/80 p-5 shadow-sm transition-shadow hover:shadow-md"
+                className="relative overflow-hidden rounded-2xl border border-mustard/20 bg-white/80 p-5 shadow-sm transition-shadow hover:shadow-md"
               >
-                <div className="mb-3 flex items-start justify-between gap-2">
+                {/* Tanda kutip dekoratif samar di latar */}
+                <QuoteMark
+                  aria-hidden
+                  className="pointer-events-none absolute -right-1 -top-1 h-10 w-10 text-mustard/10"
+                />
+
+                <div className="relative mb-3 flex items-start justify-between gap-2">
                   <span className="font-serif text-base font-bold leading-tight text-ink">
                     {item.name}
                   </span>
@@ -719,10 +913,10 @@ function WishCard() {
                       : "Not Attending"}
                   </span>
                 </div>
-                <p className="mb-3 text-sm italic leading-relaxed text-ink/80">
+                <p className="relative mb-3 text-sm italic leading-relaxed text-ink/80">
                   &ldquo;{item.message}&rdquo;
                 </p>
-                <p className="flex justify-end text-[10px] text-ink/40">
+                <p className="relative flex justify-end text-[10px] text-ink/40">
                   {item.date}
                 </p>
               </m.div>
@@ -738,23 +932,78 @@ function WishCard() {
 function RsvpWishSectionInner() {
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-20 sm:px-6 sm:py-28 md:py-32">
+      {/*
+        Nama keyframe di-prefix "rsvp-" karena @keyframes bersifat global.
+        Sebelumnya file ini mendaftarkan "sway" dan "gentle-pulse" — nama
+        yang sama persis dipakai section lain, dan definisi terakhir yang
+        mount akan diam-diam menimpa semuanya tanpa error apa pun.
+
+        JANGAN menganimasikan filter, box-shadow, atau backdrop-blur di sini.
+      */}
       <style>{`
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.4); border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.6); }
 
-        @keyframes sway {
-          0%, 100% { transform: rotate(0deg) translate3d(0,0,0); }
-          50% { transform: rotate(var(--end-deg, 2deg)) translate3d(0,0,0); }
+        @keyframes rsvp-sway {
+          0%, 100% { transform: rotate(0deg); }
+          25%      { transform: rotate(var(--end-deg, 1.5deg)); }
+          75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
         }
-        .animate-sway { animation: sway ease-in-out infinite; }
-        
-        @keyframes gentle-pulse {
-          0%, 100% { transform: scale(1) rotate(0deg) translate3d(0,0,0); }
-          50% { transform: scale(1.1) rotate(var(--rot, 5deg)) translate3d(0,0,0); }
+        .animate-rsvp-sway {
+          animation: rsvp-sway ease-in-out infinite;
         }
-        .animate-gentle-pulse { animation: gentle-pulse ease-in-out infinite; }
+
+        @keyframes rsvp-pulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
+        }
+        .animate-rsvp-pulse {
+          animation: rsvp-pulse ease-in-out infinite;
+        }
+
+        @keyframes rsvp-shine {
+          0%        { transform: translateX(-150%) skewX(-20deg); }
+          55%, 100% { transform: translateX(400%) skewX(-20deg); }
+        }
+        .animate-rsvp-shine {
+          animation: rsvp-shine 4.5s ease-in-out infinite;
+        }
+
+        @keyframes rsvp-reveal {
+          0%   { opacity: 0; transform: translateY(8px) scale(0.98); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-rsvp-reveal {
+          animation: rsvp-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes rsvp-check {
+          0%   { opacity: 0; transform: scale(0.4); }
+          60%  { opacity: 1; transform: scale(1.15); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-rsvp-check {
+          animation: rsvp-check 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+        }
+
+        @keyframes rsvp-beam {
+          0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
+          50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
+        }
+        .animate-rsvp-beam {
+          animation: rsvp-beam 19s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-rsvp-sway,
+          .animate-rsvp-pulse,
+          .animate-rsvp-shine,
+          .animate-rsvp-reveal,
+          .animate-rsvp-check,
+          .animate-rsvp-beam { animation: none; }
+        }
       `}</style>
 
       {/* Background Decor */}
@@ -765,6 +1014,36 @@ function RsvpWishSectionInner() {
       <AmbientGlow />
       <FrameLayers />
 
+      {/* Sinar matahari lembut. hidden sm:block disengaja — blur 35px pada
+          elemen sebesar ini biayanya di rasterisasi awal, terasa di HP
+          low-end saat scroll masuk. */}
+      <div
+        aria-hidden
+        className="animate-rsvp-beam pointer-events-none absolute -top-1/4 left-1/2 z-[1] hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
+        style={{
+          background:
+            "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
+          filter: "blur(35px)",
+          willChange: "transform, opacity",
+        }}
+      />
+
+      {/*
+        AmbientLayer sengaja DIKURANGI di section ini, tidak seperti Gallery.
+        Ini satu-satunya section berisi form: kelopak dan kupu-kupu yang
+        melintas di depan input mengganggu saat tamu sedang mengetik.
+        Sparkle dibiarkan (statis di tempat, tidak melintas), petal dipangkas
+        ke 2 di tepi kiri/kanan jauh dari kartu, kupu-kupu dihilangkan.
+      */}
+      <AmbientLayer
+        butterflies={[]}
+        petals={[
+          { left: "4%", size: 14, duration: 11, delay: 0, drift: 12 },
+          { left: "94%", size: 12, duration: 13, delay: 3.5, drift: -14 },
+        ]}
+        fallDistance="170vh"
+      />
+
       <m.div
         className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-5xl"
         initial="hidden"
@@ -774,7 +1053,7 @@ function RsvpWishSectionInner() {
       >
         <m.div variants={fadeUp} className="flex items-center gap-3">
           <div
-            className="animate-gentle-pulse"
+            className="animate-rsvp-pulse"
             style={
               {
                 "--rot": "6deg",
@@ -793,7 +1072,7 @@ function RsvpWishSectionInner() {
           </span>
 
           <div
-            className="animate-gentle-pulse"
+            className="animate-rsvp-pulse"
             style={
               {
                 "--rot": "-6deg",
@@ -815,8 +1094,15 @@ function RsvpWishSectionInner() {
           RSVP &amp; Wishes
         </m.h2>
 
+        <m.p
+          variants={fadeUp}
+          className="mt-3 max-w-md text-xs italic leading-relaxed text-ink/55 sm:text-sm"
+        >
+          Kehadiran dan doa restu Anda adalah hadiah terindah bagi kami.
+        </m.p>
+
         <m.div variants={fadeUp} className="mb-12 mt-6 sm:mb-16 md:mb-20">
-          <SprigDivider className="h-3 w-36 opacity-70 sm:w-44" />
+          <SprigDivider className="h-4 w-40 opacity-80 sm:w-48" />
         </m.div>
 
         <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:gap-9 lg:gap-10">

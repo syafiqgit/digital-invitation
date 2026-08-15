@@ -1,16 +1,21 @@
 "use client";
 
-import { memo, useState } from "react";
-import {
-  LazyMotion,
-  domAnimation,
-  m,
-  type Transition,
-  type Variants,
-} from "framer-motion";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
+import AmbientLayer from "./AmbientLayer";
+
+/* =========================================================================
+   TYPE ALIASES
+
+   Union di-alias supaya generic tetap satu kata. Formatter yang memproses
+   .tsx sebagai JavaScript membaca "<" pada useState<...> sebagai operator
+   perbandingan dan memotong ekspresinya jadi statement rusak — pernah
+   terjadi di RsvpWishSection. Generic pendek jauh lebih sulit dirusak.
+   ========================================================================= */
+type TimeoutId = ReturnType<typeof setTimeout>;
 
 interface BankAccount {
   id: string;
@@ -20,13 +25,15 @@ interface BankAccount {
   logoText: string;
 }
 
+interface GiftAddress {
+  recipient: string;
+  phone: string;
+  address: string;
+}
+
 interface DigitalEnvelopeSectionProps {
   accounts?: BankAccount[];
-  giftAddress?: {
-    recipient: string;
-    phone: string;
-    address: string;
-  };
+  giftAddress?: GiftAddress;
 }
 
 const DEFAULT_ACCOUNTS: BankAccount[] = [
@@ -46,7 +53,7 @@ const DEFAULT_ACCOUNTS: BankAccount[] = [
   },
 ];
 
-const DEFAULT_GIFT_ADDRESS = {
+const DEFAULT_GIFT_ADDRESS: GiftAddress = {
   recipient: "Amelia & Alexander",
   phone: "+62 812-3456-7890",
   address:
@@ -54,18 +61,15 @@ const DEFAULT_GIFT_ADDRESS = {
 };
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const GPU_HINT = { willChange: "transform, opacity" } as const;
 const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
-
-const loop = (
-  duration: number,
-  delay = 0,
-  ease: Transition["ease"] = "easeInOut",
-): Transition => ({ duration, delay, repeat: Infinity, ease });
+const COPY_RESET_MS = 2500;
 
 /* ---------- Framer Motion variants (Entrance Only) ---------- */
-
+// NOTE: GPU_HINT (willChange permanen) dihapus dari elemen entrance.
+// viewport once: true berarti animasinya jalan sekali; menahan compositor
+// layer selamanya setelah itu cuma buang GPU memory. Framer Motion sudah
+// toggle will-change otomatis selama animasi aktif.
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -81,17 +85,20 @@ const fadeUp: Variants = {
   },
 };
 
-const vineFade: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 1.1, ease: "easeOut" } },
-};
-
-const cornerFade: Variants = {
-  hidden: { opacity: 0, scale: 0.85 },
+// Kartu rekening masuk dari sisi kolomnya masing-masing.
+const cardVariants: Variants = {
+  hidden: (fromLeft: boolean) => ({
+    opacity: 0,
+    y: 24,
+    x: fromLeft ? -20 : 20,
+    scale: 0.98,
+  }),
   visible: {
     opacity: 1,
+    y: 0,
+    x: 0,
     scale: 1,
-    transition: { duration: 0.9, ease: "easeOut" },
+    transition: { duration: 0.75, ease: EASE },
   },
 };
 
@@ -100,8 +107,11 @@ const textLift = {
     "0 2px 10px rgba(255,255,255,0.9), 0 1px 3px rgba(255,255,255,0.9)",
 } as const;
 
-/* ---------- Static decoration data (Decluttered for performance) ---------- */
-
+/* ---------- Static decoration data ---------- */
+//
+// endDeg vertikal 0.9deg dengan durasi 6.5s — sama seperti Gallery & RSVP.
+// Section ini tingginya stabil (dua kartu rekening + satu kartu alamat),
+// jadi simpangan ujung vine masih aman terhadap lebar strip.
 const vines = [
   {
     key: "left",
@@ -109,7 +119,10 @@ const vines = [
     className:
       "absolute left-0 top-0 h-full w-5 opacity-70 xs:w-6 sm:w-10 lg:w-14",
     flip: "",
-    isAnimated: false,
+    origin: "top center",
+    endDeg: "0.9deg",
+    duration: "6.5s",
+    delay: "0s",
   },
   {
     key: "right",
@@ -117,7 +130,10 @@ const vines = [
     className:
       "absolute right-0 top-0 h-full w-5 opacity-70 xs:w-6 sm:w-10 lg:w-14",
     flip: "-scale-x-100",
-    isAnimated: false,
+    origin: "top center",
+    endDeg: "0.9deg",
+    duration: "7s",
+    delay: "0.4s",
   },
   {
     key: "top",
@@ -126,10 +142,9 @@ const vines = [
       "absolute left-0 top-0 h-5 w-full opacity-70 xs:h-6 sm:h-10 lg:h-14",
     flip: "",
     origin: "left center",
-    endDeg: "0.7deg",
-    duration: "8.6s",
+    endDeg: "1deg",
+    duration: "7.4s",
     delay: "0.2s",
-    isAnimated: true,
   },
   {
     key: "bottom",
@@ -138,49 +153,51 @@ const vines = [
       "absolute bottom-0 left-0 h-5 w-full opacity-70 xs:h-6 sm:h-10 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
-    endDeg: "-0.7deg",
-    duration: "9.2s",
+    endDeg: "1deg",
+    duration: "7.9s",
     delay: "0.3s",
-    isAnimated: true,
   },
 ];
 
+// endDeg positif semua. Pada keyframe dua-arah, tanda minus cuma membalik
+// fase (mulai ke kiri dulu), bukan mengubah amplitudo — variasi antar-sudut
+// sudah dihasilkan oleh delay yang berbeda.
 const corners = [
   {
     key: "top-left",
     position: "top-2 left-2 sm:top-4 sm:left-4",
     flip: "",
-    fadeDelay: 0,
     origin: "top left",
     endDeg: "1.8deg",
-    duration: "6.6s",
+    duration: "6s",
+    delay: "0s",
   },
   {
     key: "top-right",
     position: "top-2 right-2 sm:top-4 sm:right-4",
     flip: "-scale-x-100",
-    fadeDelay: 0.1,
     origin: "top right",
-    endDeg: "-1.8deg",
-    duration: "7.1s",
+    endDeg: "1.8deg",
+    duration: "6.4s",
+    delay: "0.1s",
   },
   {
     key: "bottom-left",
     position: "bottom-2 left-2 sm:bottom-4 sm:left-4",
     flip: "-scale-y-100",
-    fadeDelay: 0.2,
     origin: "bottom left",
     endDeg: "1.8deg",
-    duration: "6.9s",
+    duration: "6.2s",
+    delay: "0.2s",
   },
   {
     key: "bottom-right",
     position: "bottom-2 right-2 sm:bottom-4 sm:right-4",
     flip: "-scale-x-100 -scale-y-100",
-    fadeDelay: 0.3,
     origin: "bottom right",
-    endDeg: "-1.8deg",
-    duration: "7.4s",
+    endDeg: "1.8deg",
+    duration: "6.7s",
+    delay: "0.3s",
   },
 ];
 
@@ -211,59 +228,6 @@ const MiniBloom = memo(function MiniBloom({
         <circle r="2.3" fill="var(--mustard)" />
       </g>
     </svg>
-  );
-});
-
-const CornerFlourish = memo(function CornerFlourish({
-  className = "",
-}: {
-  className?: string;
-}) {
-  return (
-    <svg viewBox="0 0 60 60" className={className} fill="none">
-      <path
-        d="M4 4 C 4 24, 18 36, 40 38 C 48 39, 54 44, 56 52"
-        stroke="var(--sage)"
-        strokeWidth="1.1"
-        fill="none"
-        opacity="0.6"
-      />
-      <g transform="translate(10, 10)">
-        {ANGLES_5.map((deg) => (
-          <ellipse
-            key={deg}
-            cx="0"
-            cy="-5.5"
-            rx="3.6"
-            ry="7"
-            fill="var(--blush-dark)"
-            opacity="0.9"
-            transform={`rotate(${deg})`}
-          />
-        ))}
-        <circle r="2.2" fill="var(--mustard)" />
-      </g>
-      <ellipse
-        cx="28"
-        cy="30"
-        rx="3"
-        ry="6"
-        fill="var(--sage-light)"
-        stroke="var(--sage)"
-        strokeWidth="0.5"
-        transform="rotate(30 28 30)"
-      />
-    </svg>
-  );
-});
-
-/* Statis menggantikan MajesticRay yang membebani GPU */
-const AmbientGlow = memo(function AmbientGlow() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl xs:h-[340px] xs:w-[340px] sm:h-[420px] sm:w-[420px] lg:h-[620px] lg:w-[620px]"
-    />
   );
 });
 
@@ -350,42 +314,106 @@ const GiftIcon = memo(function GiftIcon({
   );
 });
 
-/* ---------- Frame Layers (Optimized CSS Keyframes) ---------- */
+const CopyIcon = memo(function CopyIcon({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+});
+
+const CheckIcon = memo(function CheckIcon({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+});
+
+const HomeIcon = memo(function HomeIcon({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="var(--burgundy)"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9.8V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.8" />
+      <path d="M9.5 21v-6h5v6" />
+    </svg>
+  );
+});
+
+// Satu elemen dengan dua gradient stop — bukan dua radial gradient besar
+// yang ditumpuk, karena masing-masing kena blur berat dan biaya
+// rasterisasinya nyata di HP low-end.
+const AmbientGlow = memo(function AmbientGlow() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl xs:h-[340px] xs:w-[340px] sm:h-[420px] sm:w-[420px] lg:h-[620px] lg:w-[620px]"
+      style={{
+        background:
+          "radial-gradient(circle, rgba(212,175,55,0.10) 0%, rgba(168,181,160,0.08) 45%, transparent 72%)",
+      }}
+    />
+  );
+});
 
 const FrameLayers = memo(function FrameLayers() {
   return (
     <>
-      <style>{`
-        @keyframes sway {
-          0%, 100% { transform: rotate(0deg) translate3d(0,0,0); }
-          50% { transform: rotate(var(--end-deg, 2deg)) translate3d(0,0,0); }
-        }
-        .animate-sway { animation: sway ease-in-out infinite; }
-        
-        @keyframes gentle-pulse {
-          0%, 100% { transform: scale(1) rotate(0deg) translate3d(0,0,0); }
-          50% { transform: scale(1.1) rotate(var(--rot, 5deg)) translate3d(0,0,0); }
-        }
-        .animate-gentle-pulse { animation: gentle-pulse ease-in-out infinite; }
-      `}</style>
-
       {vines.map((v) => (
         <div
           key={v.key}
           className={`pointer-events-none absolute z-[2] ${v.className} ${v.flip}`}
         >
           <div
-            className={`h-full w-full ${v.isAnimated ? "animate-sway" : ""}`}
+            className="h-full w-full animate-envelope-sway"
             style={
-              v.isAnimated
-                ? ({
-                    transformOrigin: v.origin,
-                    "--end-deg": v.endDeg,
-                    animationDuration: v.duration,
-                    animationDelay: v.delay,
-                    willChange: "transform",
-                  } as React.CSSProperties)
-                : undefined
+              {
+                transformOrigin: v.origin,
+                "--end-deg": v.endDeg,
+                animationDuration: v.duration,
+                animationDelay: v.delay,
+                willChange: "transform",
+              } as React.CSSProperties
             }
           >
             <FloralVine orientation={v.orientation} className="h-full w-full" />
@@ -399,13 +427,13 @@ const FrameLayers = memo(function FrameLayers() {
           className={`pointer-events-none absolute z-[3] h-12 w-12 opacity-90 xs:h-16 xs:w-16 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
-            className="h-full w-full animate-sway"
+            className="h-full w-full animate-envelope-sway"
             style={
               {
                 transformOrigin: c.origin,
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
-                animationDelay: c.fadeDelay ? `${c.fadeDelay}s` : "0s",
+                animationDelay: c.delay,
                 willChange: "transform",
               } as React.CSSProperties
             }
@@ -420,6 +448,67 @@ const FrameLayers = memo(function FrameLayers() {
   );
 });
 
+// Aksen sudut emas untuk kartu — muncul saat hover, murni opacity.
+const CardCornerAccents = memo(function CardCornerAccents() {
+  return (
+    <>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-3.5 top-3.5 h-5 w-5 rounded-tl-lg border-l border-t border-mustard opacity-0 transition-opacity duration-500 group-hover:opacity-70"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-3.5 right-3.5 h-5 w-5 rounded-br-lg border-b border-r border-mustard opacity-0 transition-opacity duration-500 group-hover:opacity-70"
+      />
+    </>
+  );
+});
+
+/* ---------- Copy button (shared) ---------- */
+const CopyButton = memo(function CopyButton({
+  copied,
+  onClick,
+  labelIdle,
+  labelCopied,
+  className = "",
+  shineDelay = "0s",
+}: {
+  copied: boolean;
+  onClick: () => void;
+  labelIdle: string;
+  labelCopied: string;
+  className?: string;
+  shineDelay?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-live="polite"
+      className={`relative flex items-center justify-center gap-2 overflow-hidden rounded-full border py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
+        copied
+          ? "border-sage bg-sage/10 text-sage-dark shadow-inner"
+          : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:border-transparent hover:bg-[#6B2A36] hover:text-white hover:shadow-md"
+      } ${className}`}
+    >
+      {/* Shine dimatikan saat state copied supaya konfirmasi terbaca tenang */}
+      {!copied && (
+        <span
+          aria-hidden
+          className="animate-envelope-shine pointer-events-none absolute inset-y-0 w-1/3 bg-[linear-gradient(90deg,transparent,rgba(212,175,55,0.22),transparent)]"
+          style={{ animationDelay: shineDelay }}
+        />
+      )}
+      {copied ? (
+        <CheckIcon className="animate-envelope-check relative z-10 h-3.5 w-3.5" />
+      ) : (
+        <CopyIcon className="relative z-10 h-3.5 w-3.5" />
+      )}
+      <span className="relative z-10">{copied ? labelCopied : labelIdle}</span>
+    </button>
+  );
+});
+
 /* ---------- Main Component ---------- */
 
 function DigitalEnvelopeSectionInner({
@@ -429,27 +518,177 @@ function DigitalEnvelopeSectionInner({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAddress, setCopiedAddress] = useState(false);
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2500);
-  };
+  // FIX: sebelumnya kedua handler memanggil setTimeout tanpa cleanup —
+  // kalau tamu menekan copy lalu meninggalkan halaman sebelum 2.5 detik,
+  // timer tetap jalan dan setState dipanggil pada komponen yang sudah
+  // unmount. Ref + cleanup di useEffect menutup keduanya. Satu ref cukup
+  // karena hanya satu konfirmasi yang aktif pada satu waktu.
+  const resetTimerRef = useRef<TimeoutId | null>(null);
 
-  const handleCopyAddress = () => {
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
+
+  const scheduleReset = useCallback((fn: () => void) => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = setTimeout(fn, COPY_RESET_MS);
+  }, []);
+
+  // navigator.clipboard butuh secure context (HTTPS/localhost) dan bisa
+  // ditolak. Sebelumnya hasilnya tidak diperiksa sama sekali — kalau gagal,
+  // tombol tetap menampilkan "Successfully Copied" padahal tidak ada apa pun
+  // di clipboard tamu.
+  const copyText = useCallback(async (text: string): Promise<boolean> => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // jatuh ke fallback di bawah
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const handleCopy = useCallback(
+    async (text: string, id: string) => {
+      const ok = await copyText(text);
+      if (!ok) return;
+      setCopiedAddress(false);
+      setCopiedId(id);
+      scheduleReset(() => setCopiedId(null));
+    },
+    [copyText, scheduleReset],
+  );
+
+  const handleCopyAddress = useCallback(async () => {
     const fullText = `Recipient: ${giftAddress.recipient}\nPhone: ${giftAddress.phone}\nAddress: ${giftAddress.address}`;
-    navigator.clipboard.writeText(fullText);
+    const ok = await copyText(fullText);
+    if (!ok) return;
+    setCopiedId(null);
     setCopiedAddress(true);
-    setTimeout(() => setCopiedAddress(false), 2500);
-  };
+    scheduleReset(() => setCopiedAddress(false));
+  }, [copyText, giftAddress, scheduleReset]);
 
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-3 py-16 xs:px-4 sm:px-6 sm:py-24 lg:py-28">
+      {/*
+        Nama keyframe di-prefix "envelope-" karena @keyframes bersifat global.
+        Sebelumnya file ini mendaftarkan "sway" dan "gentle-pulse" — nama yang
+        sama persis dipakai section lain, dan definisi terakhir yang mount
+        akan diam-diam menimpa semuanya tanpa error apa pun.
+
+        Blok <style> juga dipindah keluar dari FrameLayers ke sini, sejajar
+        dengan section lain: menaruh definisi keyframe di dalam komponen
+        dekorasi membuat aturan CSS ikut mati kalau komponen itu suatu saat
+        di-unmount atau dipakai bersyarat.
+
+        Keyframe sway sekarang dua arah, identik dengan CoverDecorations.
+        JANGAN menganimasikan filter, box-shadow, atau backdrop-blur di sini.
+      */}
+      <style>{`
+        @keyframes envelope-sway {
+          0%, 100% { transform: rotate(0deg); }
+          25%      { transform: rotate(var(--end-deg, 1.5deg)); }
+          75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
+        }
+        .animate-envelope-sway {
+          animation: envelope-sway ease-in-out infinite;
+        }
+
+        @keyframes envelope-pulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
+        }
+        .animate-envelope-pulse {
+          animation: envelope-pulse ease-in-out infinite;
+        }
+
+        @keyframes envelope-shine {
+          0%        { transform: translateX(-150%) skewX(-20deg); }
+          55%, 100% { transform: translateX(400%) skewX(-20deg); }
+        }
+        .animate-envelope-shine {
+          animation: envelope-shine 5s ease-in-out infinite;
+        }
+
+        @keyframes envelope-check {
+          0%   { opacity: 0; transform: scale(0.4); }
+          60%  { opacity: 1; transform: scale(1.2); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-envelope-check {
+          animation: envelope-check 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes envelope-beam {
+          0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
+          50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
+        }
+        .animate-envelope-beam {
+          animation: envelope-beam 20s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-envelope-sway,
+          .animate-envelope-pulse,
+          .animate-envelope-shine,
+          .animate-envelope-check,
+          .animate-envelope-beam { animation: none; }
+        }
+      `}</style>
+
       <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
         <BackgroundPattern className="h-full w-full" />
       </div>
 
       <AmbientGlow />
       <FrameLayers />
+
+      {/* Sinar matahari lembut. hidden sm:block disengaja — blur 35px pada
+          elemen sebesar ini biayanya di rasterisasi awal, terasa di HP
+          low-end saat scroll masuk. */}
+      <div
+        aria-hidden
+        className="animate-envelope-beam pointer-events-none absolute -top-1/4 left-1/2 z-[1] hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
+        style={{
+          background:
+            "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
+          filter: "blur(35px)",
+          willChange: "transform, opacity",
+        }}
+      />
+
+      {/*
+        AmbientLayer dipangkas seperti di RsvpWishSection, bukan versi penuh
+        Gallery. Alasannya sama: ini section transaksional — tamu sedang
+        membaca nomor rekening digit per digit lalu menekan tombol copy.
+        Kupu-kupu yang melintas di depan angka mengganggu ketelitian itu.
+        Petal disisakan 2 di tepi jauh dari kartu, sparkle dibiarkan.
+      */}
+      <AmbientLayer
+        butterflies={[]}
+        petals={[
+          { left: "5%", size: 13, duration: 12, delay: 0.5, drift: 14 },
+          { left: "93%", size: 12, duration: 14, delay: 4, drift: -12 },
+        ]}
+        fallDistance="150vh"
+      />
 
       <m.div
         className="relative z-10 flex w-full max-w-4xl flex-col items-center px-3 text-center xs:px-4 sm:px-6"
@@ -458,13 +697,9 @@ function DigitalEnvelopeSectionInner({
         viewport={{ once: true, amount: 0.15 }}
         variants={containerVariants}
       >
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="flex items-center gap-2 xs:gap-3"
-        >
+        <m.div variants={fadeUp} className="flex items-center gap-2 xs:gap-3">
           <div
-            className="animate-gentle-pulse shrink-0"
+            className="animate-envelope-pulse shrink-0"
             style={
               {
                 "--rot": "6deg",
@@ -483,7 +718,7 @@ function DigitalEnvelopeSectionInner({
           </span>
 
           <div
-            className="animate-gentle-pulse shrink-0"
+            className="animate-envelope-pulse shrink-0"
             style={
               {
                 "--rot": "-6deg",
@@ -500,18 +735,14 @@ function DigitalEnvelopeSectionInner({
 
         <m.p
           variants={fadeUp}
-          className="font-script mt-4 text-[2rem] leading-tight font-semibold text-ink xs:mt-5 xs:text-4xl sm:text-5xl"
-          style={{ ...textLift, ...GPU_HINT }}
+          className="font-script mt-4 text-[2rem] font-semibold leading-tight text-ink xs:mt-5 xs:text-4xl sm:text-5xl"
+          style={textLift}
         >
           Digital Envelope &amp; Gifts
         </m.p>
 
-        <m.div
-          variants={fadeUp}
-          style={GPU_HINT}
-          className="mt-5 mb-8 xs:mt-6 sm:mb-12"
-        >
-          <SprigDivider className="h-3 w-32 xs:w-36 sm:w-44 opacity-70" />
+        <m.div variants={fadeUp} className="mb-8 mt-5 xs:mt-6 sm:mb-12">
+          <SprigDivider className="h-4 w-36 opacity-80 xs:w-40 sm:w-48" />
         </m.div>
 
         <m.p
@@ -527,19 +758,27 @@ function DigitalEnvelopeSectionInner({
           variants={containerVariants}
           className="mb-6 grid w-full grid-cols-1 gap-4 sm:mb-8 sm:grid-cols-2 sm:gap-6"
         >
-          {accounts.map((acc) => (
+          {accounts.map((acc, i) => (
             <m.div
-              variants={fadeUp}
+              variants={cardVariants}
+              custom={i % 2 === 0}
               key={acc.id}
-              className="group relative flex flex-col justify-between rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:-translate-y-0.5 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem]"
+              className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:-translate-y-0.5 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem]"
             >
-              <div>
+              {/* Garis emas tipis di bibir atas kartu */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
+              />
+              <CardCornerAccents />
+
+              <div className="relative">
                 <div className="mb-4 flex items-center justify-between">
                   <span className="font-serif text-lg font-bold tracking-wide text-burgundy xs:text-xl">
                     {acc.bankName}
                   </span>
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mustard/10 transition-colors group-hover:bg-mustard/20 xs:h-10 xs:w-10">
-                    <GiftIcon className="h-4.5 w-4.5 xs:h-5 xs:w-5" />
+                    <GiftIcon className="h-[18px] w-[18px] xs:h-5 xs:w-5" />
                   </div>
                 </div>
 
@@ -547,7 +786,9 @@ function DigitalEnvelopeSectionInner({
                   <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-ink/50 xs:text-[11px]">
                     Account Number
                   </p>
-                  <p className="break-all font-mono text-lg font-bold tracking-wider text-ink xs:text-xl sm:text-2xl">
+                  {/* tabular-nums: digit selebar sama supaya nomor rekening
+                      tidak "bergoyang" lebarnya antar-kartu */}
+                  <p className="break-all font-mono text-lg font-bold tabular-nums tracking-wider text-ink xs:text-xl sm:text-2xl">
                     {acc.accountNumber}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-ink/80">
@@ -556,30 +797,32 @@ function DigitalEnvelopeSectionInner({
                 </div>
               </div>
 
-              <button
-                type="button"
+              <CopyButton
+                copied={copiedId === acc.id}
                 onClick={() => handleCopy(acc.accountNumber, acc.id)}
-                className={`relative w-full rounded-full border py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
-                  copiedId === acc.id
-                    ? "border-sage bg-sage/10 text-sage-dark shadow-inner"
-                    : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:border-transparent hover:bg-[#6B2A36] hover:text-white hover:shadow-md"
-                }`}
-              >
-                {copiedId === acc.id
-                  ? "Successfully Copied ✓"
-                  : "Copy Account Number"}
-              </button>
+                labelIdle="Copy Account Number"
+                labelCopied="Successfully Copied"
+                className="relative w-full"
+                shineDelay={`${i * 1.6}s`}
+              />
             </m.div>
           ))}
         </m.div>
 
         <m.div
           variants={fadeUp}
-          className="group relative w-full rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem] sm:p-8"
+          className="group relative w-full overflow-hidden rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem] sm:p-8"
         >
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-            <div className="flex-1 min-w-0">
-              <h4 className="mb-3 font-serif text-base font-bold text-ink transition-colors group-hover:text-burgundy xs:text-lg">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
+          />
+          <CardCornerAccents />
+
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="min-w-0 flex-1">
+              <h4 className="mb-3 flex items-center gap-2 font-serif text-base font-bold text-ink transition-colors group-hover:text-burgundy xs:text-lg">
+                <HomeIcon className="h-4 w-4 shrink-0" />
                 Send a Physical Gift
               </h4>
               <p className="text-sm leading-relaxed text-ink/80">
@@ -596,17 +839,14 @@ function DigitalEnvelopeSectionInner({
             </div>
 
             <div className="w-full shrink-0 sm:w-auto">
-              <button
-                type="button"
+              <CopyButton
+                copied={copiedAddress}
                 onClick={handleCopyAddress}
-                className={`relative w-full rounded-full border px-8 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 sm:w-auto ${
-                  copiedAddress
-                    ? "border-sage bg-sage/10 text-sage-dark shadow-inner"
-                    : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:border-transparent hover:bg-[#6B2A36] hover:text-white hover:shadow-md"
-                }`}
-              >
-                {copiedAddress ? "Address Copied ✓" : "Copy Address"}
-              </button>
+                labelIdle="Copy Address"
+                labelCopied="Address Copied"
+                className="w-full px-8 sm:w-auto"
+                shineDelay="3.2s"
+              />
             </div>
           </div>
         </m.div>

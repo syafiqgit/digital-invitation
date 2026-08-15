@@ -155,10 +155,6 @@ const sparkles = [
   { top: "88%", left: "82%" },
 ];
 
-// Kupu-kupu: sekarang pakai asset gambar (bukan SVG generated), jadi tiap
-// entry butuh src eksplisit. Titik awal & jarak tempuh (x/y/rotate range)
-// dijaga kecil supaya tetap terasa "di background", tidak menutupi konten
-// utama di tengah. src bergantian antara 2 varian supaya tidak identik.
 const butterflies = [
   {
     key: "bf-1",

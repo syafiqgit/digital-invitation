@@ -12,6 +12,7 @@ import {
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
+import AmbientLayer from "./AmbientLayer";
 
 interface GallerySectionProps {
   photos?: string[];
@@ -49,21 +50,70 @@ const fadeUp: Variants = {
   },
 };
 
+// Foto masuk berselang-seling dari kiri/kanan mengikuti kolomnya, bukan
+// semuanya dari bawah — terbaca lebih hidup pada grid.
+const photoVariants: Variants = {
+  hidden: (isLeftCol: boolean) => ({
+    opacity: 0,
+    y: 28,
+    x: isLeftCol ? -18 : 18,
+    scale: 0.94,
+  }),
+  visible: {
+    opacity: 1,
+    y: 0,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.75, ease: EASE },
+  },
+};
+
+// FIX: fungsi dinamis berbasis `custom` HANYA bisa hidup di dalam objek
+// Variants, bukan langsung di prop initial/animate/exit. Prop tersebut
+// bertipe TargetAndTransition | VariantLabels — memberi fungsi ke sana
+// gagal saat build (lolos di dev karena runtime tetap jalan).
+// Arah geser diambil dari `custom` yang di-pass ke AnimatePresence + m.div.
+const lightboxSlide: Variants = {
+  enter: (d: number) => ({ opacity: 0, x: d * 40 }),
+  center: { opacity: 1, x: 0, transition: { duration: 0.32, ease: EASE } },
+  exit: (d: number) => ({
+    opacity: 0,
+    x: d * -40,
+    transition: { duration: 0.32, ease: EASE },
+  }),
+};
+
 /* ---------- Static decoration data (Optimized for CSS Animations) ---------- */
+//
+// endDeg vertikal 0.9deg (Cover/Event pakai 1.2deg). GallerySection tumbuh
+// mengikuti jumlah foto: 6 foto di mobile = 3 baris, tinggi total ~1300px.
+// Simpangan ujung vine = tinggi x tan(sudut) — pada 0.9deg itu ~20px, masih
+// di dalam lebar strip 24px. Durasi 6.5s/7s dijaga pendek supaya kecepatan
+// sudutnya ~80% dari Event, bukan terasa lamban seperti Story.
+//
+// KALAU MENAMBAH FOTO: 6-8 foto aman di 0.9deg. Di atas 12 foto turunkan
+// ke 0.6deg. Gejala kalau kelewatan: scroll ke bawah, muncul celah putih
+// antara vine dan tepi layar.
 const vines = [
   {
     key: "left",
     orientation: "vertical" as const,
     className: "left-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "",
-    isAnimated: false,
+    origin: "top center",
+    endDeg: "0.9deg",
+    duration: "6.5s",
+    delay: "0s",
   },
   {
     key: "right",
     orientation: "vertical" as const,
     className: "right-0 top-0 h-full w-6 sm:w-10 md:w-12 lg:w-14",
     flip: "-scale-x-100",
-    isAnimated: false,
+    origin: "top center",
+    endDeg: "0.9deg",
+    duration: "7s",
+    delay: "0.4s",
   },
   {
     key: "top",
@@ -71,10 +121,9 @@ const vines = [
     className: "left-0 top-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "",
     origin: "left center",
-    endDeg: "0.7deg",
-    duration: "8.6s",
+    endDeg: "1deg",
+    duration: "7.4s",
     delay: "0.2s",
-    isAnimated: true,
   },
   {
     key: "bottom",
@@ -82,13 +131,15 @@ const vines = [
     className: "bottom-0 left-0 h-6 w-full sm:h-10 md:h-12 lg:h-14",
     flip: "-scale-y-100",
     origin: "left center",
-    endDeg: "-0.7deg",
-    duration: "9.2s",
+    endDeg: "1deg",
+    duration: "7.9s",
     delay: "0.3s",
-    isAnimated: true,
   },
 ];
 
+// endDeg positif semua. Pada keyframe dua-arah, tanda minus cuma membalik
+// fase (mulai ke kiri dulu), bukan mengubah amplitudo — variasi antar-sudut
+// sudah dihasilkan oleh delay yang berbeda.
 const corners = [
   {
     key: "top-left",
@@ -96,7 +147,7 @@ const corners = [
     flip: "",
     origin: "top left",
     endDeg: "1.8deg",
-    duration: "6.6s",
+    duration: "6s",
     delay: "0s",
   },
   {
@@ -104,8 +155,8 @@ const corners = [
     position: "top-2 right-2 sm:top-4 sm:right-4",
     flip: "-scale-x-100",
     origin: "top right",
-    endDeg: "-1.8deg",
-    duration: "7.1s",
+    endDeg: "1.8deg",
+    duration: "6.4s",
     delay: "0.1s",
   },
   {
@@ -114,7 +165,7 @@ const corners = [
     flip: "-scale-y-100",
     origin: "bottom left",
     endDeg: "1.8deg",
-    duration: "6.9s",
+    duration: "6.2s",
     delay: "0.2s",
   },
   {
@@ -122,8 +173,8 @@ const corners = [
     position: "bottom-2 right-2 sm:bottom-4 sm:right-4",
     flip: "-scale-x-100 -scale-y-100",
     origin: "bottom right",
-    endDeg: "-1.8deg",
-    duration: "7.4s",
+    endDeg: "1.8deg",
+    duration: "6.7s",
     delay: "0.3s",
   },
 ];
@@ -207,6 +258,7 @@ const CloseIcon = memo(({ className = "" }: { className?: string }) => (
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 ));
+
 const ChevronIcon = memo(
   ({
     className = "",
@@ -230,6 +282,7 @@ const ChevronIcon = memo(
     </svg>
   ),
 );
+
 const ZoomIcon = memo(({ className = "" }: { className?: string }) => (
   <svg
     viewBox="0 0 24 24"
@@ -244,11 +297,19 @@ const ZoomIcon = memo(({ className = "" }: { className?: string }) => (
   </svg>
 ));
 
+// CATATAN: AmbientGlow dan blur sage-light sebelumnya adalah dua radial
+// gradient besar yang ditumpuk di titik yang sama persis — keduanya kena
+// blur berat (blur-2xl + blur-[100px]) dan biaya rasterisasinya nyata di
+// HP low-end. Digabung jadi satu elemen dengan dua gradient stop.
 const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[0] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-2xl md:h-[520px] md:w-[520px] lg:h-[620px] lg:w-[620px]"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl md:h-[520px] md:w-[520px] lg:h-[620px] lg:w-[620px]"
+      style={{
+        background:
+          "radial-gradient(circle, rgba(212,175,55,0.10) 0%, rgba(168,181,160,0.08) 45%, transparent 72%)",
+      }}
     />
   );
 });
@@ -262,17 +323,15 @@ const FrameLayers = memo(function FrameLayers() {
           className={`pointer-events-none absolute z-[2] opacity-70 ${v.className} ${v.flip}`}
         >
           <div
-            className={`h-full w-full ${v.isAnimated ? "animate-sway" : ""}`}
+            className="h-full w-full animate-gallery-sway"
             style={
-              v.isAnimated
-                ? ({
-                    transformOrigin: v.origin,
-                    "--end-deg": v.endDeg,
-                    animationDuration: v.duration,
-                    animationDelay: v.delay,
-                    willChange: "transform",
-                  } as React.CSSProperties)
-                : undefined
+              {
+                transformOrigin: v.origin,
+                "--end-deg": v.endDeg,
+                animationDuration: v.duration,
+                animationDelay: v.delay,
+                willChange: "transform",
+              } as React.CSSProperties
             }
           >
             <FloralVine orientation={v.orientation} className="h-full w-full" />
@@ -286,7 +345,7 @@ const FrameLayers = memo(function FrameLayers() {
           className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
         >
           <div
-            className="h-full w-full animate-sway"
+            className="h-full w-full animate-gallery-sway"
             style={
               {
                 transformOrigin: c.origin,
@@ -316,25 +375,47 @@ const PhotoCard = memo(function PhotoCard({
   index: number;
   onOpen: (index: number) => void;
 }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
   return (
     <m.button
       type="button"
-      variants={fadeUp}
+      variants={photoVariants}
+      custom={index % 2 === 0}
       onClick={() => onOpen(index)}
       aria-label={`Buka foto galeri ${index + 1}`}
       className={`group relative aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-mustard/30 bg-white/80 p-2 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-300 ease-out hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.15)] sm:rounded-[2rem] sm:p-3 ${
         index % 2 !== 0 ? "sm:mt-8 md:mt-4" : ""
       }`}
     >
-      <div className="relative h-full w-full overflow-hidden rounded-xl border border-mustard/20 bg-gray-100">
+      <div className="relative h-full w-full overflow-hidden rounded-xl border border-mustard/20 bg-blush/10">
+        {/* Shimmer placeholder — berhenti total begitu foto selesai dimuat,
+            jadi tidak ada animasi yang menggantung setelah load. */}
+        {!isLoaded && (
+          <div
+            aria-hidden
+            className="animate-gallery-shimmer absolute inset-0 bg-[linear-gradient(100deg,transparent_30%,rgba(255,255,255,0.65)_50%,transparent_70%)]"
+          />
+        )}
+
         <Image
           src={url}
           alt={`Galeri ${index + 1}`}
           fill
           loading="lazy"
+          onLoad={() => setIsLoaded(true)}
           sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          className={`object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
+            isLoaded ? "opacity-100" : "opacity-0"
+          }`}
         />
+
+        {/* Inner ring putih tipis — memberi kesan matting/passe-partout */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-white/35"
+        />
+
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-burgundy/70 via-ink/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
           <div className="flex translate-y-3 flex-col items-center gap-1.5 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
             <ZoomIcon className="h-5 w-5 text-white opacity-95" />
@@ -344,6 +425,16 @@ const PhotoCard = memo(function PhotoCard({
           </div>
         </div>
       </div>
+
+      {/* Aksen sudut emas — muncul saat hover, murni opacity */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-3 top-3 h-5 w-5 rounded-tl-lg border-l border-t border-mustard opacity-0 transition-opacity duration-300 group-hover:opacity-80 sm:left-4 sm:top-4"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 rounded-br-lg border-b border-r border-mustard opacity-0 transition-opacity duration-300 group-hover:opacity-80 sm:bottom-4 sm:right-4"
+      />
     </m.button>
   );
 });
@@ -352,15 +443,27 @@ const PhotoCard = memo(function PhotoCard({
 function Lightbox({
   photos,
   index,
+  direction,
   onClose,
   onNavigate,
 }: {
   photos: string[];
   index: number;
+  direction: number;
   onClose: () => void;
-  onNavigate: (index: number) => void;
+  onNavigate: (index: number, direction: number) => void;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  const goNext = useCallback(
+    () => onNavigate((index + 1) % photos.length, 1),
+    [index, photos.length, onNavigate],
+  );
+  const goPrev = useCallback(
+    () => onNavigate((index - 1 + photos.length) % photos.length, -1),
+    [index, photos.length, onNavigate],
+  );
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -374,13 +477,33 @@ function Lightbox({
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight") onNavigate((index + 1) % photos.length);
-      if (e.key === "ArrowLeft")
-        onNavigate((index - 1 + photos.length) % photos.length);
+      if (e.key === "ArrowRight") goNext();
+      if (e.key === "ArrowLeft") goPrev();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [index, photos.length, onClose, onNavigate]);
+  }, [goNext, goPrev, onClose]);
+
+  // Swipe pakai touch event manual, BUKAN prop `drag` milik Framer Motion.
+  // LazyMotion dengan `domAnimation` sengaja tidak memuat fitur drag —
+  // memakai `drag` di sini akan gagal diam-diam (tidak error, cuma tidak
+  // jalan) kecuali diganti ke `domMax`, yang menambah bundle cukup besar
+  // hanya demi satu gestur. Dua listener ringan ini jauh lebih murah.
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) > 50) {
+      if (delta < 0) {
+        goNext();
+      } else {
+        goPrev();
+      }
+    }
+    touchStartX.current = null;
+  };
 
   return (
     <m.div
@@ -399,25 +522,40 @@ function Lightbox({
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="relative max-h-[90dvh] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-mustard/30 bg-ivory p-2 shadow-2xl sm:p-4"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        <div className="relative mx-auto aspect-[3/4] max-h-[80dvh] w-full max-w-3xl sm:aspect-[4/5] md:aspect-auto md:h-[75dvh]">
-          <Image
-            src={photos[index]}
-            alt={`Foto galeri ${index + 1} dari ${photos.length}`}
-            fill
-            sizes="100vw"
-            className="rounded-xl object-contain"
-            priority
-          />
+        <div className="relative mx-auto aspect-[3/4] max-h-[72dvh] w-full max-w-3xl sm:aspect-[4/5] md:aspect-auto md:h-[68dvh]">
+          {/* mode="wait" supaya hanya satu foto ter-mount pada satu waktu —
+              menghindari dua bitmap besar hidup bersamaan saat transisi.
+              custom={direction} diteruskan ke variants lightboxSlide. */}
+          <AnimatePresence mode="wait" custom={direction}>
+            <m.div
+              key={index}
+              custom={direction}
+              variants={lightboxSlide}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0"
+            >
+              <Image
+                src={photos[index]}
+                alt={`Foto galeri ${index + 1} dari ${photos.length}`}
+                fill
+                sizes="100vw"
+                className="rounded-xl object-contain"
+                priority
+              />
+            </m.div>
+          </AnimatePresence>
         </div>
 
         {photos.length > 1 && (
           <>
             <button
               type="button"
-              onClick={() =>
-                onNavigate((index - 1 + photos.length) % photos.length)
-              }
+              onClick={goPrev}
               aria-label="Foto sebelumnya"
               className="absolute left-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/30 text-ink shadow-lg backdrop-blur-md transition-colors hover:bg-burgundy hover:text-white sm:left-6"
             >
@@ -425,15 +563,38 @@ function Lightbox({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate((index + 1) % photos.length)}
+              onClick={goNext}
               aria-label="Foto berikutnya"
               className="absolute right-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/30 text-ink shadow-lg backdrop-blur-md transition-colors hover:bg-burgundy hover:text-white sm:right-6"
             >
               <ChevronIcon direction="right" className="h-6 w-6" />
             </button>
-            <span className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-full bg-ink/60 px-4 py-1.5 text-xs font-medium tracking-widest text-white backdrop-blur-sm">
-              {index + 1} / {photos.length}
-            </span>
+
+            {/* Strip thumbnail — navigasi langsung + konteks posisi */}
+            <div className="mt-2 flex items-center justify-center gap-2 overflow-x-auto px-2 pb-1 sm:mt-3 sm:gap-2.5">
+              {photos.map((thumb, i) => (
+                <button
+                  key={`thumb-${thumb}`}
+                  type="button"
+                  onClick={() => onNavigate(i, i > index ? 1 : -1)}
+                  aria-label={`Ke foto ${i + 1}`}
+                  aria-current={i === index}
+                  className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border transition-all duration-300 sm:h-14 sm:w-14 ${
+                    i === index
+                      ? "scale-105 border-burgundy opacity-100"
+                      : "border-mustard/30 opacity-50 hover:opacity-85"
+                  }`}
+                >
+                  <Image
+                    src={thumb}
+                    alt=""
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </>
         )}
 
@@ -454,24 +615,72 @@ function Lightbox({
 /* ---------- Main component ---------- */
 function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [direction, setDirection] = useState(1);
 
-  const openAt = useCallback((index: number) => setSelectedIndex(index), []);
+  const openAt = useCallback((index: number) => {
+    setDirection(1);
+    setSelectedIndex(index);
+  }, []);
   const closeLightbox = useCallback(() => setSelectedIndex(null), []);
+  const navigate = useCallback((index: number, dir: number) => {
+    setDirection(dir);
+    setSelectedIndex(index);
+  }, []);
 
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
+      {/*
+        Nama keyframe di-prefix "gallery-" karena @keyframes bersifat global.
+        Sebelumnya file ini mendaftarkan "sway" dan "gentle-pulse" — nama yang
+        sama persis dipakai section lain, dan definisi terakhir yang mount
+        akan diam-diam menimpa semuanya tanpa error apa pun.
+
+        Keyframe sway sekarang dua arah (0 -> +deg -> 0 -> -deg -> 0), identik
+        dengan CoverDecorations. Versi lama satu arah saja, jadi ornamen
+        terlihat mendorong ke satu sisi lalu balik, bukan berayun.
+
+        JANGAN menganimasikan filter, box-shadow, atau backdrop-blur di sini.
+      */}
       <style>{`
-        @keyframes sway {
-          0%, 100% { transform: rotate(0deg) translate3d(0,0,0); }
-          50% { transform: rotate(var(--end-deg, 2deg)) translate3d(0,0,0); }
+        @keyframes gallery-sway {
+          0%, 100% { transform: rotate(0deg); }
+          25%      { transform: rotate(var(--end-deg, 1.5deg)); }
+          75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
         }
-        .animate-sway { animation: sway ease-in-out infinite; }
-        
-        @keyframes gentle-pulse {
-          0%, 100% { transform: scale(1) rotate(0deg) translate3d(0,0,0); }
-          50% { transform: scale(1.1) rotate(var(--rot, 5deg)) translate3d(0,0,0); }
+        .animate-gallery-sway {
+          animation: gallery-sway ease-in-out infinite;
         }
-        .animate-gentle-pulse { animation: gentle-pulse ease-in-out infinite; }
+
+        @keyframes gallery-pulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
+        }
+        .animate-gallery-pulse {
+          animation: gallery-pulse ease-in-out infinite;
+        }
+
+        @keyframes gallery-shimmer {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-gallery-shimmer {
+          animation: gallery-shimmer 1.6s ease-in-out infinite;
+        }
+
+        @keyframes gallery-beam {
+          0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
+          50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
+        }
+        .animate-gallery-beam {
+          animation: gallery-beam 17s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-gallery-sway,
+          .animate-gallery-pulse,
+          .animate-gallery-shimmer,
+          .animate-gallery-beam { animation: none; }
+        }
       `}</style>
 
       {/* Background Decor */}
@@ -479,10 +688,26 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
         <BackgroundPattern className="h-full w-full" />
       </div>
 
-      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sage-light/20 blur-[100px] sm:h-80 sm:w-80" />
-
       <AmbientGlow />
       <FrameLayers />
+
+      {/* Sinar matahari lembut. hidden sm:block disengaja — blur 35px pada
+          elemen sebesar ini biayanya di rasterisasi awal, terasa di HP
+          low-end saat scroll masuk. */}
+      <div
+        aria-hidden
+        className="animate-gallery-beam pointer-events-none absolute -top-1/4 left-1/2 z-[1] hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
+        style={{
+          background:
+            "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
+          filter: "blur(35px)",
+          willChange: "transform, opacity",
+        }}
+      />
+
+      {/* Petals, butterflies, sparkles — z-[4]: di atas vine (z-2) & corner
+          (z-3), di bawah konten utama (z-10) */}
+      <AmbientLayer fallDistance="160vh" />
 
       <m.div
         className="relative z-10 flex w-full max-w-sm flex-col items-center px-2 text-center xs:max-w-md sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl"
@@ -493,7 +718,7 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
       >
         <m.div variants={fadeUp} className="flex items-center gap-3">
           <div
-            className="animate-gentle-pulse"
+            className="animate-gallery-pulse"
             style={
               {
                 "--rot": "6deg",
@@ -512,7 +737,7 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
           </span>
 
           <div
-            className="animate-gentle-pulse"
+            className="animate-gallery-pulse"
             style={
               {
                 "--rot": "-6deg",
@@ -534,19 +759,30 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
           Moment of Togetherness
         </m.h2>
 
+        <m.p
+          variants={fadeUp}
+          className="mt-3 text-xs italic text-ink/55 sm:text-sm"
+        >
+          {photos.length} momen yang kami simpan
+        </m.p>
+
         <m.div variants={fadeUp} className="mb-12 mt-6 sm:mb-16 md:mb-20">
-          <SprigDivider className="h-3 w-36 opacity-70 sm:w-44" />
+          <SprigDivider className="h-4 w-40 opacity-80 sm:w-48" />
         </m.div>
 
-        {/* Gallery Grid — ditambah xl:grid-cols-4 supaya di desktop besar
-            foto tidak membesar tanpa kontrol saat container melebar ke xl */}
+        {/* Gallery Grid — xl:grid-cols-4 supaya di desktop besar foto tidak
+            membesar tanpa kontrol saat container melebar ke xl */}
         <m.div
           variants={containerVariants}
           className="grid w-full grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 md:gap-7 lg:gap-8 xl:grid-cols-4"
         >
           {photos.map((url, index) => (
             <PhotoCard
-              key={`photo-${index}`}
+              // FIX: key sebelumnya `photo-${index}` — kalau daftar foto
+              // nanti diurutkan ulang atau ada yang dihapus, React akan
+              // mencocokkan DOM ke foto yang salah dan state isLoaded
+              // ikut tertukar. URL stabil per foto.
+              key={url}
               url={url}
               index={index}
               onOpen={openAt}
@@ -560,8 +796,9 @@ function GallerySectionInner({ photos = DEFAULT_PHOTOS }: GallerySectionProps) {
           <Lightbox
             photos={photos}
             index={selectedIndex}
+            direction={direction}
             onClose={closeLightbox}
-            onNavigate={setSelectedIndex}
+            onNavigate={navigate}
           />
         )}
       </AnimatePresence>
