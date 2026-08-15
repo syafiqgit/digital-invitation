@@ -1,6 +1,7 @@
 "use client";
 
 import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
+import Image from "next/image";
 import BackgroundPattern from "./BackgroundPattern";
 import WreathFrame, { WREATH_HOLE } from "./WreathFrame";
 import { AmbientDecor } from "./Ambientdecor";
@@ -30,10 +31,8 @@ interface CoupleSectionProps {
 const DEFAULT_BRIDE_PHOTO = "https://picsum.photos/id/1027/600/800";
 const DEFAULT_GROOM_PHOTO = "https://picsum.photos/id/1005/600/800";
 
-// Custom easing yang sangat smooth dan natural
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-// Stagger efisien untuk mengurangi beban main-thread
 const containerVariants: Variants = {
   hidden: {},
   visible: {
@@ -41,7 +40,6 @@ const containerVariants: Variants = {
   },
 };
 
-// Fade up ringan (15px) khusus untuk GPU compositing
 const blockFadeUp: Variants = {
   hidden: { opacity: 0, y: 15 },
   visible: {
@@ -50,6 +48,156 @@ const blockFadeUp: Variants = {
     transition: { duration: 0.8, ease: EASE },
   },
 };
+
+/* ---------- DATA: Falling Petals, Butterflies, Sparkles ---------- */
+const couplePetals = [
+  { left: "6%", size: 14, duration: 10, delay: 0, drift: 16 },
+  { left: "24%", size: 11, duration: 13, delay: 3, drift: -12 },
+  { left: "78%", size: 15, duration: 11, delay: 1.5, drift: 14 },
+  { left: "92%", size: 12, duration: 14, delay: 5, drift: -18 },
+];
+
+const coupleButterflies = [
+  {
+    key: "cb-1",
+    src: "/assets/butterfly-1.png",
+    top: "16%",
+    left: "10%",
+    size: 22,
+    duration: 10,
+    delay: 0.5,
+    xRange: [0, 12, -5, 0],
+    yRange: [0, -8, -3, 0],
+    rotateRange: [0, 5, -3, 0],
+  },
+  {
+    key: "cb-2",
+    src: "/assets/butterfly-2.png",
+    top: "78%",
+    left: "88%",
+    size: 20,
+    duration: 12,
+    delay: 2,
+    xRange: [0, -10, 6, 0],
+    yRange: [0, -6, 5, 0],
+    rotateRange: [0, -4, 4, 0],
+  },
+];
+
+const coupleSparkles = [
+  { top: "8%", left: "8%" },
+  { top: "14%", left: "92%" },
+  { top: "86%", left: "10%" },
+  { top: "92%", left: "90%" },
+];
+
+/* Falling petals, butterflies, dan sparkles tambahan — ditampilkan di SEMUA
+   ukuran layar (tidak ada `hidden` lagi), karena device seperti iPhone
+   16 Pro Max (~430px) masih di bawah breakpoint `sm` (640px) dan akan
+   ketutup hidden kalau dibatasi ke sm ke atas. */
+function CoupleAmbientExtras() {
+  return (
+    <>
+      {/* Falling petals — pure CSS keyframes, tidak pakai Framer Motion */}
+      <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+        {couplePetals.map((p, i) => (
+          <div
+            key={`couple-petal-${i}`}
+            className="pointer-events-none absolute top-0"
+            style={
+              {
+                left: p.left,
+                width: p.size,
+                height: p.size,
+                animation: `couple-petal-fall ${p.duration}s linear ${p.delay}s infinite`,
+                willChange: "transform, opacity",
+                ["--petal-drift" as string]: `${p.drift}px`,
+              } as React.CSSProperties
+            }
+          >
+            <Image
+              src="/assets/flower-petal.png"
+              alt=""
+              fill
+              sizes={`${p.size}px`}
+              className="pointer-events-none select-none object-contain"
+              draggable={false}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Butterflies — Framer Motion, dibatasi 2 saja karena paling mahal */}
+      {coupleButterflies.map((b) => (
+        <m.div
+          key={b.key}
+          className="pointer-events-none absolute z-[1]"
+          style={{ top: b.top, left: b.left, width: b.size, height: b.size }}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0, 0.85, 0.85, 0],
+            x: b.xRange,
+            y: b.yRange,
+            rotate: b.rotateRange,
+          }}
+          transition={{
+            duration: b.duration,
+            delay: b.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <m.div
+            className="h-full w-full"
+            style={{ transformOrigin: "center" }}
+            animate={{ scaleY: [1, 0.55, 1] }}
+            transition={{
+              duration: 0.5,
+              delay: b.delay * 0.3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <Image
+              src={b.src}
+              alt=""
+              fill
+              sizes={`${b.size}px`}
+              className="pointer-events-none select-none object-contain"
+              draggable={false}
+            />
+          </m.div>
+        </m.div>
+      ))}
+
+      {/* Sparkles tambahan — pure CSS keyframes, keyframes `couple-twinkle`
+          didefinisikan di AmbientKeyframes.tsx (dipakai juga AmbientDecor) */}
+      {coupleSparkles.map((s, i) => (
+        <div
+          key={`couple-sparkle-${i}`}
+          className="pointer-events-none absolute z-[1]"
+          style={{
+            top: s.top,
+            left: s.left,
+            animation: `couple-twinkle ${2.6 + (i % 3) * 0.4}s ease-in-out ${i * 0.3}s infinite`,
+            willChange: "transform, opacity",
+          }}
+        >
+          <Sparkle className="h-2.5 w-2.5 opacity-90 sm:h-3 sm:w-3" />
+        </div>
+      ))}
+
+      <style>{`
+        @keyframes couple-petal-fall {
+          0% { opacity: 0; transform: translate(0, -10%) rotate(0deg); }
+          10% { opacity: 0.7; }
+          90% { opacity: 0.5; }
+          100% { opacity: 0; transform: translate(var(--petal-drift), 115vh) rotate(320deg); }
+        }
+      `}</style>
+    </>
+  );
+}
 
 function CoupleSectionInner({
   groomName = "Alexander",
@@ -76,13 +224,12 @@ function CoupleSectionInner({
       <FrameLayers />
       <AmbientDecor />
       <FairyLights />
+      <CoupleAmbientExtras />
 
       <div className="pointer-events-none absolute bottom-0 left-0 z-[1] hidden h-6 w-full opacity-90 sm:block sm:h-8 lg:h-10">
         <GrassSilhouette className="h-full w-full" />
       </div>
 
-      {/* Kontainer utama — ditambah xl step supaya tidak "mengambang kecil"
-          di monitor lebar (1440px+) sementara dekorasi latar full-width */}
       <m.div
         className="relative z-10 flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl xl:max-w-4xl"
         variants={containerVariants}
@@ -96,7 +243,10 @@ function CoupleSectionInner({
             variants={blockFadeUp}
             className="flex flex-col items-center gap-1 text-center"
           >
-            <StaticWreathBand className="mb-1 h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72" />
+            <StaticWreathBand
+              animated
+              className="mb-1 h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
+            />
 
             <div className="flex items-center gap-2 sm:gap-3">
               <div
@@ -112,6 +262,17 @@ function CoupleSectionInner({
               </div>
               <span className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-gradient-to-b from-ivory to-ivory/85 px-3.5 py-1 text-[9px] font-extrabold tracking-[0.3em] text-burgundy shadow-[0_2px_10px_rgba(58,54,48,0.08)] backdrop-blur-sm sm:px-5 sm:py-1.5 sm:text-[11px] sm:tracking-[0.34em]">
                 THE BRIDE &amp; GROOM
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(115deg, transparent 20%, rgba(212,175,55,0.35) 45%, rgba(255,255,255,0.6) 50%, rgba(212,175,55,0.35) 55%, transparent 80%)",
+                    backgroundSize: "200% 100%",
+                    animation:
+                      "couple-badge-shimmer 3.5s ease-in-out 1s infinite",
+                  }}
+                />
               </span>
               <div
                 style={{
@@ -136,10 +297,7 @@ function CoupleSectionInner({
             <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
           </m.div>
 
-          {/* BLOK 2: Area Foto & Simbol Tengah
-              FIX: ditambah md: step pada width foto & gap supaya proporsi
-              mengikuti pelebaran container (sebelumnya loncat sm -> lg,
-              bikin foto kecil "tenggelam" saat container sudah selebar md) */}
+          {/* BLOK 2: Area Foto & Simbol Tengah */}
           <m.div
             variants={blockFadeUp}
             className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 md:gap-5 lg:gap-6"
@@ -219,13 +377,13 @@ function CoupleSectionInner({
           <m.div variants={blockFadeUp} className="mt-9 sm:mt-12 lg:mt-16">
             <StaticWreathBand
               flip
+              animated
               className="h-4 w-36 opacity-70 xs:w-40 sm:h-5 sm:w-56 lg:h-6 lg:w-72"
             />
           </m.div>
         </div>
       </m.div>
 
-      {/* Keyframes Mikro-animasi yang ditarik oleh GPU (translateZ) */}
       <style>{`
         @keyframes couple-badge-spin-l {
           0%, 100% { transform: rotate(0deg) translateZ(0); }
@@ -246,6 +404,14 @@ function CoupleSectionInner({
         @keyframes couple-twinkle-pop-lg {
           0%, 100% { opacity: 0.3; transform: scale(0.6) translateZ(0); }
           50% { opacity: 1; transform: scale(1.4) translateZ(0); }
+        }
+        @keyframes couple-badge-shimmer {
+          0%, 100% { background-position: 150% 0; }
+          50% { background-position: -50% 0; }
+        }
+        @keyframes couple-band-sway {
+          0%, 100% { transform: rotate(-0.6deg) translateZ(0); }
+          50% { transform: rotate(0.6deg) translateZ(0); }
         }
       `}</style>
     </section>

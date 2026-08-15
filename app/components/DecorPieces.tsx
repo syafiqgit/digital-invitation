@@ -253,17 +253,26 @@ export const GrassSilhouette = memo(function GrassSilhouette({
   );
 });
 
+/**
+ * `animated` (opsional, default false — behavior lama tetap sama persis):
+ * membungkus svg dengan div yang punya animasi sway ringan (rotate ±0.6deg).
+ * Sengaja pakai wrapper terpisah, BUKAN gabung ke style svg langsung, supaya
+ * tidak bentrok dengan `flip` yang sudah pakai transform scaleY(-1) di svg
+ * itu sendiri — dua transform di elemen yang sama akan saling override.
+ */
 export const StaticWreathBand = memo(function StaticWreathBand({
   className = "",
   flip = false,
+  animated = false,
 }: {
   className?: string;
   flip?: boolean;
+  animated?: boolean;
 }) {
-  return (
+  const svg = (
     <svg
       viewBox="0 0 300 28"
-      className={className}
+      className={animated ? "h-full w-full" : className}
       fill="none"
       style={flip ? { transform: "scaleY(-1)" } : undefined}
     >
@@ -312,5 +321,19 @@ export const StaticWreathBand = memo(function StaticWreathBand({
         </g>
       ))}
     </svg>
+  );
+
+  if (!animated) return svg;
+
+  return (
+    <div
+      className={className}
+      style={{
+        animation: "couple-band-sway 5s ease-in-out infinite",
+        transformOrigin: "center",
+      }}
+    >
+      {svg}
+    </div>
   );
 });

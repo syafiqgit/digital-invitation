@@ -34,7 +34,21 @@ export const FrameLayers = memo(function FrameLayers() {
           transition={{ delay: v.delay }}
           className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
         >
-          <FloralVine orientation={v.orientation} className="h-full w-full" />
+          <m.div
+            className="h-full w-full"
+            style={{ transformOrigin: v.swayOrigin ?? "top" }}
+            animate={{
+              rotate: [0, v.swayRange ?? 1.2, 0, -(v.swayRange ?? 1.2), 0],
+            }}
+            transition={{
+              duration: 7 + v.delay * 0.6,
+              delay: v.delay * 0.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <FloralVine orientation={v.orientation} className="h-full w-full" />
+          </m.div>
         </m.div>
       ))}
 
@@ -48,7 +62,19 @@ export const FrameLayers = memo(function FrameLayers() {
           transition={{ delay: c.fadeDelay }}
           className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${c.position}`}
         >
-          <FloralCorner className="h-full w-full" flip={c.flip} />
+          <m.div
+            className="h-full w-full"
+            style={{ transformOrigin: c.swayOrigin ?? "center" }}
+            animate={{ rotate: [0, 1.5, 0, -1.5, 0] }}
+            transition={{
+              duration: 6,
+              delay: c.fadeDelay * 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <FloralCorner className="h-full w-full" flip={c.flip} />
+          </m.div>
         </m.div>
       ))}
 
