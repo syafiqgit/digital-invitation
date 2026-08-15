@@ -24,33 +24,40 @@ const cornerFade: Variants = {
 export const FrameLayers = memo(function FrameLayers() {
   return (
     <>
-      {vines.map((v) => (
-        <m.div
-          key={v.key}
-          variants={vineFade}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          transition={{ delay: v.delay }}
-          className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
-        >
+      {vines.map((v) => {
+        const magnitude = v.swayMagnitude ?? 1.2;
+        const range = v.swayReverse
+          ? [0, -magnitude, 0, magnitude, 0]
+          : [0, magnitude, 0, -magnitude, 0];
+        return (
           <m.div
-            className="h-full w-full"
-            style={{ transformOrigin: v.swayOrigin ?? "top" }}
-            animate={{
-              rotate: [0, v.swayRange ?? 1.2, 0, -(v.swayRange ?? 1.2), 0],
-            }}
-            transition={{
-              duration: 7 + v.delay * 0.6,
-              delay: v.delay * 0.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            key={v.key}
+            variants={vineFade}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            transition={{ delay: v.delay }}
+            className={`pointer-events-none z-[2] ${v.className} ${v.flip}`}
           >
-            <FloralVine orientation={v.orientation} className="h-full w-full" />
+            <m.div
+              className="h-full w-full"
+              style={{ transformOrigin: v.swayOrigin ?? "top" }}
+              animate={{ rotate: range }}
+              transition={{
+                duration: v.swayDuration ?? 7 + v.delay * 0.6,
+                delay: v.delay * 0.4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <FloralVine
+                orientation={v.orientation}
+                className="h-full w-full"
+              />
+            </m.div>
           </m.div>
-        </m.div>
-      ))}
+        );
+      })}
 
       {corners.map((c) => (
         <m.div
