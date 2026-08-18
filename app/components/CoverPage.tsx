@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { LazyMotion, domAnimation, m } from "framer-motion";
+import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { container, CoverBackground, CoverOrnaments } from "./CoverDecorations";
 import { CoverContent } from "./CoverContent";
 
@@ -12,6 +12,8 @@ interface CoverPageProps {
 
 function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
   const [isOpening, setIsOpening] = useState(false);
+  // Tambahkan state untuk mengontrol kemunculan video
+  const [showVideo, setShowVideo] = useState(true);
 
   const handleOpen = useCallback(() => {
     setIsOpening(true);
@@ -29,19 +31,46 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
         paddingLeft: "env(safe-area-inset-left)",
         paddingRight: "env(safe-area-inset-right)",
         willChange: "opacity",
-        // translateZ(0) dihapus: willChange sudah cukup untuk promote compositor
-        // layer di browser modern, dua-duanya sekaligus cuma overhead ganda.
       }}
     >
+      {/* --- VIDEO SPLASH SCREEN --- */}
+      <AnimatePresence>
+        {showVideo && (
+          <m.div
+            key="cinematic-splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }} // Fade out halus selama 1.2 detik
+            className="absolute inset-0 z-[100] bg-ivory"
+          >
+            <video
+              src="/assets/A_smooth_elegant_watercolor_a.webm" // Sesuaikan dengan path/nama file video Anda
+              autoPlay
+              muted
+              playsInline
+              onEnded={() => setShowVideo(false)}
+              className="h-full w-full object-cover"
+            />
+            {/* Tombol Skip dengan efek Glassmorphism */}
+            <button
+              type="button"
+              onClick={() => setShowVideo(false)}
+              className="absolute right-5 top-5 z-[110] rounded-full bg-ink/20 px-4 py-1.5 text-[0.65rem] font-bold tracking-widest text-white backdrop-blur-md transition-colors hover:bg-ink/40 sm:text-xs"
+            >
+              SKIP
+            </button>
+          </m.div>
+        )}
+      </AnimatePresence>
+
       <CoverBackground />
       <CoverOrnaments />
-
-      {/* Catatan: CoverParticles dihapus total untuk menjaga kestabilan 60fps mutlak di mobile */}
 
       <m.div
         variants={container}
         initial="hidden"
-        animate="show"
+        // Tahan animasi cover sampai video selesai/di-skip agar timing masuknya elemen pas
+        animate={showVideo ? "hidden" : "show"}
         style={{ containerType: "inline-size" }}
         className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 md:max-w-lg md:px-10 lg:max-w-160"
       >
