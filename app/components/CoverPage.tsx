@@ -44,7 +44,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
             className="absolute inset-0 z-[100] bg-ivory"
           >
             <video
-              src="/assets/A_smooth_elegant_watercolor_a.webm" // Sesuaikan dengan path/nama file video Anda
+              src="/assets/Burgundy_roses_blooming_intro.mp4" // Sesuaikan dengan path/nama file video Anda
               autoPlay
               muted
               playsInline
