@@ -453,7 +453,11 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": v.endDeg,
                 animationDuration: v.duration,
                 animationDelay: v.delay,
-                willChange: "transform",
+                // ✅ FIX: willChange permanen dihapus — pola sama seperti
+                // Event/Story/GallerySection. Section ini berisi form
+                // dengan interaksi ketik aktif; 8 compositor layer permanen
+                // + content-visibility toggle adalah kombinasi paling
+                // berisiko bikin sendat justru saat tamu sedang mengisi RSVP.
               } as React.CSSProperties
             }
           >
@@ -475,7 +479,7 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
                 animationDelay: c.delay,
-                willChange: "transform",
+                // ✅ FIX: sama seperti vines di atas
               } as React.CSSProperties
             }
           >
@@ -1024,7 +1028,8 @@ function RsvpWishSectionInner() {
           background:
             "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
           filter: "blur(35px)",
-          willChange: "transform, opacity",
+          // ✅ FIX: willChange permanen dihapus — sama alasan seperti section
+          // lain.
         }}
       />
 

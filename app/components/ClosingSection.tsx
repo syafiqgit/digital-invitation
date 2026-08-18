@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Image from "next/image";
 import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
@@ -21,9 +21,6 @@ const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
 
 /* ---------- Framer Motion variants (Entrance Only) ---------- */
-// NOTE: willChange manual permanen dihapus di seluruh file ini — animasi
-// entrance cuma sekali (viewport once: true), Framer Motion sudah handle
-// will-change otomatis selama animasi aktif.
 
 const containerVariants: Variants = {
   hidden: {},
@@ -40,9 +37,6 @@ const fadeUp: Variants = {
   },
 };
 
-// Foto pasangan: entrance sedikit lebih dramatis dari elemen lain karena
-// ini titik fokus visual penutup — scale dari 0.94 dengan durasi lebih
-// panjang, bukan fadeUp seragam.
 const photoVariants: Variants = {
   hidden: { opacity: 0, y: 28, scale: 0.94 },
   visible: {
@@ -59,10 +53,6 @@ const textLift = {
 } as const;
 
 /* ---------- Static decoration data ---------- */
-//
-// endDeg vertikal 0.9deg dengan durasi 6.5s — sama seperti Gallery, RSVP,
-// dan DigitalEnvelope. Section ini tingginya stabil (foto + kartu nama),
-// jadi simpangan ujung vine aman terhadap lebar strip.
 const vines = [
   {
     key: "left",
@@ -110,9 +100,6 @@ const vines = [
   },
 ];
 
-// endDeg positif semua. Pada keyframe dua-arah, tanda minus cuma membalik
-// fase (mulai ke kiri dulu), bukan mengubah amplitudo — variasi antar-sudut
-// sudah dihasilkan oleh delay yang berbeda.
 const corners = [
   {
     key: "top-left",
@@ -182,8 +169,6 @@ const MiniBloom = memo(function MiniBloom({
   );
 });
 
-// Dipakai di Names Card (dua sudut). Berbeda dari DigitalEnvelope, di sini
-// komponen ini memang terpakai — jangan ikut dihapus.
 const CornerFlourish = memo(function CornerFlourish({
   className = "",
 }: {
@@ -273,19 +258,23 @@ const SprigDivider = memo(function SprigDivider({
 
 const HeartIcon = memo(function HeartIcon({
   className = "",
+  style,
 }: {
   className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      style={style}
+      fill="currentColor"
+    >
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     </svg>
   );
 });
 
-// Satu elemen dengan dua gradient stop — bukan dua radial gradient besar
-// yang ditumpuk, karena masing-masing kena blur berat dan biaya
-// rasterisasinya nyata di HP low-end.
 const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
@@ -299,7 +288,12 @@ const AmbientGlow = memo(function AmbientGlow() {
   );
 });
 
-const FrameLayers = memo(function FrameLayers() {
+// active mengontrol animation-play-state, bukan mount/unmount, supaya tidak
+// ada layout thrash tambahan saat section masuk viewport. willChange manual
+// dihapus total — Framer/browser sudah cukup pintar mengelola compositing
+// layer selama animasi memang berjalan.
+const FrameLayers = memo(function FrameLayers({ active }: { active: boolean }) {
+  const playState = active ? "running" : "paused";
   return (
     <>
       {vines.map((v) => (
@@ -315,7 +309,7 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": v.endDeg,
                 animationDuration: v.duration,
                 animationDelay: v.delay,
-                willChange: "transform",
+                animationPlayState: playState,
               } as React.CSSProperties
             }
           >
@@ -337,7 +331,7 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
                 animationDelay: c.delay,
-                willChange: "transform",
+                animationPlayState: playState,
               } as React.CSSProperties
             }
           >
@@ -359,21 +353,23 @@ function ClosingSectionInner({
   brideName = "Amelia",
   couplePhotoUrl = DEFAULT_COUPLE_PHOTO,
 }: ClosingSectionProps) {
+  // Semua CSS keyframe infinite (sway/pulse/kenburns/beam/heartbeat) dan
+  // AmbientLayer digate oleh flag ini, disatukan dengan onViewportEnter
+  // milik Framer Motion (bukan IntersectionObserver terpisah — parent
+  // sudah lazy-load section ini, jadi cukup satu observer, bukan dua).
+  //
+  // Root cause stutter sebelumnya: parent me-lazy-load section ini saat
+  // mendekati viewport, tapi begitu mounted, 8 elemen sway/corner + Ken
+  // Burns + beam + heartbeat + particle system AmbientLayer semua langsung
+  // start looping di frame yang sama persis dengan initial layout/paint
+  // section ini sendiri (yang berat: banyak absolutely-positioned layer,
+  // blur besar, border ganda, backdrop-blur). Itu race antara "kerja
+  // render pertama kali" dan "8+ animasi baru mulai" — bukan animasi itu
+  // sendiri yang mahal per-frame.
+  const [animationsActive, setAnimationsActive] = useState(false);
+
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 text-center xs:px-5 sm:px-8 sm:py-24 md:py-28">
-      {/*
-        Nama keyframe di-prefix "closing-" karena @keyframes bersifat global.
-        Sebelumnya file ini mendaftarkan "sway" dan "gentle-pulse" — nama yang
-        sama persis dipakai section lain, dan definisi terakhir yang mount
-        akan diam-diam menimpa semuanya tanpa error apa pun.
-
-        Blok <style> juga dipindah keluar dari FrameLayers ke sini, sejajar
-        dengan section lain: menaruh definisi keyframe di dalam komponen
-        dekorasi membuat aturan CSS ikut mati kalau komponen itu suatu saat
-        di-unmount atau dipakai bersyarat.
-
-        JANGAN menganimasikan filter, box-shadow, atau backdrop-blur di sini.
-      */}
+    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 text-center [content-visibility:auto] [contain-intrinsic-size:100vh_1200px] xs:px-5 sm:px-8 sm:py-24 md:py-28">
       <style>{`
         @keyframes closing-sway {
           0%, 100% { transform: rotate(0deg); }
@@ -433,11 +429,8 @@ function ClosingSectionInner({
       </div>
 
       <AmbientGlow />
-      <FrameLayers />
+      <FrameLayers active={animationsActive} />
 
-      {/* Sinar matahari lembut. hidden sm:block disengaja — blur 35px pada
-          elemen sebesar ini biayanya di rasterisasi awal, terasa di HP
-          low-end saat scroll masuk. */}
       <div
         aria-hidden
         className="animate-closing-beam pointer-events-none absolute -top-1/4 left-1/2 z-1 hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
@@ -445,19 +438,16 @@ function ClosingSectionInner({
           background:
             "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
           filter: "blur(35px)",
-          willChange: "transform, opacity",
+          animationPlayState: animationsActive ? "running" : "paused",
         }}
       />
 
-      {/*
-        AmbientLayer versi PENUH di sini — kebalikan dari RsvpWishSection
-        dan DigitalEnvelope yang dipangkas. Section ini murni seremonial:
-        tidak ada form, tidak ada angka yang harus dibaca teliti, tidak ada
-        tombol yang harus ditekan. Kupu-kupu dan kelopak justru memperkuat
-        kesan penutup, dan kalau melintas di depan teks pun tidak ada yang
-        dirugikan.
-      */}
-      <AmbientLayer fallDistance="140vh" />
+      {/* AmbientLayer (particle system) cuma dirender setelah section
+          benar-benar masuk viewport, bukan langsung saat mount. Sebelumnya
+          ini jalan penuh dari mount pertama — bareng dengan initial paint
+          section yang sudah berat sendiri, itulah kombinasi yang bikin
+          scroll-in kesendat. */}
+      {animationsActive && <AmbientLayer fallDistance="140vh" />}
 
       <m.div
         className="relative z-10 flex w-full max-w-sm flex-col items-center px-1 xs:max-w-md sm:max-w-xl sm:px-2 md:max-w-2xl lg:max-w-3xl"
@@ -465,6 +455,7 @@ function ClosingSectionInner({
         whileInView="visible"
         viewport={{ once: true, amount: 0.2 }}
         variants={containerVariants}
+        onViewportEnter={() => setAnimationsActive(true)}
       >
         {/* Badge */}
         <m.div variants={fadeUp} className="flex items-center gap-3">
@@ -474,6 +465,7 @@ function ClosingSectionInner({
               {
                 "--rot": "6deg",
                 animationDuration: "3.4s",
+                animationPlayState: animationsActive ? "running" : "paused",
               } as React.CSSProperties
             }
           >
@@ -493,6 +485,7 @@ function ClosingSectionInner({
               {
                 "--rot": "-6deg",
                 animationDuration: "3.7s",
+                animationPlayState: animationsActive ? "running" : "paused",
               } as React.CSSProperties
             }
           >
@@ -522,17 +515,6 @@ function ClosingSectionInner({
           <div className="relative aspect-4/5 w-44 overflow-hidden rounded-b-3xl rounded-t-[9rem] border-[3px] border-mustard/60 bg-white/90 p-2 shadow-[0_12px_36px_rgba(0,0,0,0.06)] xs:w-52 sm:w-60 md:w-64 lg:w-72">
             <div className="pointer-events-none absolute inset-1.5 z-10 rounded-b-[1.4rem] rounded-t-[8.4rem] border border-mustard/30" />
             <div className="relative h-full w-full overflow-hidden rounded-b-2xl rounded-t-[8.6rem] bg-gray-100">
-              {/*
-                FIX (dipertahankan): <img> native diganti next/image. <img>
-                murni tidak menghasilkan srcset otomatis, jadi foto ini
-                di-load ukuran penuh yang sama untuk semua device. Kalau
-                couplePhotoUrl berasal dari domain eksternal baru, tambahkan
-                ke images.remotePatterns di next.config.js — jangan revert.
-
-                Wrapper hover dipisah dari <Image>: kalau scale hover dan
-                animasi Ken Burns berada di elemen yang sama, animation akan
-                menang atas transition dan hover jadi mati total.
-              */}
               <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105">
                 <Image
                   src={couplePhotoUrl}
@@ -541,7 +523,10 @@ function ClosingSectionInner({
                   loading="lazy"
                   sizes="(min-width: 1024px) 288px, (min-width: 768px) 256px, (min-width: 640px) 240px, 208px"
                   className="animate-closing-kenburns object-cover"
-                  style={{ transformOrigin: "50% 35%" }}
+                  style={{
+                    transformOrigin: "50% 35%",
+                    animationPlayState: animationsActive ? "running" : "paused",
+                  }}
                 />
               </div>
               <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-ink/10 via-transparent to-transparent" />
@@ -563,7 +548,6 @@ function ClosingSectionInner({
           variants={fadeUp}
           className="relative w-full max-w-sm overflow-hidden rounded-[1.75rem] border border-mustard/30 bg-white/85 px-6 py-9 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md sm:max-w-md sm:rounded-4xl sm:px-10 sm:py-12 md:max-w-lg lg:max-w-xl lg:px-12 lg:py-14"
         >
-          {/* Garis emas tipis di bibir atas kartu */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
@@ -594,10 +578,15 @@ function ClosingSectionInner({
             {groomName}
           </p>
 
-          {/* Hati berdetak — satu elemen, transform murni. Penutup yang
-              hangat tanpa menambah beban berarti. */}
           <div className="mt-5 flex justify-center sm:mt-6">
-            <HeartIcon className="animate-closing-heartbeat h-4 w-4 text-burgundy/50 sm:h-5 sm:w-5" />
+            <HeartIcon
+              className="animate-closing-heartbeat h-4 w-4 text-burgundy/50 sm:h-5 sm:w-5"
+              style={
+                {
+                  animationPlayState: animationsActive ? "running" : "paused",
+                } as React.CSSProperties
+              }
+            />
           </div>
         </m.div>
 

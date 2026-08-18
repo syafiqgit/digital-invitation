@@ -259,7 +259,12 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": v.endDeg,
                 animationDuration: v.duration,
                 animationDelay: v.delay,
-                willChange: "transform",
+                // ✅ FIX: willChange permanen dihapus. Browser modern sudah
+                // otomatis promote layer selama animation aktif; memaksa
+                // willChange statis di 8 elemen (vines+corners) sekaligus
+                // bikin compositor menahan 8 GPU layer terus-menerus tanpa
+                // henti, dan itu yang bikin sendat pas content-visibility
+                // toggle section ini render/skip saat scroll naik-turun.
               } as React.CSSProperties
             }
           >
@@ -281,7 +286,7 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
                 animationDelay: c.delay,
-                willChange: "transform",
+                // ✅ FIX: sama seperti vines di atas
               } as React.CSSProperties
             }
           >
@@ -479,7 +484,10 @@ function EventSectionInner({
           background:
             "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
           filter: "blur(35px)",
-          willChange: "transform, opacity",
+          // ✅ FIX: willChange permanen dihapus. Kombinasi filter:blur() +
+          // willChange statis adalah yang paling mahal untuk di-rasterize
+          // pertama kali browser toggle section ini in/out lewat
+          // content-visibility, dan itu yang paling terasa di boundary scroll.
         }}
       />
 

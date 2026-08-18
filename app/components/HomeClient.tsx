@@ -36,6 +36,8 @@ function HomeInner() {
 
   const [phase, setPhase] = useState<Phase>("cover");
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  // ✅ FIX: state terpisah khusus untuk menandai animasi iris SEDANG berjalan
+  const [isIrisAnimating, setIsIrisAnimating] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // ✅ PRELOAD SILENT: Memuat chunk MainContent di latar belakang setelah render pertama stabil
@@ -48,6 +50,7 @@ function HomeInner() {
 
   const handleOpen = useCallback(() => {
     setPhase("opening");
+    setIsIrisAnimating(true);
 
     // ✅ NON-BLOCKING AUDIO: Menunda eksekusi audio 1 frame (rAF) agar animasi iris 60fps berjalan tanpa stutter
     requestAnimationFrame(() => {
@@ -92,8 +95,9 @@ function HomeInner() {
         )}
       </AnimatePresence>
 
-      {/* ✅ GPU ACCELERATION & PAINT CONTAINMENT: 
-          Mengisolasi area render iris transition menggunakan paint containment dan Biz/Hardware layer acceleration */}
+      {/* ✅ FIX: contain/willChange/translateZ HANYA aktif selagi animasi iris berjalan.
+          Setelah selesai (onAnimationComplete), layer dilepas total agar tidak
+          membebani compositor saat user scroll halaman. */}
       <m.div
         initial={{ clipPath: clipPathHidden }}
         animate={{ clipPath: isBlooming ? clipPathVisible : clipPathHidden }}
@@ -101,11 +105,16 @@ function HomeInner() {
           duration: TIMELINE.irisDuration / 1000,
           ease: [0.16, 1.35, 0.3, 1],
         }}
-        style={{
-          contain: "paint",
-          transform: "translateZ(0)",
-          willChange: isBlooming ? "clip-path" : "auto",
-        }}
+        onAnimationComplete={() => setIsIrisAnimating(false)}
+        style={
+          isIrisAnimating
+            ? {
+                contain: "paint",
+                transform: "translateZ(0)",
+                willChange: "clip-path",
+              }
+            : undefined
+        }
         className="relative z-0"
       >
         {isOpened && (

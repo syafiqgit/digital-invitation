@@ -210,7 +210,20 @@ function CoupleSectionInner({
   bridePhotoUrl = DEFAULT_BRIDE_PHOTO,
 }: CoupleSectionProps) {
   return (
-    <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
+    <section
+      className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-ivory px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28"
+      // ✅ FIX SCROLL JANK: section ini punya belasan animasi infinite (petal,
+      // butterfly, sparkle, badge spin/shimmer, twinkle-pop, dll) + beberapa
+      // blur besar yang terus di-composite meski section sudah keluar
+      // viewport. content-visibility: auto membuat browser skip total
+      // layout/paint/composite untuk section ini begitu tidak terlihat lagi,
+      // sehingga scroll transisi ke EventSection tidak lagi tersendat.
+      // containIntrinsicSize dipakai sebagai estimasi tinggi agar tidak ada
+      // layout shift saat browser belum pernah render section ini.
+      style={{
+        containIntrinsicSize: "1px 900px",
+      }}
+    >
       <AmbientKeyframes />
 
       <div className="pointer-events-none absolute inset-0 z-0">

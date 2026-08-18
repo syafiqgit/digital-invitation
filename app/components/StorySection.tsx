@@ -290,7 +290,11 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": v.endDeg,
                 animationDuration: v.duration,
                 animationDelay: v.delay,
-                willChange: "transform",
+                // ✅ FIX: willChange permanen dihapus. Section ini dibungkus
+                // content-visibility di MainContent — 8 elemen (vines+corners)
+                // menahan compositor layer terus-menerus persis pola yang
+                // bikin sendat di EventSection. Browser modern auto-promote
+                // layer selama animation aktif, tidak perlu dipaksa manual.
               } as React.CSSProperties
             }
           >
@@ -312,7 +316,7 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
                 animationDelay: c.delay,
-                willChange: "transform",
+                // ✅ FIX: sama seperti vines di atas
               } as React.CSSProperties
             }
           >
@@ -507,7 +511,10 @@ function StorySectionInner({
           background:
             "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
           filter: "blur(35px)",
-          willChange: "transform, opacity",
+          // ✅ FIX: willChange permanen dihapus — sama alasan seperti
+          // EventSection: filter:blur() + willChange statis paling mahal
+          // di-rasterize pertama kali saat content-visibility toggle section
+          // ini render/skip.
         }}
       />
 
