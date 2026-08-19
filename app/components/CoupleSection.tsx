@@ -5,19 +5,46 @@ import Image from "next/image";
 import { memo } from "react";
 import BackgroundPattern from "./BackgroundPattern";
 import WreathFrame, { WREATH_HOLE } from "./WreathFrame";
-import { AmbientDecor } from "./Ambientdecor";
-import { AmbientKeyframes } from "./AmbientKeyFrames";
-import {
-  GrassSilhouette,
-  StaticWreathBand,
-  MiniBloom,
-  SprigDivider,
-  Monogram,
-  MiniLeaf,
-} from "./DecorPieces";
-import { AmbientGlow, FairyLights } from "./FairyLights";
-import { FrameLayers } from "./FrameLayers";
+import FloralCorner from "./FloralCorner";
+import FloralVine from "./FloralVine";
+import FloatingDecorations from "./FloatingDecorations";
 
+const ANGLES_5 = [0, 72, 144, 216, 288] as const;
+const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
+
+const grassBlades = [
+  { x: 10, h: 22, rot: -8 },
+  { x: 24, h: 30, rot: 4 },
+  { x: 40, h: 18, rot: -12 },
+  { x: 58, h: 26, rot: 6 },
+  { x: 76, h: 20, rot: -4 },
+  { x: 94, h: 28, rot: 10 },
+  { x: 300, h: 20, rot: -6 },
+  { x: 318, h: 28, rot: 8 },
+  { x: 336, h: 18, rot: -10 },
+  { x: 354, h: 26, rot: 5 },
+  { x: 372, h: 22, rot: -3 },
+  { x: 390, h: 30, rot: 9 },
+] as const;
+
+const wreathBlooms = [
+  { x: 40, y: 14, s: 1, color: "var(--burgundy)" },
+  { x: 95, y: 6, s: 0.8, color: "var(--coral)" },
+  { x: 150, y: 16, s: 0.9, color: "var(--blush-dark)" },
+  { x: 205, y: 5, s: 0.75, color: "var(--coral)" },
+  { x: 260, y: 15, s: 1, color: "var(--burgundy)" },
+] as const;
+
+const wreathLeaves = [
+  { x: 65, y: 12, rot: -20 },
+  { x: 120, y: 4, rot: 15 },
+  { x: 178, y: 12, rot: -12 },
+  { x: 232, y: 4, rot: 18 },
+] as const;
+
+/* -------------------------------------------------------------------------- */
+/*                                TYPES                                       */
+/* -------------------------------------------------------------------------- */
 interface CoupleSectionProps {
   groomName?: string;
   groomFullName?: string;
@@ -44,19 +71,37 @@ const DEFAULT_GROOM_PHOTO = "https://picsum.photos/id/1005/600/800";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+/** Class ukuran wrapper foto bride/groom — sebelumnya diduplikasi 2x. */
+const PORTRAIT_WRAPPER_CLASS =
+  "flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] md:max-w-[13rem] lg:max-w-[16rem]";
+
+/* -------------------------------------------------------------------------- */
+/*                           MOTION VARIANTS (STATIC)                         */
+/* -------------------------------------------------------------------------- */
 const containerVariants: Variants = {
   hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+};
+
+const fadeOnly: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.8, ease: EASE } },
+};
+
+const cornerFade: Variants = {
+  hidden: { opacity: 0, scale: 0.92 },
   visible: {
-    transition: { staggerChildren: 0.1 },
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.8, ease: "easeOut" },
   },
 };
 
-// Transisi murni fade (tanpa pergerakan y) untuk elemen yang berat
-const fadeOnly: Variants = {
+const vineFade: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.8, ease: EASE },
+    transition: { duration: 1, ease: "easeOut", delay: 0.2 },
   },
 };
 
@@ -71,48 +116,458 @@ const textLift = {
   },
 } as const;
 
-/* ---------- EFEK VISUAL ---------- */
-const couplePetals = [
-  { left: "6%", size: 14, duration: 10, delay: 0, drift: 16 },
-  { left: "24%", size: 11, duration: 13, delay: 3, drift: -12 },
-  { left: "78%", size: 15, duration: 11, delay: 1.5, drift: 14 },
-  { left: "92%", size: 12, duration: 14, delay: 5, drift: -18 },
+/* -------------------------------------------------------------------------- */
+/*  VINES & CORNERS — sway animation dipindah dari framer `animate` (JS/rAF   */
+/*  loop tak berhenti) ke CSS keyframes, konsisten dengan animasi loop lain   */
+/*  di file ini (float, badge-spin, amp-scale) dan lebih ringan di main       */
+/*  thread + GPU-composited.                                                 */
+/* -------------------------------------------------------------------------- */
+const vines = [
+  {
+    key: "left",
+    orientation: "vertical" as const,
+    className:
+      "absolute left-0 top-0 h-full w-8 opacity-90 sm:w-10 md:w-12 lg:w-14",
+    flip: "",
+    swayOrigin: "top",
+    swayVar: "7s 0s",
+  },
+  {
+    key: "right",
+    orientation: "vertical" as const,
+    className:
+      "absolute right-0 top-0 h-full w-8 opacity-90 sm:w-10 md:w-12 lg:w-14",
+    flip: "-scale-x-100",
+    swayOrigin: "top",
+    swayVar: "7.6s 0.4s",
+  },
+  {
+    key: "top",
+    orientation: "horizontal" as const,
+    className:
+      "absolute left-0 top-0 h-8 w-full opacity-90 sm:h-10 md:h-12 lg:h-14",
+    flip: "",
+    swayOrigin: "left",
+    swayVar: "8.2s 0.8s",
+  },
+  {
+    key: "bottom",
+    orientation: "horizontal" as const,
+    className:
+      "absolute bottom-0 left-0 h-8 w-full opacity-90 sm:h-10 md:h-12 lg:h-14",
+    flip: "-scale-y-100",
+    swayOrigin: "left",
+    swayVar: "8.8s 1.2s",
+  },
 ];
 
-function CoupleAmbientExtras() {
-  return (
-    <>
-      <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
-        {couplePetals.map((p, i) => (
-          <div
-            key={`couple-petal-${i}`}
-            className="pointer-events-none absolute top-0"
-            style={
-              {
-                left: p.left,
-                width: p.size,
-                height: p.size,
-                animation: `couple-petal-fall ${p.duration}s linear ${p.delay}s infinite`,
-                ["--petal-drift" as string]: `${p.drift}px`,
-              } as React.CSSProperties
-            }
-          >
-            <Image
-              src="/assets/flower-petal.png"
-              alt=""
-              fill
-              sizes={`${p.size}px`}
-              className="pointer-events-none select-none object-contain"
-              draggable={false}
-            />
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
+const corners = [
+  {
+    key: "bl",
+    position: "bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4",
+    flip: "",
+    fadeDelay: 0,
+    swayOrigin: "bottom left",
+    swayVar: "6s 0s",
+  },
+  {
+    key: "br",
+    position: "bottom-2 right-2 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4",
+    flip: "-scale-x-100",
+    fadeDelay: 0.05,
+    swayOrigin: "bottom right",
+    swayVar: "6s 0.1s",
+  },
+  {
+    key: "tl",
+    position: "top-2 left-2 sm:top-3 sm:left-3 md:top-4 md:left-4",
+    flip: "-scale-y-100",
+    fadeDelay: 0.1,
+    swayOrigin: "top left",
+    swayVar: "6s 0.2s",
+  },
+  {
+    key: "tr",
+    position: "top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4",
+    flip: "-scale-x-100 -scale-y-100",
+    fadeDelay: 0.15,
+    swayOrigin: "top right",
+    swayVar: "6s 0.3s",
+  },
+];
 
-/* ---------- KOMPONEN PORTRAIT ---------- */
+/* -------------------------------------------------------------------------- */
+/*                           DECOR PIECES COMPONENTS                          */
+/* -------------------------------------------------------------------------- */
+export const Monogram = memo(function Monogram({ name }: { name: string }) {
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <div
+      aria-hidden="true"
+      className="flex h-full w-full items-center justify-center bg-linear-to-br from-blush via-blush-dark/70 to-burgundy/55"
+    >
+      <span className="font-script text-3xl text-white drop-shadow-md sm:text-4xl lg:text-6xl">
+        {initial}
+      </span>
+    </div>
+  );
+});
+Monogram.displayName = "Monogram";
+
+export const SprigDivider = memo(function SprigDivider({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 220 28"
+      className={className}
+      fill="none"
+    >
+      <line
+        x1="0"
+        y1="14"
+        x2="86"
+        y2="14"
+        stroke="var(--sage)"
+        strokeWidth="0.8"
+        opacity="0.55"
+      />
+      <line
+        x1="134"
+        y1="14"
+        x2="220"
+        y2="14"
+        stroke="var(--sage)"
+        strokeWidth="0.8"
+        opacity="0.55"
+      />
+      <g transform="translate(110, 14)">
+        {ANGLES_6.map((deg) => (
+          <ellipse
+            key={deg}
+            cx="0"
+            cy="-6"
+            rx="3.6"
+            ry="7"
+            fill="var(--coral)"
+            opacity="0.92"
+            transform={`rotate(${deg})`}
+          />
+        ))}
+        <circle r="2.4" fill="var(--mustard)" />
+      </g>
+      <ellipse
+        cx="94"
+        cy="14"
+        rx="3"
+        ry="5.4"
+        fill="var(--sage-light)"
+        stroke="var(--sage)"
+        strokeWidth="0.5"
+        transform="rotate(-25 94 14)"
+      />
+      <ellipse
+        cx="126"
+        cy="14"
+        rx="3"
+        ry="5.4"
+        fill="var(--sage-light)"
+        stroke="var(--sage)"
+        strokeWidth="0.5"
+        transform="rotate(25 126 14)"
+      />
+    </svg>
+  );
+});
+SprigDivider.displayName = "SprigDivider";
+
+export const CornerFlourish = memo(function CornerFlourish({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 60 60"
+      className={className}
+      fill="none"
+    >
+      <path
+        d="M4 4 C 4 24, 18 36, 40 38 C 48 39, 54 44, 56 52"
+        stroke="var(--sage)"
+        strokeWidth="1.1"
+        fill="none"
+        opacity="0.6"
+      />
+      <g transform="translate(10, 10)">
+        {ANGLES_5.map((deg) => (
+          <ellipse
+            key={deg}
+            cx="0"
+            cy="-5.5"
+            rx="3.6"
+            ry="7"
+            fill="var(--blush-dark)"
+            opacity="0.9"
+            transform={`rotate(${deg})`}
+          />
+        ))}
+        <circle r="2.2" fill="var(--mustard)" />
+      </g>
+      <ellipse
+        cx="28"
+        cy="30"
+        rx="3"
+        ry="6"
+        fill="var(--sage-light)"
+        stroke="var(--sage)"
+        strokeWidth="0.5"
+        transform="rotate(30 28 30)"
+      />
+    </svg>
+  );
+});
+CornerFlourish.displayName = "CornerFlourish";
+
+export const MiniBloom = memo(function MiniBloom({
+  className = "",
+  color = "var(--coral)",
+}: {
+  className?: string;
+  color?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 28 28"
+      className={className}
+      fill="none"
+    >
+      <g transform="translate(14, 14)">
+        {ANGLES_5.map((deg) => (
+          <ellipse
+            key={deg}
+            cx="0"
+            cy="-5.5"
+            rx="3.8"
+            ry="7.2"
+            fill={color}
+            opacity="0.94"
+            transform={`rotate(${deg})`}
+          />
+        ))}
+        <circle r="2.3" fill="var(--mustard)" />
+      </g>
+    </svg>
+  );
+});
+MiniBloom.displayName = "MiniBloom";
+
+export const MiniLeaf = memo(function MiniLeaf({
+  className = "",
+  rot = 0,
+}: {
+  className?: string;
+  rot?: number;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+    >
+      <ellipse
+        cx="12"
+        cy="12"
+        rx="5.2"
+        ry="9.5"
+        fill="var(--sage-light)"
+        stroke="var(--sage)"
+        strokeWidth="0.6"
+        transform={`rotate(${rot} 12 12)`}
+      />
+    </svg>
+  );
+});
+MiniLeaf.displayName = "MiniLeaf";
+
+export const Sparkle = memo(function Sparkle({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="var(--mustard)"
+    >
+      <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z" />
+    </svg>
+  );
+});
+Sparkle.displayName = "Sparkle";
+
+export const Butterfly = memo(function Butterfly({
+  className = "",
+  color = "var(--coral)",
+}: {
+  className?: string;
+  color?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 32 24"
+      className={className}
+      fill="none"
+    >
+      <line
+        x1="16"
+        y1="3"
+        x2="16"
+        y2="21"
+        stroke="var(--ink)"
+        strokeWidth="1.1"
+        opacity="0.55"
+      />
+      <ellipse cx="8" cy="9" rx="7.5" ry="6" fill={color} opacity="0.85" />
+      <ellipse cx="8.5" cy="16" rx="5.5" ry="4.5" fill={color} opacity="0.65" />
+      <ellipse cx="24" cy="9" rx="7.5" ry="6" fill={color} opacity="0.85" />
+      <ellipse
+        cx="23.5"
+        cy="16"
+        rx="5.5"
+        ry="4.5"
+        fill={color}
+        opacity="0.65"
+      />
+      <circle cx="8" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
+      <circle cx="24" cy="9" r="1.6" fill="var(--mustard)" opacity="0.9" />
+    </svg>
+  );
+});
+Butterfly.displayName = "Butterfly";
+
+export const GrassSilhouette = memo(function GrassSilhouette({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 400 40"
+      className={className}
+      fill="none"
+      preserveAspectRatio="none"
+    >
+      {grassBlades.map((b, i) => (
+        <path
+          key={i}
+          d={`M${b.x} 40 Q${b.x + 2} ${40 - b.h * 0.6} ${b.x + 4} ${40 - b.h}`}
+          stroke="var(--sage)"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.5"
+          transform={`rotate(${b.rot} ${b.x} 40)`}
+        />
+      ))}
+    </svg>
+  );
+});
+GrassSilhouette.displayName = "GrassSilhouette";
+
+export const StaticWreathBand = memo(function StaticWreathBand({
+  className = "",
+  flip = false,
+  animated = false,
+}: {
+  className?: string;
+  flip?: boolean;
+  animated?: boolean;
+}) {
+  const svg = (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 300 28"
+      className={animated ? "h-full w-full" : className}
+      fill="none"
+      style={flip ? { transform: "scaleY(-1)" } : undefined}
+    >
+      <line
+        x1="0"
+        y1="20"
+        x2="300"
+        y2="20"
+        stroke="var(--sage)"
+        strokeWidth="0.6"
+        opacity="0.35"
+        strokeDasharray="1 5"
+      />
+      {wreathLeaves.map((l, i) => (
+        <ellipse
+          key={`wl-${i}`}
+          cx={l.x}
+          cy={l.y}
+          rx="3.4"
+          ry="6.4"
+          fill="var(--sage-light)"
+          stroke="var(--sage)"
+          strokeWidth="0.5"
+          opacity="0.75"
+          transform={`rotate(${l.rot} ${l.x} ${l.y})`}
+        />
+      ))}
+      {wreathBlooms.map((b, i) => (
+        <g
+          key={`wb-${i}`}
+          transform={`translate(${b.x}, ${b.y}) scale(${b.s})`}
+        >
+          {ANGLES_5.map((deg) => (
+            <ellipse
+              key={deg}
+              cx="0"
+              cy="-5"
+              rx="3.2"
+              ry="6.2"
+              fill={b.color}
+              opacity="0.9"
+              transform={`rotate(${deg})`}
+            />
+          ))}
+          <circle r="2" fill="var(--mustard)" />
+        </g>
+      ))}
+    </svg>
+  );
+
+  if (!animated) return svg;
+
+  return (
+    <div
+      className={className}
+      style={{
+        animation: "couple-band-sway 5s ease-in-out infinite",
+        transformOrigin: "center",
+      }}
+    >
+      {svg}
+    </div>
+  );
+});
+StaticWreathBand.displayName = "StaticWreathBand";
+
+/* -------------------------------------------------------------------------- */
+/*                              KOMPONEN PORTRAIT                             */
+/* -------------------------------------------------------------------------- */
 export const ArchPortrait = memo(function ArchPortrait({
   displayName,
   fullName,
@@ -124,16 +579,11 @@ export const ArchPortrait = memo(function ArchPortrait({
 }: ArchPortraitProps) {
   return (
     <div className="relative flex w-full flex-col items-center text-center">
-      {/* ✅ FIX: Menghapus translateZ(0) dan backfaceVisibility. 
-        Murni menggunakan layout standar agar tidak glitch saat di-scroll di iOS/Safari.
-      */}
       <div
         className="relative w-full"
-        style={
-          {
-            animation: `couple-portrait-float 5s ease-in-out ${floatDelay}s infinite`,
-          } as React.CSSProperties
-        }
+        style={{
+          animation: `couple-portrait-float 5s ease-in-out ${floatDelay}s infinite`,
+        }}
       >
         <div className="absolute -inset-[7px] rounded-t-[3.6rem] rounded-b-xl border-[1.5px] border-mustard shadow-[0_0_15px_rgba(212,175,55,0.3)] sm:-inset-2.5 sm:rounded-t-[4.3rem] lg:-inset-3 lg:rounded-t-[6.6rem] lg:rounded-b-3xl" />
         <div className="absolute -inset-[3px] rounded-t-[3.4rem] rounded-b-lg border border-mustard/70 sm:-inset-1 sm:rounded-t-[4rem] lg:-inset-1.5 lg:rounded-t-[6.3rem] lg:rounded-b-2xl" />
@@ -142,7 +592,7 @@ export const ArchPortrait = memo(function ArchPortrait({
           {photoUrl ? (
             <Image
               src={photoUrl}
-              alt={displayName}
+              alt={displayName || "Portrait"}
               fill
               priority={priority}
               sizes="(min-width: 1024px) 16rem, (min-width: 640px) 10rem, 38vw"
@@ -201,8 +651,55 @@ export const ArchPortrait = memo(function ArchPortrait({
     </div>
   );
 });
+ArchPortrait.displayName = "ArchPortrait";
 
-/* ---------- MAIN SECTION ---------- */
+/* -------------------------------------------------------------------------- */
+/*  STYLES — semua loop animation (float, badge, amp-scale, band-sway, vine   */
+/*  & corner sway) sekarang konsisten pakai CSS keyframes, tidak ada lagi     */
+/*  framer `animate` JS loop untuk vines/corners.                            */
+/* -------------------------------------------------------------------------- */
+const COUPLE_STYLES = `
+  @keyframes couple-portrait-float {
+    0%, 100% { transform: translateY(-3px); }
+    50% { transform: translateY(3px); }
+  }
+  @keyframes couple-badge-spin-l {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(15deg); }
+  }
+  @keyframes couple-badge-spin-r {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-15deg); }
+  }
+  @keyframes couple-amp-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  @keyframes couple-band-sway {
+    0%, 100% { transform: rotate(-1deg); }
+    50% { transform: rotate(1deg); }
+  }
+  @keyframes couple-vine-sway {
+    0%, 50%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1.2deg); }
+    75% { transform: rotate(-1.2deg); }
+  }
+  @keyframes couple-corner-sway {
+    0%, 50%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1.5deg); }
+    75% { transform: rotate(-1.5deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .couple-anim-float,
+    .couple-anim-sway {
+      animation: none !important;
+    }
+  }
+`;
+
+/* -------------------------------------------------------------------------- */
+/*                                MAIN SECTION                                */
+/* -------------------------------------------------------------------------- */
 function CoupleSectionInner({
   groomName = "Alexander",
   groomFullName = "Alexander",
@@ -214,11 +711,10 @@ function CoupleSectionInner({
   bridePhotoUrl = DEFAULT_BRIDE_PHOTO,
 }: CoupleSectionProps) {
   return (
-    // ✅ FIX: Menggunakan Block Layout dengan Padding tetap (pt-28 pb-24).
-    // Menghapus `min-h-dvh`, `flex-col`, `justify-center`.
     <section className="relative w-full overflow-hidden bg-ivory px-4 pt-28 pb-24 xs:px-5 sm:px-6 sm:pt-36 sm:pb-32 md:pt-40 md:pb-36">
-      <AmbientKeyframes />
+      <style dangerouslySetInnerHTML={{ __html: COUPLE_STYLES }} />
 
+      {/* 1. BACKGROUND */}
       <div className="pointer-events-none absolute inset-0 z-0">
         <BackgroundPattern className="h-full w-full opacity-[0.28]" />
       </div>
@@ -226,17 +722,67 @@ function CoupleSectionInner({
       <div className="pointer-events-none absolute -right-16 -top-12 z-0 h-56 w-56 rounded-full bg-blush/35 blur-[90px] opacity-70 lg:h-[22rem] lg:w-[22rem]" />
       <div className="pointer-events-none absolute -bottom-16 -left-12 z-0 h-48 w-48 rounded-full bg-sage-light/40 blur-[80px] opacity-70 lg:h-72 lg:w-72" />
 
-      <AmbientGlow />
-      <FrameLayers />
-      <AmbientDecor />
-      <FairyLights />
-      <CoupleAmbientExtras />
+      {/* 2. ORNAMENTS & DECORATIONS */}
+      <FloatingDecorations />
+
+      {vines.map((v) => {
+        const [duration, delay] = v.swayVar.split(" ");
+        return (
+          <m.div
+            key={v.key}
+            variants={vineFade}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className={`pointer-events-none absolute z-2 ${v.className} ${v.flip}`}
+          >
+            <div
+              className="couple-anim-sway h-full w-full"
+              style={{
+                transformOrigin: v.swayOrigin,
+                animation: `couple-vine-sway ${duration} ease-in-out ${delay} infinite`,
+              }}
+            >
+              <FloralVine
+                orientation={v.orientation}
+                className="h-full w-full"
+                tileSize={360}
+              />
+            </div>
+          </m.div>
+        );
+      })}
+
+      {corners.map((c) => {
+        const [duration, delay] = c.swayVar.split(" ");
+        return (
+          <m.div
+            key={c.key}
+            variants={cornerFade}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            transition={{ delay: c.fadeDelay }}
+            className={`pointer-events-none absolute z-20 h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-48 lg:w-48 ${c.position}`}
+          >
+            <div
+              className="couple-anim-sway h-full w-full"
+              style={{
+                transformOrigin: c.swayOrigin,
+                animation: `couple-corner-sway ${duration} ease-in-out ${delay} infinite`,
+              }}
+            >
+              <FloralCorner className="h-full w-full" flip={c.flip} />
+            </div>
+          </m.div>
+        );
+      })}
 
       <div className="pointer-events-none absolute bottom-0 left-0 z-[1] hidden h-6 w-full opacity-90 sm:block sm:h-8 lg:h-10">
         <GrassSilhouette className="h-full w-full" />
       </div>
 
-      {/* Pembungkus Konten Ditengah */}
+      {/* 3. MAIN CONTENT CONTAINER */}
       <m.div
         className="relative z-10 mx-auto flex w-full max-w-sm flex-col items-center xs:max-w-md sm:max-w-2xl md:max-w-3xl xl:max-w-4xl"
         variants={containerVariants}
@@ -292,13 +838,13 @@ function CoupleSectionInner({
           <SprigDivider className="mt-2 h-4 w-28 xs:w-32 sm:mt-3 sm:w-40 lg:mt-4 lg:h-5 lg:w-44" />
         </m.div>
 
-        {/* BLOK 2: Area Foto (Dipisah agar tidak menggeser sumbu Y saat animasi masuk) */}
+        {/* BLOK 2: Area Foto */}
         <m.div
           variants={fadeOnly}
           className="relative mt-5 flex w-full flex-row items-end justify-center gap-2 sm:mt-8 sm:gap-4 md:mt-10 md:gap-5 lg:gap-6"
           style={{ paddingInline: "clamp(0.75rem, 6vw, 3rem)" }}
         >
-          <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] md:max-w-[13rem] lg:max-w-[16rem]">
+          <div className={PORTRAIT_WRAPPER_CLASS}>
             <ArchPortrait
               displayName={brideName}
               fullName={brideFullName}
@@ -339,7 +885,7 @@ function CoupleSectionInner({
             </div>
           </div>
 
-          <div className="flex w-[38%] max-w-[8.5rem] shrink-0 sm:w-auto sm:max-w-[10rem] md:max-w-[13rem] lg:max-w-[16rem]">
+          <div className={PORTRAIT_WRAPPER_CLASS}>
             <ArchPortrait
               displayName={groomName}
               fullName={groomFullName}
@@ -360,35 +906,6 @@ function CoupleSectionInner({
           />
         </m.div>
       </m.div>
-
-      {/* STYLES */}
-      <style>{`
-        @keyframes couple-portrait-float {
-          0%, 100% { transform: translateY(-3px); }
-          50% { transform: translateY(3px); }
-        }
-        @keyframes couple-petal-fall {
-          0% { opacity: 0; transform: translateY(-10%) rotate(0deg); }
-          10% { opacity: 0.7; }
-          90% { opacity: 0.5; }
-          100% { opacity: 0; transform: translate(var(--petal-drift), 115vh) rotate(320deg); }
-        }
-        @keyframes couple-badge-spin-l {
-          0%, 100% { transform: rotate(0deg); }
-          50% { transform: rotate(15deg); }
-        }
-        @keyframes couple-badge-spin-r {
-          0%, 100% { transform: rotate(0deg); }
-          50% { transform: rotate(-15deg); }
-        }
-        @keyframes couple-amp-scale {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.08); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .couple-anim-float { animation: none !important; }
-        }
-      `}</style>
     </section>
   );
 }
