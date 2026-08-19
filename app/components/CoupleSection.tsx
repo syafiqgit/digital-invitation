@@ -7,7 +7,6 @@ import BackgroundPattern from "./BackgroundPattern";
 import WreathFrame, { WREATH_HOLE } from "./WreathFrame";
 import { AmbientDecor } from "./Ambientdecor";
 import { AmbientKeyframes } from "./AmbientKeyFrames";
-import { Sparkle } from "./CoverDecorations";
 import {
   GrassSilhouette,
   StaticWreathBand,

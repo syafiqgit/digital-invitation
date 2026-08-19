@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState, memo, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import dynamic from "next/dynamic";
-import CoverPage from "./CoverPage";
+import CoverPage from "./cover page/CoverPage";
 import { FloatingMusic } from "./FloatingMusic";
 
-// ✅ LAZY LOADING: Code-splitting chunk MainContent agar tidak membebani initial bundle
+// ✅ LAZY LOADING: Code-splitting chunk MainContent
 const MainContent = dynamic(() => import("./MainContent"), {
   ssr: false,
   loading: () => null,
@@ -75,6 +75,38 @@ function buildWave(waveIndex: number): Particle[] {
   });
 }
 
+// ✅ HOISTING STYLES: Dikeluarkan dari siklus render agar parsing CSS engine lebih efisien
+const BLOOM_STYLES = `
+  @keyframes bloom-glow {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    35% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.6); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.1); }
+  }
+  @keyframes bloom-particle {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.25);
+    }
+    22% {
+      opacity: 1;
+      transform: translate(-50%, -50%) translate(var(--tx-mid), var(--ty-mid)) rotate(var(--rot-mid)) scale(1);
+    }
+    70% {
+      opacity: 0.9;
+      transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) rotate(var(--rot-end)) scale(0.95);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) translate(var(--tx-final), var(--ty-final)) rotate(var(--rot)) scale(0.65);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bloom-glow, .bloom-particle {
+      animation-duration: 0.01ms !important;
+    }
+  }
+`;
+
 export const BloomParticles = memo(function BloomParticles() {
   const particles = useMemo(
     () => Array.from({ length: WAVE_COUNT }, (_, w) => buildWave(w)).flat(),
@@ -86,44 +118,13 @@ export const BloomParticles = memo(function BloomParticles() {
       className="pointer-events-none absolute z-50"
       style={{ left: `${BLOOM_ORIGIN.xPct}%`, top: `${BLOOM_ORIGIN.yPct}%` }}
     >
-      <style>{`
-        @keyframes bloom-glow {
-          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
-          35% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.6); }
-          100% { opacity: 0; transform: translate(-50%, -50%) scale(2.1); }
-        }
-        @keyframes bloom-particle {
-          0% {
-            opacity: 0;
-            transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.25);
-          }
-          22% {
-            opacity: 1;
-            transform: translate(-50%, -50%) translate(var(--tx-mid), var(--ty-mid)) rotate(var(--rot-mid)) scale(1);
-          }
-          70% {
-            opacity: 0.9;
-            transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) rotate(var(--rot-end)) scale(0.95);
-          }
-          100% {
-            opacity: 0;
-            transform: translate(-50%, -50%) translate(var(--tx-final), var(--ty-final)) rotate(var(--rot)) scale(0.65);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .bloom-glow, .bloom-particle {
-            animation-duration: 0.01ms !important;
-          }
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: BLOOM_STYLES }} />
 
-      {/* Glow */}
       <div
         className="bloom-glow absolute left-0 top-0 h-32 w-32 rounded-full bg-mustard/60 blur-xl sm:h-40 sm:w-40"
         style={{ animation: "bloom-glow 0.9s ease-out forwards" }}
       />
 
-      {/* Particles */}
       {particles.map((p) => (
         <div
           key={p.id}
@@ -155,27 +156,32 @@ export const BloomParticles = memo(function BloomParticles() {
 /* ---------- MAIN HOME INNER ---------- */
 function HomeInner() {
   const searchParams = useSearchParams();
-  const guestName = searchParams.get("to") || "Syafiq";
+  const guestName = searchParams.get("to") || "Guest"; // Fallback default yang lebih universal
 
   const [phase, setPhase] = useState<Phase>("cover");
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
-  // state terpisah khusus untuk menandai animasi iris SEDANG berjalan
   const [isIrisAnimating, setIsIrisAnimating] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // PRELOAD SILENT: Memuat chunk MainContent di latar belakang setelah render pertama stabil
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const phaseTimerRef = useRef<number | null>(null);
+
   useEffect(() => {
-    const preloadTimeout = setTimeout(() => {
+    // PRELOAD SILENT: Memuat chunk MainContent di latar belakang setelah render pertama stabil
+    const preloadTimeout = window.setTimeout(() => {
       import("./MainContent");
     }, 1000);
-    return () => clearTimeout(preloadTimeout);
+
+    return () => {
+      // ✅ SAFETY: Cleanup semua timeout saat komponen unmount untuk mencegah memory leak
+      window.clearTimeout(preloadTimeout);
+      if (phaseTimerRef.current) window.clearTimeout(phaseTimerRef.current);
+    };
   }, []);
 
   const handleOpen = useCallback(() => {
     setPhase("opening");
     setIsIrisAnimating(true);
 
-    // NON-BLOCKING AUDIO: Menunda eksekusi audio 1 frame (rAF) agar animasi iris 60fps berjalan tanpa stutter
     requestAnimationFrame(() => {
       if (audioRef.current) {
         audioRef.current
@@ -185,12 +191,16 @@ function HomeInner() {
       }
     });
 
-    window.setTimeout(() => setPhase("content"), TOTAL_MS);
+    phaseTimerRef.current = window.setTimeout(
+      () => setPhase("content"),
+      TOTAL_MS,
+    );
   }, []);
 
   const toggleMusic = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
     if (audio.paused) {
       audio
         .play()
@@ -210,7 +220,8 @@ function HomeInner() {
 
   return (
     <>
-      <audio ref={audioRef} src={MUSIC_SRC} loop preload="auto" />
+      {/* ✅ OPTIMASI SEO & KUOTA: preload="metadata" mencegah unduhan file MP3 penuh di awal */}
+      <audio ref={audioRef} src={MUSIC_SRC} loop preload="metadata" />
 
       <AnimatePresence>
         {isOpened && (
@@ -218,8 +229,6 @@ function HomeInner() {
         )}
       </AnimatePresence>
 
-      {/* ✅ Menambahkan BloomParticles di luar kontainer m.div clip-path 
-          agar partikel meledak mulus dan tidak terpotong oleh masking */}
       {isOpened && <BloomParticles />}
 
       <m.div
@@ -234,7 +243,7 @@ function HomeInner() {
           isIrisAnimating
             ? {
                 contain: "paint",
-                transform: "translateZ(0)",
+                transform: "translateZ(0)", // Force GPU acceleration
                 willChange: "clip-path",
               }
             : undefined
@@ -243,7 +252,6 @@ function HomeInner() {
       >
         {isOpened && (
           <m.div
-            // FADE-IN MURNI: Menghindari layout shift vertikal (y-axis) pada seluruh halaman
             initial={{ opacity: 0 }}
             animate={isBlooming ? { opacity: 1 } : { opacity: 0 }}
             transition={{

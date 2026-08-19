@@ -1,10 +1,18 @@
 import { memo } from "react";
 
-type Props = { className?: string };
+interface BackgroundPatternProps {
+  className?: string;
+}
 
-function BackgroundPattern({ className = "" }: Props) {
+const FLOWER_ANGLES = [0, 72, 144, 216, 288];
+
+function BackgroundPattern({ className = "" }: BackgroundPatternProps) {
   return (
-    <svg className={className} preserveAspectRatio="xMidYMid slice">
+    <svg
+      aria-hidden="true"
+      className={className}
+      preserveAspectRatio="xMidYMid slice"
+    >
       <defs>
         <pattern
           id="floral-bg-pattern"
@@ -23,9 +31,9 @@ function BackgroundPattern({ className = "" }: Props) {
             transform="rotate(-20 16 14)"
           />
           <g transform="translate(38, 40)">
-            {[0, 72, 144, 216, 288].map((deg) => (
+            {FLOWER_ANGLES.map((deg) => (
               <ellipse
-                key={deg}
+                key={`p1-${deg}`}
                 cx="0"
                 cy="-4"
                 rx="2.6"
@@ -66,12 +74,6 @@ function BackgroundPattern({ className = "" }: Props) {
           <circle cx="50" cy="48" r="1.4" fill="var(--mustard)" opacity="0.4" />
         </pattern>
 
-        {/*
-          Pattern kedua: tile size beda (110 vs 72) + rotasi berlawanan (-9 vs 12).
-          Dua periode berbeda yang saling silang jauh lebih sulit ditangkap mata
-          sebagai "grid" dibanding satu pattern diulang — tanpa perlu bikin motif
-          baru, cukup reuse elemen yang sama dengan parameter berbeda.
-        */}
         <pattern
           id="floral-bg-pattern-2"
           width="110"
@@ -89,9 +91,9 @@ function BackgroundPattern({ className = "" }: Props) {
             transform="rotate(15 24 20)"
           />
           <g transform="translate(70, 60)">
-            {[0, 72, 144, 216, 288].map((deg) => (
+            {FLOWER_ANGLES.map((deg) => (
               <ellipse
-                key={deg}
+                key={`p2-${deg}`}
                 cx="0"
                 cy="-3.5"
                 rx="2.2"

@@ -13,20 +13,20 @@ export const WREATH_HOLE = {
   heightPct: 60.25,
 };
 
-type Props = { className?: string };
+interface WreathFrameProps {
+  className?: string;
+}
 
-function WreathFrame({ className = "" }: Props) {
+function WreathFrame({ className = "" }: WreathFrameProps) {
   return (
     <m.div
+      aria-hidden="true"
       className={`relative ${className}`}
       style={{
         aspectRatio: WREATH_ASPECT_RATIO,
         transformOrigin: "top center",
         willChange: "transform",
       }}
-      // Ayunan halus & "napas" tak berhenti, transform-only (rotate+scale)
-      // sehingga sepenuhnya ditangani compositor/GPU — mulai setelah
-      // animasi entrance (wreathVariant di parent) selesai.
       animate={{
         rotate: [0, 0.8, 0, -0.8, 0],
         scale: [1, 1.012, 1, 1.008, 1],
@@ -39,7 +39,7 @@ function WreathFrame({ className = "" }: Props) {
       }}
     >
       <Image
-        src="/assets/wreath-full-final.png"
+        src="/assets/wreath-frame.webp"
         alt=""
         fill
         sizes="(min-width: 1024px) 610px, (min-width: 640px) 520px, 440px"

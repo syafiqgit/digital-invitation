@@ -2,14 +2,14 @@
 
 import { memo } from "react";
 import { m } from "framer-motion";
-import WreathFrame, { WREATH_HOLE } from "./WreathFrame";
+import WreathFrame, { WREATH_HOLE } from "../WreathFrame";
 import {
   fadeUp,
   wreathVariant,
   loop,
+  Sparkle,
   MiniFlower,
   FlourishDivider,
-  Sparkle,
 } from "./CoverDecorations";
 
 interface CoverContentProps {

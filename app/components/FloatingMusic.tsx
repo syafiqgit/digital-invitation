@@ -4,7 +4,12 @@ import { memo } from "react";
 import { m } from "framer-motion";
 
 const NoteIcon = memo(() => (
-  <svg viewBox="0 0 24 24" className="h-full w-full" fill="none">
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    className="h-full w-full"
+    fill="none"
+  >
     <path
       d="M9 18V5l11-2v13"
       stroke="var(--burgundy)"
@@ -16,9 +21,15 @@ const NoteIcon = memo(() => (
     <circle cx="17" cy="16" r="3" fill="var(--burgundy)" />
   </svg>
 ));
+NoteIcon.displayName = "NoteIcon";
 
 const MutedNoteIcon = memo(() => (
-  <svg viewBox="0 0 24 24" className="h-full w-full" fill="none">
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    className="h-full w-full"
+    fill="none"
+  >
     <path
       d="M9 18V5l11-2v13"
       stroke="var(--ink)"
@@ -40,6 +51,7 @@ const MutedNoteIcon = memo(() => (
     />
   </svg>
 ));
+MutedNoteIcon.displayName = "MutedNoteIcon";
 
 interface FloatingMusicProps {
   isPlaying: boolean;
@@ -63,17 +75,13 @@ export const FloatingMusic = memo(function FloatingMusic({
       whileHover={{ scale: 1.06 }}
       whileTap={{ scale: 0.95 }}
     >
-      <m.span
-        animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
-        transition={{
-          duration: 6,
-          repeat: isPlaying ? Infinity : 0,
-          ease: "linear",
-        }}
-        className="flex h-5 w-5 items-center justify-center sm:h-6 sm:w-6"
+      <span
+        className={`flex h-5 w-5 items-center justify-center sm:h-6 sm:w-6 will-change-transform ${
+          isPlaying ? "animate-[spin_6s_linear_infinite]" : ""
+        }`}
       >
         {isPlaying ? <NoteIcon /> : <MutedNoteIcon />}
-      </m.span>
+      </span>
     </m.button>
   );
 });

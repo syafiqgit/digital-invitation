@@ -2,8 +2,8 @@
 
 import { memo } from "react";
 import { scatterItems, sparkles } from "../lib/decor-data";
-import { Sparkle } from "./CoverDecorations";
 import { MiniBloom, MiniLeaf } from "./DecorPieces";
+import { Sparkle } from "./cover page/CoverDecorations";
 
 const GPU_HINT = { willChange: "transform, opacity" } as const;
 

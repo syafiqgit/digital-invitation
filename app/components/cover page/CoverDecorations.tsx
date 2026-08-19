@@ -3,9 +3,9 @@
 import { memo } from "react";
 import { m, type Transition, type Variants } from "framer-motion";
 import Image from "next/image";
-import BackgroundPattern from "./BackgroundPattern";
-import FloralCorner from "./FloralCorner";
-import FloralVine from "./FloralVine";
+import BackgroundPattern from "../BackgroundPattern";
+import FloralCorner from "../FloralCorner";
+import FloralVine from "../FloralVine";
 
 export const loop = (
   duration: number,
