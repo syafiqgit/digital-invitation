@@ -5,9 +5,11 @@ import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
-import AmbientLayer from "./AmbientLayer";
+import FloatingDecorations from "./FloatingDecorations";
 
-// --- INTERFACES ---
+/* -------------------------------------------------------------------------- */
+/*                                 INTERFACES                                 */
+/* -------------------------------------------------------------------------- */
 interface EventSectionProps {
   targetDate?: string;
   akadTime?: string;
@@ -33,16 +35,12 @@ interface EventBlockProps {
   address?: string;
 }
 
-// --- CONSTANTS ---
+/* -------------------------------------------------------------------------- */
+/*                                  CONSTANTS                                 */
+/* -------------------------------------------------------------------------- */
 const DEFAULT_TARGET_DATE = "2026-12-12T08:00:00+07:00";
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-// --- FRAMER MOTION VARIANTS (Only for 1-time entrance) ---
-// NOTE: willChange permanen dihapus dari semua elemen statis di bawah ini.
-// Framer Motion sudah otomatis mengelola will-change selama animasi aktif
-// (initial -> whileInView berjalan sekali), jadi override manual permanen
-// cuma memaksa browser menahan compositor layer tanpa batas waktu meski
-// animasi entrance sudah lama selesai.
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -53,10 +51,9 @@ const fadeUp: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
 };
 
-// --- STATIC DECORATION DATA ---
-// Nilai sway diselaraskan dengan CoverDecorations: vertikal ±1.2deg,
-// horizontal ±1deg, corner ±1.5deg. Durasi & delay di-stagger per elemen
-// supaya tidak bergerak serentak seperti mesin.
+/* -------------------------------------------------------------------------- */
+/*                           STATIC DECORATION DATA                           */
+/* -------------------------------------------------------------------------- */
 const vines = [
   {
     key: "left",
@@ -146,14 +143,21 @@ const countdownUnits = [
   { key: "seconds", label: "Seconds" },
 ] as const;
 
-// --- PRESENTATIONAL COMPONENTS ---
+/* -------------------------------------------------------------------------- */
+/*                          PRESENTATIONAL COMPONENTS                         */
+/* -------------------------------------------------------------------------- */
 const SprigDivider = memo(function SprigDivider({
   className = "",
 }: {
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 220 28" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 220 28"
+      className={className}
+      fill="none"
+    >
       <line
         x1="0"
         y1="14"
@@ -180,19 +184,20 @@ const SprigDivider = memo(function SprigDivider({
     </svg>
   );
 });
+SprigDivider.displayName = "SprigDivider";
 
-// Watermark bunga untuk latar card. Sengaja didefinisikan lokal, bukan
-// import MiniFlower dari CoverDecorations — file itu ikut menyeret
-// BackgroundPattern/FloralCorner/FloralVine + seluruh variant Framer ke
-// dalam import graph, dan tree-shaking pada modul "use client" dengan
-// side-effect tidak bisa diandalkan. 12 baris SVG lebih murah.
 const FlowerWatermark = memo(function FlowerWatermark({
   className = "",
 }: {
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 40 40" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 40 40"
+      className={className}
+      fill="none"
+    >
       <g transform="translate(20, 20)">
         {[0, 72, 144, 216, 288].map((deg) => (
           <ellipse
@@ -210,9 +215,15 @@ const FlowerWatermark = memo(function FlowerWatermark({
     </svg>
   );
 });
+FlowerWatermark.displayName = "FlowerWatermark";
 
 const CalendarIcon = memo(() => (
-  <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none">
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    className="h-4 w-4 shrink-0"
+    fill="none"
+  >
     <rect
       x="3"
       y="5"
@@ -232,9 +243,15 @@ const CalendarIcon = memo(() => (
     />
   </svg>
 ));
+CalendarIcon.displayName = "CalendarIcon";
 
 const PinIcon = memo(() => (
-  <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none">
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    className="h-4 w-4 shrink-0"
+    fill="none"
+  >
     <path
       d="M12 22c4-4.5 7-8.3 7-12a7 7 0 0 0-14 0c0 3.7 3 7.5 7 12Z"
       stroke="currentColor"
@@ -242,6 +259,7 @@ const PinIcon = memo(() => (
     />
   </svg>
 ));
+PinIcon.displayName = "PinIcon";
 
 const FrameLayers = memo(function FrameLayers() {
   return (
@@ -259,12 +277,6 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": v.endDeg,
                 animationDuration: v.duration,
                 animationDelay: v.delay,
-                // ✅ FIX: willChange permanen dihapus. Browser modern sudah
-                // otomatis promote layer selama animation aktif; memaksa
-                // willChange statis di 8 elemen (vines+corners) sekaligus
-                // bikin compositor menahan 8 GPU layer terus-menerus tanpa
-                // henti, dan itu yang bikin sendat pas content-visibility
-                // toggle section ini render/skip saat scroll naik-turun.
               } as React.CSSProperties
             }
           >
@@ -274,9 +286,10 @@ const FrameLayers = memo(function FrameLayers() {
       ))}
 
       {corners.map((c) => (
+        // REFINED: Ukuran diperbesar dan disamakan persis dengan Couple Section
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-[3] h-24 w-24 opacity-90 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-48 lg:w-48 ${c.position}`}
         >
           <div
             className="h-full w-full animate-event-sway"
@@ -286,7 +299,6 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
                 animationDelay: c.delay,
-                // ✅ FIX: sama seperti vines di atas
               } as React.CSSProperties
             }
           >
@@ -298,9 +310,11 @@ const FrameLayers = memo(function FrameLayers() {
     </>
   );
 });
+FrameLayers.displayName = "FrameLayers";
 
-/* ---------- COUNTDOWN (diisolasi supaya tick per detik tidak
-   me-re-render seluruh EventSection, cuma sub-tree ini) ---------- */
+/* -------------------------------------------------------------------------- */
+/*                                  COUNTDOWN                                 */
+/* -------------------------------------------------------------------------- */
 function useCountdown(target: string): TimeLeft {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
@@ -337,14 +351,7 @@ const CountdownDigit = memo(function CountdownDigit({
 }) {
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* min-w + px: box melar sendiri kalau digit bertambah jadi 3 angka
-          (hari > 99), tapi tetap seragam saat 2 angka. w-16 fixed sebelumnya
-          bikin "118" mepet ke tepi border. */}
       <div className="relative flex h-16 min-w-16 items-center justify-center overflow-hidden rounded-2xl border border-mustard/40 bg-white/60 px-3 shadow-sm backdrop-blur-sm sm:h-20 sm:min-w-20 md:h-24 md:min-w-24">
-        {/* key={value} memaksa React remount span tiap nilai berubah, sehingga
-            animasi CSS restart otomatis tanpa perlu state tambahan. Karena
-            CountdownDigit di-memo, praktis cuma 1 digit yang re-render per
-            detik — bukan keempatnya. */}
         <span
           key={value}
           className="font-serif animate-digit-tick relative z-10 text-2xl font-semibold tabular-nums text-burgundy sm:text-3xl md:text-4xl"
@@ -358,15 +365,31 @@ const CountdownDigit = memo(function CountdownDigit({
     </div>
   );
 });
+CountdownDigit.displayName = "CountdownDigit";
 
-// Sub-tree terisolasi: hanya bagian ini yang re-render tiap detik,
-// bukan seluruh EventSectionInner (yang berisi banyak decoration m.div).
 const CountdownTimer = memo(function CountdownTimer({
   targetDate,
 }: {
   targetDate: string;
 }) {
+  const [isMounted, setIsMounted] = useState(false);
   const timeLeft = useCountdown(targetDate);
+
+  // Mencegah Hydration Mismatch: Me-render state statis selama SSR
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="flex justify-center gap-3 sm:gap-5 md:gap-6">
+        {countdownUnits.map((u) => (
+          <CountdownDigit key={u.key} value={0} label={u.label} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center gap-3 sm:gap-5 md:gap-6">
       {countdownUnits.map((u) => (
@@ -375,8 +398,11 @@ const CountdownTimer = memo(function CountdownTimer({
     </div>
   );
 });
+CountdownTimer.displayName = "CountdownTimer";
 
-/* ---------- EVENT BLOCK ---------- */
+/* -------------------------------------------------------------------------- */
+/*                                EVENT BLOCKS                                */
+/* -------------------------------------------------------------------------- */
 const EventBlock = memo(function EventBlock({
   title,
   time,
@@ -385,84 +411,82 @@ const EventBlock = memo(function EventBlock({
 }: EventBlockProps) {
   return (
     <div className="relative flex flex-col items-center gap-3 px-6 py-8 text-center md:px-8 md:py-9">
+      {/* Badge Title */}
       <span className="rounded-full border border-mustard/50 bg-white/50 px-5 py-1.5 text-[10px] font-bold tracking-[0.2em] text-burgundy sm:text-xs">
         {title}
       </span>
+
+      {/* Time */}
       <div className="mt-2 flex items-center gap-2 text-sm font-medium text-ink sm:text-base">
         <CalendarIcon />
         <span>{time}</span>
       </div>
-      <div className="flex flex-col items-center gap-1 text-xs text-ink/70 sm:text-sm">
-        <span className="font-semibold text-ink">{venue}</span>
-        <span className="leading-relaxed">{address}</span>
+
+      {/* Venue & Address (REFINED) */}
+      <div className="mt-1 flex flex-col items-center gap-1.5 text-center">
+        <span className="text-xs font-bold tracking-wide text-ink sm:text-sm">
+          {venue}
+        </span>
+        <span className="max-w-[16rem] text-[11px] leading-relaxed text-ink/65 sm:max-w-[18rem] sm:text-xs">
+          {address}
+        </span>
       </div>
     </div>
   );
 });
+EventBlock.displayName = "EventBlock";
 
-/* ---------- MAIN SECTION ---------- */
+/* -------------------------------------------------------------------------- */
+/*                               STYLES HOISTING                              */
+/* -------------------------------------------------------------------------- */
+const EVENT_STYLES = `
+  @keyframes event-sway {
+    0%, 100% { transform: rotate(0deg); }
+    25%      { transform: rotate(var(--end-deg, 1.5deg)); }
+    75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
+  }
+  .animate-event-sway {
+    animation: event-sway ease-in-out infinite;
+  }
+  @keyframes digit-tick {
+    0%   { opacity: 0; transform: translateY(-40%); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-digit-tick {
+    animation: digit-tick 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes btn-shine {
+    0%        { transform: translateX(-150%) skewX(-20deg); }
+    55%, 100% { transform: translateX(400%) skewX(-20deg); }
+  }
+  .animate-btn-shine {
+    animation: btn-shine 4.5s ease-in-out infinite;
+  }
+  @keyframes garden-beam {
+    0%, 100% { opacity: 0.35; transform: translateX(-50%) rotate(0deg); }
+    50%      { opacity: 0.6;  transform: translateX(-46%) rotate(3deg); }
+  }
+  .animate-garden-beam {
+    animation: garden-beam 16s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-event-sway,
+    .animate-digit-tick,
+    .animate-btn-shine,
+    .animate-garden-beam { animation: none; }
+  }
+`;
+
+/* -------------------------------------------------------------------------- */
+/*                                MAIN SECTION                                */
+/* -------------------------------------------------------------------------- */
 function EventSectionInner({
   targetDate = DEFAULT_TARGET_DATE,
   ...props
 }: EventSectionProps) {
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-20 sm:px-6">
-      {/*
-        ENGINEERING NOTE: seluruh animasi di section ini pakai CSS keyframes
-        murni (bukan Framer Motion) supaya tidak menahan animation loop di JS
-        thread selama section ter-mount. Semua hanya menyentuh transform &
-        opacity — dua properti yang bisa dijalankan compositor tanpa layout
-        atau paint ulang.
-
-        Nama keyframe di-prefix supaya tidak bentrok: @keyframes bersifat
-        global, jadi kalau section lain mendaftarkan nama yang sama, definisi
-        terakhir yang mount akan diam-diam menimpa yang ini.
-
-        JANGAN menganimasikan filter, box-shadow, atau backdrop-blur di sini —
-        ketiganya memaksa repaint tiap frame dan akan langsung terasa di HP
-        mid-range dengan 21 elemen beranimasi seperti sekarang.
-      */}
-      <style>{`
-        @keyframes event-sway {
-          0%, 100% { transform: rotate(0deg); }
-          25%      { transform: rotate(var(--end-deg, 1.5deg)); }
-          75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
-        }
-        .animate-event-sway {
-          animation: event-sway ease-in-out infinite;
-        }
-
-        @keyframes digit-tick {
-          0%   { opacity: 0; transform: translateY(-40%); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        .animate-digit-tick {
-          animation: digit-tick 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        @keyframes btn-shine {
-          0%        { transform: translateX(-150%) skewX(-20deg); }
-          55%, 100% { transform: translateX(400%) skewX(-20deg); }
-        }
-        .animate-btn-shine {
-          animation: btn-shine 4.5s ease-in-out infinite;
-        }
-
-        @keyframes garden-beam {
-          0%, 100% { opacity: 0.35; transform: translateX(-50%) rotate(0deg); }
-          50%      { opacity: 0.6;  transform: translateX(-46%) rotate(3deg); }
-        }
-        .animate-garden-beam {
-          animation: garden-beam 16s ease-in-out infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .animate-event-sway,
-          .animate-digit-tick,
-          .animate-btn-shine,
-          .animate-garden-beam { animation: none; }
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: EVENT_STYLES }} />
 
       {/* Background Decor (Static) */}
       <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
@@ -471,29 +495,18 @@ function EventSectionInner({
 
       <FrameLayers />
 
-      {/*
-        Sinar matahari lembut. hidden sm:block disengaja — blur 35px pada
-        elemen sebesar ini biayanya ada di rasterisasi awal, dan di HP low-end
-        itu terasa saat scroll masuk. Efeknya subtil, mobile tidak kehilangan
-        banyak.
-      */}
+      {/* Light Beam */}
       <div
-        aria-hidden
+        aria-hidden="true"
         className="animate-garden-beam pointer-events-none absolute -top-1/4 left-1/2 z-[1] hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
         style={{
           background:
             "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
           filter: "blur(35px)",
-          // ✅ FIX: willChange permanen dihapus. Kombinasi filter:blur() +
-          // willChange statis adalah yang paling mahal untuk di-rasterize
-          // pertama kali browser toggle section ini in/out lewat
-          // content-visibility, dan itu yang paling terasa di boundary scroll.
         }}
       />
 
-      {/* Petals, butterflies, sparkles — z-[4]: di atas vine (z-2) & corner
-          (z-3), di bawah konten utama (z-10) */}
-      <AmbientLayer />
+      <FloatingDecorations />
 
       <m.div
         className="relative z-10 flex w-full max-w-sm flex-col items-center text-center xs:max-w-md sm:max-w-2xl md:max-w-3xl"
@@ -502,7 +515,6 @@ function EventSectionInner({
         viewport={{ once: true, amount: 0.2 }}
         variants={containerVariants}
       >
-        {/* Title */}
         <m.div variants={fadeUp}>
           <span className="inline-block rounded-full border border-mustard/40 bg-white/60 px-5 py-1.5 text-[10px] font-bold tracking-[0.25em] text-burgundy backdrop-blur-sm sm:px-6 sm:text-xs">
             SAVE THE DATE
@@ -530,15 +542,12 @@ function EventSectionInner({
           variants={fadeUp}
           className="relative mt-12 flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-mustard/30 bg-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md"
         >
-          {/* Garis emas tipis di bibir atas card */}
           <div
-            aria-hidden
+            aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
           />
-
-          {/* Watermark bunga — statis, nol biaya animasi */}
           <div
-            aria-hidden
+            aria-hidden="true"
             className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 opacity-[0.05]"
           >
             <FlowerWatermark className="h-full w-full" />
@@ -574,7 +583,7 @@ function EventSectionInner({
           className="relative mt-10 inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#6B2A36] px-8 py-3.5 text-xs font-bold uppercase tracking-[0.15em] text-white shadow-lg transition-transform"
         >
           <span
-            aria-hidden
+            aria-hidden="true"
             className="animate-btn-shine pointer-events-none absolute inset-y-0 w-1/3 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)]"
           />
           <PinIcon />

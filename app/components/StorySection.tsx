@@ -10,12 +10,16 @@ import {
   useSpring,
   type Variants,
 } from "framer-motion";
+
+// KOMPONEN & DATA EKSTERNAL
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
-import AmbientLayer from "./AmbientLayer";
+import FloatingDecorations from "./FloatingDecorations"; // Menggantikan AmbientLayer
 
-// --- INTERFACES ---
+/* -------------------------------------------------------------------------- */
+/*                                 INTERFACES                                 */
+/* -------------------------------------------------------------------------- */
 interface StoryMilestone {
   date: string;
   title: string;
@@ -53,10 +57,9 @@ const DEFAULT_MILESTONES: StoryMilestone[] = [
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-// --- FRAMER MOTION VARIANTS (Entrance Only) ---
-// NOTE: willChange permanen dihapus. viewport={{ once: true }} berarti
-// animasi ini hanya jalan sekali; menahan compositor layer selamanya
-// setelah itu (via willChange manual) cuma buang-buang GPU memory.
+/* -------------------------------------------------------------------------- */
+/*                           MOTION VARIANTS                                  */
+/* -------------------------------------------------------------------------- */
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.15, delayChildren: 0.1 } },
@@ -72,10 +75,6 @@ const fadeUp: Variants = {
   },
 };
 
-// Card masuk dari sisi yang sesuai posisi zig-zagnya (kiri untuk card kiri,
-// kanan untuk card kanan) lewat `custom` prop. Offset sengaja kecil (24px)
-// karena di mobile semua card rata kiri — offset besar akan terlihat aneh
-// di sana, sementara variants tidak bisa membaca media query.
 const cardVariants: Variants = {
   hidden: (isEven: boolean) => ({
     opacity: 0,
@@ -92,20 +91,9 @@ const cardVariants: Variants = {
   },
 };
 
-// --- STATIC DECORATION DATA (Optimized for CSS Animations) ---
-//
-// PENTING — kenapa endDeg vertikal di sini lebih kecil dari Cover/Event
-// (0.6deg vs 1.2deg):
-// StorySection tumbuh mengikuti jumlah milestone, jadi vine kiri/kanan
-// (h-full) bisa setinggi 3000px+ di mobile. Rotasi bertumpu pada
-// transformOrigin, jadi simpangan di ujung = tinggi x tan(sudut).
-// Pada 1.2deg itu ~63px di ujung bawah — vine terlempar keluar dari strip
-// selebar 24px-nya sendiri dan tampak lepas dari tepi layar. 0.6deg
-// menahannya di ~31px: masih sedikit lewat, tapi tertutup card dan
-// kerapatan daun sehingga tidak kentara.
-//
-// KALAU MENAMBAH MILESTONE: turunkan angka ini. Patokan kasar —
-// 3 milestone: 0.6deg | 5 milestone: 0.4deg | 7+ milestone: 0.25deg.
+/* -------------------------------------------------------------------------- */
+/*                           STATIC DECORATION DATA                           */
+/* -------------------------------------------------------------------------- */
 const vines = [
   {
     key: "left",
@@ -149,9 +137,6 @@ const vines = [
   },
 ];
 
-// endDeg positif semua. Pada keyframe dua-arah, tanda minus cuma membalik
-// fase (mulai ke kiri dulu), bukan mengubah amplitudo. Variasi antar-sudut
-// sudah dihasilkan oleh delay yang berbeda.
 const corners = [
   {
     key: "top-left",
@@ -191,14 +176,15 @@ const corners = [
   },
 ];
 
-// Variasi Ken Burns per foto supaya ketiganya tidak bergerak identik.
 const KEN_BURNS = [
   { origin: "50% 30%", duration: "22s" },
   { origin: "35% 60%", duration: "26s" },
   { origin: "65% 45%", duration: "24s" },
 ];
 
-// --- PRESENTATIONAL PIECES ---
+/* -------------------------------------------------------------------------- */
+/*                            PRESENTATIONAL PIECES                           */
+/* -------------------------------------------------------------------------- */
 const MiniBloom = memo(function MiniBloom({
   className = "",
   color = "var(--coral)",
@@ -208,7 +194,12 @@ const MiniBloom = memo(function MiniBloom({
 }) {
   const ANGLES = [0, 72, 144, 216, 288];
   return (
-    <svg viewBox="0 0 28 28" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 28 28"
+      className={className}
+      fill="none"
+    >
       <g transform="translate(14, 14)">
         {ANGLES.map((deg) => (
           <ellipse
@@ -227,6 +218,7 @@ const MiniBloom = memo(function MiniBloom({
     </svg>
   );
 });
+MiniBloom.displayName = "MiniBloom";
 
 const SprigDivider = memo(function SprigDivider({
   className = "",
@@ -234,7 +226,12 @@ const SprigDivider = memo(function SprigDivider({
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 220 28" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 220 28"
+      className={className}
+      fill="none"
+    >
       <line
         x1="0"
         y1="14"
@@ -261,6 +258,7 @@ const SprigDivider = memo(function SprigDivider({
     </svg>
   );
 });
+SprigDivider.displayName = "SprigDivider";
 
 const HeartIcon = memo(function HeartIcon({
   className = "",
@@ -268,11 +266,17 @@ const HeartIcon = memo(function HeartIcon({
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="var(--burgundy)">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="var(--burgundy)"
+    >
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     </svg>
   );
 });
+HeartIcon.displayName = "HeartIcon";
 
 const FrameLayers = memo(function FrameLayers() {
   return (
@@ -290,11 +294,6 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": v.endDeg,
                 animationDuration: v.duration,
                 animationDelay: v.delay,
-                // ✅ FIX: willChange permanen dihapus. Section ini dibungkus
-                // content-visibility di MainContent — 8 elemen (vines+corners)
-                // menahan compositor layer terus-menerus persis pola yang
-                // bikin sendat di EventSection. Browser modern auto-promote
-                // layer selama animation aktif, tidak perlu dipaksa manual.
               } as React.CSSProperties
             }
           >
@@ -304,9 +303,10 @@ const FrameLayers = memo(function FrameLayers() {
       ))}
 
       {corners.map((c) => (
+        // REFINED: Ukuran diperbesar disamakan dengan Couple & Event Section
         <div
           key={c.key}
-          className={`pointer-events-none absolute z-[3] h-16 w-16 opacity-90 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ${c.position}`}
+          className={`pointer-events-none absolute z-[3] h-24 w-24 opacity-90 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-48 lg:w-48 ${c.position}`}
         >
           <div
             className="h-full w-full animate-story-sway"
@@ -316,7 +316,6 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
                 animationDelay: c.delay,
-                // ✅ FIX: sama seperti vines di atas
               } as React.CSSProperties
             }
           >
@@ -328,8 +327,11 @@ const FrameLayers = memo(function FrameLayers() {
     </>
   );
 });
+FrameLayers.displayName = "FrameLayers";
 
-/* ---------- TIMELINE COMPONENT ---------- */
+/* -------------------------------------------------------------------------- */
+/*                            TIMELINE COMPONENT                              */
+/* -------------------------------------------------------------------------- */
 const MilestoneCard = memo(function MilestoneCard({
   item,
   isEven,
@@ -345,20 +347,13 @@ const MilestoneCard = memo(function MilestoneCard({
     <m.div
       variants={cardVariants}
       custom={isEven}
-      className={`group relative flex w-full flex-col items-center gap-5 sm:flex-row sm:gap-0 ${
-        isEven ? "sm:flex-row-reverse" : ""
-      }`}
+      className={`group relative flex w-full flex-col items-center gap-5 sm:flex-row sm:gap-0 ${isEven ? "sm:flex-row-reverse" : ""}`}
     >
       <div
-        className={`ml-14 w-[calc(100%-3.5rem)] rounded-[2rem] border border-mustard/30 bg-white/80 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-shadow duration-500 ease-out hover:shadow-[0_15px_40px_rgba(212,175,55,0.12)] sm:ml-0 sm:w-[calc(50%-3rem)] sm:p-7 md:w-[calc(50%-3.5rem)] md:p-8 lg:w-[calc(50%-4rem)] lg:p-9 ${
-          isEven ? "sm:mr-auto" : "sm:ml-auto"
-        }`}
+        className={`ml-14 w-[calc(100%-3.5rem)] rounded-[2rem] border border-mustard/30 bg-white/80 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-shadow duration-500 ease-out hover:shadow-[0_15px_40px_rgba(212,175,55,0.12)] sm:ml-0 sm:w-[calc(50%-3rem)] sm:p-7 md:w-[calc(50%-3.5rem)] md:p-8 lg:w-[calc(50%-4rem)] lg:p-9 ${isEven ? "sm:mr-auto" : "sm:ml-auto"}`}
       >
         {item.photoUrl && (
           <div className="relative mb-5 aspect-[16/10] w-full overflow-hidden rounded-2xl border border-mustard/20 bg-gray-100">
-            {/* Wrapper hover terpisah dari <Image>: kalau scale hover dan
-                animasi Ken Burns berada di elemen yang sama, animation akan
-                menang atas transition dan hover jadi mati total. */}
             <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105">
               <Image
                 src={item.photoUrl}
@@ -375,9 +370,8 @@ const MilestoneCard = memo(function MilestoneCard({
                 }
               />
             </div>
-            {/* Inner ring emas tipis — statis, nol biaya animasi */}
             <div
-              aria-hidden
+              aria-hidden="true"
               className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/40"
             />
           </div>
@@ -394,15 +388,9 @@ const MilestoneCard = memo(function MilestoneCard({
         </p>
       </div>
 
-      {/* FIX: posisi vertikal dot sebelumnya tidak ditentukan sama sekali,
-          jadi browser memakai static position — di mobile (flex-col) itu
-          menaruhnya di bawah card, tidak sejajar konten apa pun. Sekarang
-          eksplisit: nempel di area atas card pada mobile, center pada sm+. */}
       <div className="absolute left-6 top-8 z-20 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-mustard/50 bg-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:border-burgundy/60 sm:left-1/2 sm:top-1/2 sm:h-12 sm:w-12 sm:-translate-y-1/2 md:h-14 md:w-14">
-        {/* Ripple ring dipisah dari dot: dot memakai transform untuk hover
-            scale, jadi animasi denyut tidak bisa menumpang di elemen sama. */}
         <span
-          aria-hidden
+          aria-hidden="true"
           className="animate-story-ripple pointer-events-none absolute inset-0 rounded-full border border-burgundy/40"
           style={{ animationDelay: `${index * 0.8}s` }}
         />
@@ -411,16 +399,64 @@ const MilestoneCard = memo(function MilestoneCard({
     </m.div>
   );
 });
+MilestoneCard.displayName = "MilestoneCard";
 
-/* ---------- MAIN SECTION ---------- */
+/* -------------------------------------------------------------------------- */
+/*                               STYLES HOISTING                              */
+/* -------------------------------------------------------------------------- */
+const STORY_STYLES = `
+  @keyframes story-sway {
+    0%, 100% { transform: rotate(0deg); }
+    25%      { transform: rotate(var(--end-deg, 1.5deg)); }
+    75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
+  }
+  .animate-story-sway {
+    animation: story-sway ease-in-out infinite;
+  }
+  @keyframes story-pulse {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
+  }
+  .animate-story-pulse {
+    animation: story-pulse ease-in-out infinite;
+  }
+  @keyframes story-ripple {
+    0%        { opacity: 0.55; transform: scale(1); }
+    70%, 100% { opacity: 0;    transform: scale(1.75); }
+  }
+  .animate-story-ripple {
+    animation: story-ripple 3.2s ease-out infinite;
+  }
+  @keyframes story-kenburns {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.06); }
+  }
+  .animate-story-kenburns {
+    animation: story-kenburns ease-in-out infinite;
+  }
+  @keyframes story-beam {
+    0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
+    50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
+  }
+  .animate-story-beam {
+    animation: story-beam 18s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-story-sway,
+    .animate-story-pulse,
+    .animate-story-ripple,
+    .animate-story-kenburns,
+    .animate-story-beam { animation: none; }
+  }
+`;
+
+/* -------------------------------------------------------------------------- */
+/*                                MAIN SECTION                                */
+/* -------------------------------------------------------------------------- */
 function StorySectionInner({
   milestones = DEFAULT_MILESTONES,
 }: StorySectionProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
-
-  // Garis timeline yang "menggambar dirinya" mengikuti scroll. useScroll
-  // memakai listener pasif + rAF, dan scaleY dijalankan compositor — jadi
-  // ini satu elemen saja, bukan animasi berkelanjutan.
   const { scrollYProgress } = useScroll({
     target: timelineRef,
     offset: ["start 85%", "end 55%"],
@@ -433,88 +469,23 @@ function StorySectionInner({
 
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 xs:px-5 sm:px-6 sm:py-24 md:py-28">
-      {/*
-        Nama keyframe di-prefix "story-" karena @keyframes bersifat global.
-        Sebelumnya section ini mendaftarkan "sway" dan "gentle-pulse" — nama
-        yang sama persis dipakai section lain, dan definisi terakhir yang
-        mount akan diam-diam menimpa semuanya.
+      <style dangerouslySetInnerHTML={{ __html: STORY_STYLES }} />
 
-        JANGAN menganimasikan filter, box-shadow, atau backdrop-blur di sini —
-        ketiganya memaksa repaint tiap frame.
-      */}
-      <style>{`
-        @keyframes story-sway {
-          0%, 100% { transform: rotate(0deg); }
-          25%      { transform: rotate(var(--end-deg, 1.5deg)); }
-          75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
-        }
-        .animate-story-sway {
-          animation: story-sway ease-in-out infinite;
-        }
-
-        @keyframes story-pulse {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
-        }
-        .animate-story-pulse {
-          animation: story-pulse ease-in-out infinite;
-        }
-
-        @keyframes story-ripple {
-          0%        { opacity: 0.55; transform: scale(1); }
-          70%, 100% { opacity: 0;    transform: scale(1.75); }
-        }
-        .animate-story-ripple {
-          animation: story-ripple 3.2s ease-out infinite;
-        }
-
-        @keyframes story-kenburns {
-          0%, 100% { transform: scale(1); }
-          50%      { transform: scale(1.06); }
-        }
-        .animate-story-kenburns {
-          animation: story-kenburns ease-in-out infinite;
-        }
-
-        @keyframes story-beam {
-          0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
-          50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
-        }
-        .animate-story-beam {
-          animation: story-beam 18s ease-in-out infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .animate-story-sway,
-          .animate-story-pulse,
-          .animate-story-ripple,
-          .animate-story-kenburns,
-          .animate-story-beam { animation: none; }
-        }
-      `}</style>
-
-      {/* Background Decor */}
       <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
         <BackgroundPattern className="h-full w-full" />
       </div>
 
       <FrameLayers />
-      <AmbientLayer />
+      {/* REFINED: AmbientLayer diganti menjadi FloatingDecorations */}
+      <FloatingDecorations />
 
-      {/* Sinar matahari lembut. hidden sm:block disengaja — blur 35px pada
-          elemen sebesar ini biayanya di rasterisasi awal, terasa di HP
-          low-end saat scroll masuk. Efeknya subtil, mobile tidak rugi. */}
       <div
-        aria-hidden
+        aria-hidden="true"
         className="animate-story-beam pointer-events-none absolute -top-1/4 left-1/2 z-[1] hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
         style={{
           background:
             "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
           filter: "blur(35px)",
-          // ✅ FIX: willChange permanen dihapus — sama alasan seperti
-          // EventSection: filter:blur() + willChange statis paling mahal
-          // di-rasterize pertama kali saat content-visibility toggle section
-          // ini render/skip.
         }}
       />
 
@@ -540,11 +511,9 @@ function StorySectionInner({
               color="var(--sage-light)"
             />
           </div>
-
           <span className="inline-block rounded-full border border-mustard/40 bg-white/80 px-4 py-1.5 text-[10px] font-bold tracking-[0.25em] text-burgundy shadow-sm backdrop-blur-sm sm:text-xs">
             OUR LOVE STORY
           </span>
-
           <div
             className="animate-story-pulse"
             style={
@@ -576,27 +545,18 @@ function StorySectionInner({
           ref={timelineRef}
           className="relative flex w-full flex-col gap-12 sm:gap-20 md:gap-24"
         >
-          {/* FIX: sebelumnya top-6 bottom-6 membuat garis berhenti sebelum
-              dot pertama & terakhir, dan gradient from/to mustard/10 bikin
-              kedua ujungnya nyaris transparan — garis terlihat menggantung.
-              Sekarang: rail redup penuh tinggi + garis terang yang
-              digambar mengikuti scroll di atasnya. */}
           <div
-            aria-hidden
+            aria-hidden="true"
             className="absolute bottom-0 left-6 top-0 w-[2px] -translate-x-1/2 bg-mustard/15 sm:left-1/2"
           />
           <m.div
-            aria-hidden
+            aria-hidden="true"
             style={{ scaleY: lineScale }}
             className="absolute bottom-0 left-6 top-0 w-[2px] origin-top -translate-x-1/2 bg-gradient-to-b from-mustard/70 via-mustard to-mustard/70 sm:left-1/2"
           />
 
           {milestones.map((item, index) => (
             <MilestoneCard
-              // FIX: key sebelumnya pakai index murni — rapuh kalau
-              // milestones nanti di-fetch dinamis (urutan bisa berubah,
-              // React salah reconcile DOM). date+title lebih stabil
-              // selama tidak ada dua milestone dengan kombinasi sama persis.
               key={`${item.date}-${item.title}`}
               item={item}
               isEven={index % 2 === 0}

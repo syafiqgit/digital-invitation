@@ -5,16 +5,7 @@ import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
-import AmbientLayer from "./AmbientLayer";
 
-/* =========================================================================
-   TYPE ALIASES
-
-   Union di-alias supaya generic tetap satu kata. Formatter yang memproses
-   .tsx sebagai JavaScript membaca "<" pada useState<...> sebagai operator
-   perbandingan dan memotong ekspresinya jadi statement rusak — pernah
-   terjadi di RsvpWishSection. Generic pendek jauh lebih sulit dirusak.
-   ========================================================================= */
 type TimeoutId = ReturnType<typeof setTimeout>;
 
 interface BankAccount {
@@ -65,11 +56,9 @@ const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
 const COPY_RESET_MS = 2500;
 
-/* ---------- Framer Motion variants (Entrance Only) ---------- */
-// NOTE: GPU_HINT (willChange permanen) dihapus dari elemen entrance.
-// viewport once: true berarti animasinya jalan sekali; menahan compositor
-// layer selamanya setelah itu cuma buang GPU memory. Framer Motion sudah
-// toggle will-change otomatis selama animasi aktif.
+/* -------------------------------------------------------------------------- */
+/*                              MOTION VARIANTS                               */
+/* -------------------------------------------------------------------------- */
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -85,7 +74,6 @@ const fadeUp: Variants = {
   },
 };
 
-// Kartu rekening masuk dari sisi kolomnya masing-masing.
 const cardVariants: Variants = {
   hidden: (fromLeft: boolean) => ({
     opacity: 0,
@@ -107,11 +95,9 @@ const textLift = {
     "0 2px 10px rgba(255,255,255,0.9), 0 1px 3px rgba(255,255,255,0.9)",
 } as const;
 
-/* ---------- Static decoration data ---------- */
-//
-// endDeg vertikal 0.9deg dengan durasi 6.5s — sama seperti Gallery & RSVP.
-// Section ini tingginya stabil (dua kartu rekening + satu kartu alamat),
-// jadi simpangan ujung vine masih aman terhadap lebar strip.
+/* -------------------------------------------------------------------------- */
+/*                          STATIC DECORATION DATA                            */
+/* -------------------------------------------------------------------------- */
 const vines = [
   {
     key: "left",
@@ -159,9 +145,6 @@ const vines = [
   },
 ];
 
-// endDeg positif semua. Pada keyframe dua-arah, tanda minus cuma membalik
-// fase (mulai ke kiri dulu), bukan mengubah amplitudo — variasi antar-sudut
-// sudah dihasilkan oleh delay yang berbeda.
 const corners = [
   {
     key: "top-left",
@@ -201,8 +184,9 @@ const corners = [
   },
 ];
 
-/* ---------- Small Presentational Pieces ---------- */
-
+/* -------------------------------------------------------------------------- */
+/*                          PRESENTATIONAL PIECES                             */
+/* -------------------------------------------------------------------------- */
 const MiniBloom = memo(function MiniBloom({
   className = "",
   color = "var(--coral)",
@@ -211,7 +195,12 @@ const MiniBloom = memo(function MiniBloom({
   color?: string;
 }) {
   return (
-    <svg viewBox="0 0 28 28" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 28 28"
+      className={className}
+      fill="none"
+    >
       <g transform="translate(14, 14)">
         {ANGLES_5.map((deg) => (
           <ellipse
@@ -230,6 +219,7 @@ const MiniBloom = memo(function MiniBloom({
     </svg>
   );
 });
+MiniBloom.displayName = "MiniBloom";
 
 const SprigDivider = memo(function SprigDivider({
   className = "",
@@ -237,7 +227,12 @@ const SprigDivider = memo(function SprigDivider({
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 220 28" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 220 28"
+      className={className}
+      fill="none"
+    >
       <line
         x1="0"
         y1="14"
@@ -274,6 +269,7 @@ const SprigDivider = memo(function SprigDivider({
     </svg>
   );
 });
+SprigDivider.displayName = "SprigDivider";
 
 const GiftIcon = memo(function GiftIcon({
   className = "",
@@ -281,7 +277,12 @@ const GiftIcon = memo(function GiftIcon({
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+    >
       <rect
         x="3"
         y="8"
@@ -313,6 +314,7 @@ const GiftIcon = memo(function GiftIcon({
     </svg>
   );
 });
+GiftIcon.displayName = "GiftIcon";
 
 const CopyIcon = memo(function CopyIcon({
   className = "",
@@ -321,6 +323,7 @@ const CopyIcon = memo(function CopyIcon({
 }) {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 24 24"
       className={className}
       fill="none"
@@ -328,13 +331,13 @@ const CopyIcon = memo(function CopyIcon({
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden
     >
       <rect x="9" y="9" width="13" height="13" rx="2" />
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
   );
 });
+CopyIcon.displayName = "CopyIcon";
 
 const CheckIcon = memo(function CheckIcon({
   className = "",
@@ -343,6 +346,7 @@ const CheckIcon = memo(function CheckIcon({
 }) {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 24 24"
       className={className}
       fill="none"
@@ -350,12 +354,12 @@ const CheckIcon = memo(function CheckIcon({
       strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden
     >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 });
+CheckIcon.displayName = "CheckIcon";
 
 const HomeIcon = memo(function HomeIcon({
   className = "",
@@ -364,6 +368,7 @@ const HomeIcon = memo(function HomeIcon({
 }) {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 24 24"
       className={className}
       fill="none"
@@ -371,7 +376,6 @@ const HomeIcon = memo(function HomeIcon({
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden
     >
       <path d="M3 10.5 12 3l9 7.5" />
       <path d="M5 9.8V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.8" />
@@ -379,14 +383,12 @@ const HomeIcon = memo(function HomeIcon({
     </svg>
   );
 });
+HomeIcon.displayName = "HomeIcon";
 
-// Satu elemen dengan dua gradient stop — bukan dua radial gradient besar
-// yang ditumpuk, karena masing-masing kena blur berat dan biaya
-// rasterisasinya nyata di HP low-end.
 const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
-      aria-hidden
+      aria-hidden="true"
       className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl xs:h-[340px] xs:w-[340px] sm:h-[420px] sm:w-[420px] lg:h-[620px] lg:w-[620px]"
       style={{
         background:
@@ -395,6 +397,7 @@ const AmbientGlow = memo(function AmbientGlow() {
     />
   );
 });
+AmbientGlow.displayName = "AmbientGlow";
 
 const FrameLayers = memo(function FrameLayers() {
   return (
@@ -412,11 +415,6 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": v.endDeg,
                 animationDuration: v.duration,
                 animationDelay: v.delay,
-                // ✅ FIX: willChange permanen dihapus — pola sama seperti
-                // section lain. Section ini juga transaksional (tamu
-                // membaca nomor rekening + menekan copy), jadi menghindari
-                // compositor layer yang menahan terus-menerus tetap penting
-                // walau tidak ada input teks aktif seperti RsvpWishSection.
               } as React.CSSProperties
             }
           >
@@ -438,7 +436,6 @@ const FrameLayers = memo(function FrameLayers() {
                 "--end-deg": c.endDeg,
                 animationDuration: c.duration,
                 animationDelay: c.delay,
-                // ✅ FIX: sama seperti vines di atas
               } as React.CSSProperties
             }
           >
@@ -451,22 +448,23 @@ const FrameLayers = memo(function FrameLayers() {
     </>
   );
 });
+FrameLayers.displayName = "FrameLayers";
 
-// Aksen sudut emas untuk kartu — muncul saat hover, murni opacity.
 const CardCornerAccents = memo(function CardCornerAccents() {
   return (
     <>
       <span
-        aria-hidden
+        aria-hidden="true"
         className="pointer-events-none absolute left-3.5 top-3.5 h-5 w-5 rounded-tl-lg border-l border-t border-mustard opacity-0 transition-opacity duration-500 group-hover:opacity-70"
       />
       <span
-        aria-hidden
+        aria-hidden="true"
         className="pointer-events-none absolute bottom-3.5 right-3.5 h-5 w-5 rounded-br-lg border-b border-r border-mustard opacity-0 transition-opacity duration-500 group-hover:opacity-70"
       />
     </>
   );
 });
+CardCornerAccents.displayName = "CardCornerAccents";
 
 /* ---------- Copy button (shared) ---------- */
 const CopyButton = memo(function CopyButton({
@@ -495,10 +493,9 @@ const CopyButton = memo(function CopyButton({
           : "border-mustard/60 bg-white/90 text-burgundy shadow-sm hover:border-transparent hover:bg-[#6B2A36] hover:text-white hover:shadow-md"
       } ${className}`}
     >
-      {/* Shine dimatikan saat state copied supaya konfirmasi terbaca tenang */}
       {!copied && (
         <span
-          aria-hidden
+          aria-hidden="true"
           className="animate-envelope-shine pointer-events-none absolute inset-y-0 w-1/3 bg-[linear-gradient(90deg,transparent,rgba(212,175,55,0.22),transparent)]"
           style={{ animationDelay: shineDelay }}
         />
@@ -512,9 +509,54 @@ const CopyButton = memo(function CopyButton({
     </button>
   );
 });
+CopyButton.displayName = "CopyButton";
 
-/* ---------- Main Component ---------- */
+/* -------------------------------------------------------------------------- */
+/*                               STYLES HOISTING                              */
+/* -------------------------------------------------------------------------- */
+// Prefixed "envelope-" because @keyframes are global — an unprefixed name
+// here would silently collide with the same name defined in another section.
+const ENVELOPE_STYLES = `
+  @keyframes envelope-sway {
+    0%, 100% { transform: rotate(0deg); }
+    25%      { transform: rotate(var(--end-deg, 1.5deg)); }
+    75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
+  }
+  .animate-envelope-sway { animation: envelope-sway ease-in-out infinite; }
 
+  @keyframes envelope-pulse {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
+  }
+  .animate-envelope-pulse { animation: envelope-pulse ease-in-out infinite; }
+
+  @keyframes envelope-shine {
+    0%        { transform: translateX(-150%) skewX(-20deg); }
+    55%, 100% { transform: translateX(400%) skewX(-20deg); }
+  }
+  .animate-envelope-shine { animation: envelope-shine 5s ease-in-out infinite; }
+
+  @keyframes envelope-check {
+    0%   { opacity: 0; transform: scale(0.4); }
+    60%  { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .animate-envelope-check { animation: envelope-check 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+
+  @keyframes envelope-beam {
+    0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
+    50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
+  }
+  .animate-envelope-beam { animation: envelope-beam 20s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-envelope-sway, .animate-envelope-pulse, .animate-envelope-shine, .animate-envelope-check, .animate-envelope-beam { animation: none; }
+  }
+`;
+
+/* -------------------------------------------------------------------------- */
+/*                                MAIN SECTION                                */
+/* -------------------------------------------------------------------------- */
 function DigitalEnvelopeSectionInner({
   accounts = DEFAULT_ACCOUNTS,
   giftAddress = DEFAULT_GIFT_ADDRESS,
@@ -522,11 +564,7 @@ function DigitalEnvelopeSectionInner({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAddress, setCopiedAddress] = useState(false);
 
-  // FIX: sebelumnya kedua handler memanggil setTimeout tanpa cleanup —
-  // kalau tamu menekan copy lalu meninggalkan halaman sebelum 2.5 detik,
-  // timer tetap jalan dan setState dipanggil pada komponen yang sudah
-  // unmount. Ref + cleanup di useEffect menutup keduanya. Satu ref cukup
-  // karena hanya satu konfirmasi yang aktif pada satu waktu.
+  // Single ref is enough since only one confirmation is ever active at a time.
   const resetTimerRef = useRef<TimeoutId | null>(null);
 
   useEffect(() => {
@@ -540,10 +578,8 @@ function DigitalEnvelopeSectionInner({
     resetTimerRef.current = setTimeout(fn, COPY_RESET_MS);
   }, []);
 
-  // navigator.clipboard butuh secure context (HTTPS/localhost) dan bisa
-  // ditolak. Sebelumnya hasilnya tidak diperiksa sama sekali — kalau gagal,
-  // tombol tetap menampilkan "Successfully Copied" padahal tidak ada apa pun
-  // di clipboard tamu.
+  // navigator.clipboard requires a secure context and can reject; result is
+  // checked so a failed copy never shows a false "Copied" confirmation.
   const copyText = useCallback(async (text: string): Promise<boolean> => {
     try {
       if (navigator?.clipboard?.writeText) {
@@ -551,7 +587,7 @@ function DigitalEnvelopeSectionInner({
         return true;
       }
     } catch {
-      // jatuh ke fallback di bawah
+      // fall through to legacy fallback below
     }
     try {
       const ta = document.createElement("textarea");
@@ -591,71 +627,7 @@ function DigitalEnvelopeSectionInner({
 
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-3 py-16 xs:px-4 sm:px-6 sm:py-24 lg:py-28">
-      {/*
-        Nama keyframe di-prefix "envelope-" karena @keyframes bersifat global.
-        Sebelumnya file ini mendaftarkan "sway" dan "gentle-pulse" — nama yang
-        sama persis dipakai section lain, dan definisi terakhir yang mount
-        akan diam-diam menimpa semuanya tanpa error apa pun.
-
-        Blok <style> juga dipindah keluar dari FrameLayers ke sini, sejajar
-        dengan section lain: menaruh definisi keyframe di dalam komponen
-        dekorasi membuat aturan CSS ikut mati kalau komponen itu suatu saat
-        di-unmount atau dipakai bersyarat.
-
-        Keyframe sway sekarang dua arah, identik dengan CoverDecorations.
-        JANGAN menganimasikan filter, box-shadow, atau backdrop-blur di sini.
-      */}
-      <style>{`
-        @keyframes envelope-sway {
-          0%, 100% { transform: rotate(0deg); }
-          25%      { transform: rotate(var(--end-deg, 1.5deg)); }
-          75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
-        }
-        .animate-envelope-sway {
-          animation: envelope-sway ease-in-out infinite;
-        }
-
-        @keyframes envelope-pulse {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
-        }
-        .animate-envelope-pulse {
-          animation: envelope-pulse ease-in-out infinite;
-        }
-
-        @keyframes envelope-shine {
-          0%        { transform: translateX(-150%) skewX(-20deg); }
-          55%, 100% { transform: translateX(400%) skewX(-20deg); }
-        }
-        .animate-envelope-shine {
-          animation: envelope-shine 5s ease-in-out infinite;
-        }
-
-        @keyframes envelope-check {
-          0%   { opacity: 0; transform: scale(0.4); }
-          60%  { opacity: 1; transform: scale(1.2); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        .animate-envelope-check {
-          animation: envelope-check 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        @keyframes envelope-beam {
-          0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
-          50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
-        }
-        .animate-envelope-beam {
-          animation: envelope-beam 20s ease-in-out infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .animate-envelope-sway,
-          .animate-envelope-pulse,
-          .animate-envelope-shine,
-          .animate-envelope-check,
-          .animate-envelope-beam { animation: none; }
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: ENVELOPE_STYLES }} />
 
       <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
         <BackgroundPattern className="h-full w-full" />
@@ -664,35 +636,14 @@ function DigitalEnvelopeSectionInner({
       <AmbientGlow />
       <FrameLayers />
 
-      {/* Sinar matahari lembut. hidden sm:block disengaja — blur 35px pada
-          elemen sebesar ini biayanya di rasterisasi awal, terasa di HP
-          low-end saat scroll masuk. */}
       <div
-        aria-hidden
+        aria-hidden="true"
         className="animate-envelope-beam pointer-events-none absolute -top-1/4 left-1/2 z-[1] hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
         style={{
           background:
             "linear-gradient(100deg, transparent 42%, rgba(255,242,208,0.5) 50%, transparent 58%)",
           filter: "blur(35px)",
-          // ✅ FIX: willChange permanen dihapus — sama alasan seperti section
-          // lain.
         }}
-      />
-
-      {/*
-        AmbientLayer dipangkas seperti di RsvpWishSection, bukan versi penuh
-        Gallery. Alasannya sama: ini section transaksional — tamu sedang
-        membaca nomor rekening digit per digit lalu menekan tombol copy.
-        Kupu-kupu yang melintas di depan angka mengganggu ketelitian itu.
-        Petal disisakan 2 di tepi jauh dari kartu, sparkle dibiarkan.
-      */}
-      <AmbientLayer
-        butterflies={[]}
-        petals={[
-          { left: "5%", size: 13, duration: 12, delay: 0.5, drift: 14 },
-          { left: "93%", size: 12, duration: 14, delay: 4, drift: -12 },
-        ]}
-        fallDistance="150vh"
       />
 
       <m.div
@@ -770,9 +721,8 @@ function DigitalEnvelopeSectionInner({
               key={acc.id}
               className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:-translate-y-0.5 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem]"
             >
-              {/* Garis emas tipis di bibir atas kartu */}
               <div
-                aria-hidden
+                aria-hidden="true"
                 className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
               />
               <CardCornerAccents />
@@ -791,8 +741,6 @@ function DigitalEnvelopeSectionInner({
                   <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-ink/50 xs:text-[11px]">
                     Account Number
                   </p>
-                  {/* tabular-nums: digit selebar sama supaya nomor rekening
-                      tidak "bergoyang" lebarnya antar-kartu */}
                   <p className="break-all font-mono text-lg font-bold tabular-nums tracking-wider text-ink xs:text-xl sm:text-2xl">
                     {acc.accountNumber}
                   </p>
@@ -819,7 +767,7 @@ function DigitalEnvelopeSectionInner({
           className="group relative w-full overflow-hidden rounded-3xl border border-mustard/30 bg-white/85 p-5 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md transition-all duration-500 hover:border-mustard/60 hover:shadow-[0_15px_40px_rgba(212,175,55,0.1)] xs:p-6 sm:rounded-[2rem] sm:p-8"
         >
           <div
-            aria-hidden
+            aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
           />
           <CardCornerAccents />

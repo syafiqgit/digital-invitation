@@ -6,7 +6,7 @@ import { LazyMotion, domAnimation, m, type Variants } from "framer-motion";
 import BackgroundPattern from "./BackgroundPattern";
 import FloralCorner from "./FloralCorner";
 import FloralVine from "./FloralVine";
-import AmbientLayer from "./AmbientLayer";
+import FloatingDecorations from "./FloatingDecorations";
 
 interface ClosingSectionProps {
   groomName?: string;
@@ -20,8 +20,9 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const ANGLES_5 = [0, 72, 144, 216, 288] as const;
 const ANGLES_6 = [0, 60, 120, 180, 240, 300] as const;
 
-/* ---------- Framer Motion variants (Entrance Only) ---------- */
-
+/* -------------------------------------------------------------------------- */
+/*                              MOTION VARIANTS                               */
+/* -------------------------------------------------------------------------- */
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
@@ -52,7 +53,9 @@ const textLift = {
     "0 1px 8px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.9)",
 } as const;
 
-/* ---------- Static decoration data ---------- */
+/* -------------------------------------------------------------------------- */
+/*                          STATIC DECORATION DATA                            */
+/* -------------------------------------------------------------------------- */
 const vines = [
   {
     key: "left",
@@ -139,8 +142,9 @@ const corners = [
   },
 ];
 
-/* ---------- Small Presentational Pieces ---------- */
-
+/* -------------------------------------------------------------------------- */
+/*                          PRESENTATIONAL PIECES                             */
+/* -------------------------------------------------------------------------- */
 const MiniBloom = memo(function MiniBloom({
   className = "",
   color = "var(--coral)",
@@ -149,7 +153,12 @@ const MiniBloom = memo(function MiniBloom({
   color?: string;
 }) {
   return (
-    <svg viewBox="0 0 28 28" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 28 28"
+      className={className}
+      fill="none"
+    >
       <g transform="translate(14, 14)">
         {ANGLES_5.map((deg) => (
           <ellipse
@@ -168,6 +177,7 @@ const MiniBloom = memo(function MiniBloom({
     </svg>
   );
 });
+MiniBloom.displayName = "MiniBloom";
 
 const CornerFlourish = memo(function CornerFlourish({
   className = "",
@@ -175,7 +185,12 @@ const CornerFlourish = memo(function CornerFlourish({
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 60 60" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 60 60"
+      className={className}
+      fill="none"
+    >
       <path
         d="M4 4 C 4 24, 18 36, 40 38 C 48 39, 54 44, 56 52"
         stroke="var(--sage)"
@@ -211,6 +226,7 @@ const CornerFlourish = memo(function CornerFlourish({
     </svg>
   );
 });
+CornerFlourish.displayName = "CornerFlourish";
 
 const SprigDivider = memo(function SprigDivider({
   className = "",
@@ -218,7 +234,12 @@ const SprigDivider = memo(function SprigDivider({
   className?: string;
 }) {
   return (
-    <svg viewBox="0 0 220 28" className={className} fill="none">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 220 28"
+      className={className}
+      fill="none"
+    >
       <line
         x1="0"
         y1="14"
@@ -255,6 +276,7 @@ const SprigDivider = memo(function SprigDivider({
     </svg>
   );
 });
+SprigDivider.displayName = "SprigDivider";
 
 const HeartIcon = memo(function HeartIcon({
   className = "",
@@ -265,6 +287,7 @@ const HeartIcon = memo(function HeartIcon({
 }) {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 24 24"
       className={className}
       style={style}
@@ -274,11 +297,12 @@ const HeartIcon = memo(function HeartIcon({
     </svg>
   );
 });
+HeartIcon.displayName = "HeartIcon";
 
 const AmbientGlow = memo(function AmbientGlow() {
   return (
     <div
-      aria-hidden
+      aria-hidden="true"
       className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-105 w-105 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl md:h-130 md:w-130 lg:h-155 lg:w-155"
       style={{
         background:
@@ -287,11 +311,10 @@ const AmbientGlow = memo(function AmbientGlow() {
     />
   );
 });
+AmbientGlow.displayName = "AmbientGlow";
 
-// active mengontrol animation-play-state, bukan mount/unmount, supaya tidak
-// ada layout thrash tambahan saat section masuk viewport. willChange manual
-// dihapus total — Framer/browser sudah cukup pintar mengelola compositing
-// layer selama animasi memang berjalan.
+// `active` toggles animation-play-state rather than mount/unmount, so no
+// extra layout thrash happens once the section enters view.
 const FrameLayers = memo(function FrameLayers({ active }: { active: boolean }) {
   const playState = active ? "running" : "paused";
   return (
@@ -345,84 +368,70 @@ const FrameLayers = memo(function FrameLayers({ active }: { active: boolean }) {
     </>
   );
 });
+FrameLayers.displayName = "FrameLayers";
 
-/* ---------- Main Component ---------- */
+/* -------------------------------------------------------------------------- */
+/*                               STYLES HOISTING                              */
+/* -------------------------------------------------------------------------- */
+const CLOSING_STYLES = `
+  @keyframes closing-sway {
+    0%, 100% { transform: rotate(0deg); }
+    25%      { transform: rotate(var(--end-deg, 1.5deg)); }
+    75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
+  }
+  .animate-closing-sway { animation: closing-sway ease-in-out infinite; }
 
+  @keyframes closing-pulse {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
+  }
+  .animate-closing-pulse { animation: closing-pulse ease-in-out infinite; }
+
+  @keyframes closing-kenburns {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.05); }
+  }
+  .animate-closing-kenburns { animation: closing-kenburns 24s ease-in-out infinite; }
+
+  @keyframes closing-heartbeat {
+    0%, 100%   { transform: scale(1); }
+    14%        { transform: scale(1.18); }
+    28%        { transform: scale(1); }
+    42%        { transform: scale(1.12); }
+    56%        { transform: scale(1); }
+  }
+  .animate-closing-heartbeat { animation: closing-heartbeat 3.6s ease-in-out infinite; }
+
+  @keyframes closing-beam {
+    0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
+    50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
+  }
+  .animate-closing-beam { animation: closing-beam 21s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-closing-sway, .animate-closing-pulse, .animate-closing-kenburns, .animate-closing-heartbeat, .animate-closing-beam { animation: none; }
+  }
+`;
+
+/* -------------------------------------------------------------------------- */
+/*                                MAIN SECTION                                */
+/* -------------------------------------------------------------------------- */
 function ClosingSectionInner({
   groomName = "Alexander",
   brideName = "Amelia",
   couplePhotoUrl = DEFAULT_COUPLE_PHOTO,
 }: ClosingSectionProps) {
-  // Semua CSS keyframe infinite (sway/pulse/kenburns/beam/heartbeat) dan
-  // AmbientLayer digate oleh flag ini, disatukan dengan onViewportEnter
-  // milik Framer Motion (bukan IntersectionObserver terpisah — parent
-  // sudah lazy-load section ini, jadi cukup satu observer, bukan dua).
-  //
-  // Root cause stutter sebelumnya: parent me-lazy-load section ini saat
-  // mendekati viewport, tapi begitu mounted, 8 elemen sway/corner + Ken
-  // Burns + beam + heartbeat + particle system AmbientLayer semua langsung
-  // start looping di frame yang sama persis dengan initial layout/paint
-  // section ini sendiri (yang berat: banyak absolutely-positioned layer,
-  // blur besar, border ganda, backdrop-blur). Itu race antara "kerja
-  // render pertama kali" dan "8+ animasi baru mulai" — bukan animasi itu
-  // sendiri yang mahal per-frame.
+  // Gated by onViewportEnter rather than a separate IntersectionObserver —
+  // the parent already lazy-loads this section, so one observer is enough.
+  // Root cause of the earlier stutter: on mount, 8 sway/corner elements plus
+  // Ken Burns, beam, and heartbeat all started looping on the exact same
+  // frame as this section's own (expensive) initial layout/paint. Gating
+  // animation start separates "first render" from "animations begin".
   const [animationsActive, setAnimationsActive] = useState(false);
 
   return (
     <section className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] px-4 py-16 text-center [content-visibility:auto] [contain-intrinsic-size:100vh_1200px] xs:px-5 sm:px-8 sm:py-24 md:py-28">
-      <style>{`
-        @keyframes closing-sway {
-          0%, 100% { transform: rotate(0deg); }
-          25%      { transform: rotate(var(--end-deg, 1.5deg)); }
-          75%      { transform: rotate(calc(var(--end-deg, 1.5deg) * -1)); }
-        }
-        .animate-closing-sway {
-          animation: closing-sway ease-in-out infinite;
-        }
-
-        @keyframes closing-pulse {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50%      { transform: scale(1.1) rotate(var(--rot, 5deg)); }
-        }
-        .animate-closing-pulse {
-          animation: closing-pulse ease-in-out infinite;
-        }
-
-        @keyframes closing-kenburns {
-          0%, 100% { transform: scale(1); }
-          50%      { transform: scale(1.05); }
-        }
-        .animate-closing-kenburns {
-          animation: closing-kenburns 24s ease-in-out infinite;
-        }
-
-        @keyframes closing-heartbeat {
-          0%, 100%   { transform: scale(1); }
-          14%        { transform: scale(1.18); }
-          28%        { transform: scale(1); }
-          42%        { transform: scale(1.12); }
-          56%        { transform: scale(1); }
-        }
-        .animate-closing-heartbeat {
-          animation: closing-heartbeat 3.6s ease-in-out infinite;
-        }
-
-        @keyframes closing-beam {
-          0%, 100% { opacity: 0.3;  transform: translateX(-50%) rotate(0deg); }
-          50%      { opacity: 0.55; transform: translateX(-46%) rotate(3deg); }
-        }
-        .animate-closing-beam {
-          animation: closing-beam 21s ease-in-out infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .animate-closing-sway,
-          .animate-closing-pulse,
-          .animate-closing-kenburns,
-          .animate-closing-heartbeat,
-          .animate-closing-beam { animation: none; }
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: CLOSING_STYLES }} />
 
       <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
         <BackgroundPattern className="h-full w-full" />
@@ -430,9 +439,10 @@ function ClosingSectionInner({
 
       <AmbientGlow />
       <FrameLayers active={animationsActive} />
+      <FloatingDecorations />
 
       <div
-        aria-hidden
+        aria-hidden="true"
         className="animate-closing-beam pointer-events-none absolute -top-1/4 left-1/2 z-1 hidden h-[150%] w-3/5 -translate-x-1/2 sm:block"
         style={{
           background:
@@ -442,13 +452,6 @@ function ClosingSectionInner({
         }}
       />
 
-      {/* AmbientLayer (particle system) cuma dirender setelah section
-          benar-benar masuk viewport, bukan langsung saat mount. Sebelumnya
-          ini jalan penuh dari mount pertama — bareng dengan initial paint
-          section yang sudah berat sendiri, itulah kombinasi yang bikin
-          scroll-in kesendat. */}
-      {animationsActive && <AmbientLayer fallDistance="140vh" />}
-
       <m.div
         className="relative z-10 flex w-full max-w-sm flex-col items-center px-1 xs:max-w-md sm:max-w-xl sm:px-2 md:max-w-2xl lg:max-w-3xl"
         initial="hidden"
@@ -457,7 +460,6 @@ function ClosingSectionInner({
         variants={containerVariants}
         onViewportEnter={() => setAnimationsActive(true)}
       >
-        {/* Badge */}
         <m.div variants={fadeUp} className="flex items-center gap-3">
           <div
             className="animate-closing-pulse"
@@ -496,7 +498,6 @@ function ClosingSectionInner({
           </div>
         </m.div>
 
-        {/* Heading */}
         <m.p
           variants={fadeUp}
           className="font-script mt-5 px-2 text-[2.1rem] font-semibold leading-tight text-ink xs:text-4xl sm:mt-6 sm:text-5xl md:text-[3.4rem]"
@@ -509,7 +510,6 @@ function ClosingSectionInner({
           <SprigDivider className="h-4 w-36 opacity-80 xs:w-44 sm:w-52" />
         </m.div>
 
-        {/* Gorgeous Arch Photo Showcase */}
         <m.div variants={photoVariants} className="group relative mb-7 sm:mb-9">
           <div className="pointer-events-none absolute -inset-3 rounded-b-[2.2rem] rounded-t-[11rem] bg-linear-to-b from-mustard/20 via-transparent to-blush/20 blur-xl sm:-inset-4" />
           <div className="relative aspect-4/5 w-44 overflow-hidden rounded-b-3xl rounded-t-[9rem] border-[3px] border-mustard/60 bg-white/90 p-2 shadow-[0_12px_36px_rgba(0,0,0,0.06)] xs:w-52 sm:w-60 md:w-64 lg:w-72">
@@ -534,7 +534,6 @@ function ClosingSectionInner({
           </div>
         </m.div>
 
-        {/* Message */}
         <m.p
           variants={fadeUp}
           className="mx-auto mb-8 max-w-xs px-1 text-sm leading-relaxed text-ink/80 xs:max-w-sm sm:mb-10 sm:max-w-md sm:text-base"
@@ -543,13 +542,12 @@ function ClosingSectionInner({
           presence and bestow your blessings upon the newlyweds.
         </m.p>
 
-        {/* Names Card */}
         <m.div
           variants={fadeUp}
           className="relative w-full max-w-sm overflow-hidden rounded-[1.75rem] border border-mustard/30 bg-white/85 px-6 py-9 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-md sm:max-w-md sm:rounded-4xl sm:px-10 sm:py-12 md:max-w-lg lg:max-w-xl lg:px-12 lg:py-14"
         >
           <div
-            aria-hidden
+            aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--mustard),transparent)] opacity-60"
           />
 
@@ -590,7 +588,6 @@ function ClosingSectionInner({
           </div>
         </m.div>
 
-        {/* Footer */}
         <m.div
           variants={fadeUp}
           className="mt-9 flex items-center gap-3 text-[10px] uppercase tracking-widest text-ink/50 sm:mt-12 sm:text-xs"
