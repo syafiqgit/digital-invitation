@@ -1,11 +1,10 @@
 "use client";
 
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import {
   LazyMotion,
   domAnimation,
   m,
-  AnimatePresence,
   type Transition,
   type Variants,
 } from "framer-motion";
@@ -282,70 +281,15 @@ const FlourishDivider = memo(({ className = "" }: { className?: string }) => (
 FlourishDivider.displayName = "FlourishDivider";
 
 /* -------------------------------------------------------------------------- */
-/*                        ISOLATED CINEMATIC SPLASH                           */
-/* -------------------------------------------------------------------------- */
-const CinematicSplash = memo(({ onComplete }: { onComplete: () => void }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const hasTriggeredRef = useRef(false);
-
-  const handleTimeUpdate = useCallback(() => {
-    const v = videoRef.current;
-    if (!v || !v.duration) return;
-
-    // DIPOTONG LEBIH CEPAT: 0.8 detik sebelum habis, video langsung di-cut ke halaman utama
-    // Ini mencegah penampakan frame terakhir video yang pecah/pudar jelek
-    if (v.duration - v.currentTime <= 0.8 && !hasTriggeredRef.current) {
-      hasTriggeredRef.current = true;
-      onComplete();
-    }
-  }, [onComplete]);
-
-  return (
-    <m.div
-      key="cinematic-splash"
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }} // Transisi keluar super cepat dan mulus
-      className="absolute inset-0 z-[100] bg-ivory"
-    >
-      <video
-        ref={videoRef}
-        src="/assets/intro_wedding_garden_4_1080p_202608192133.mp4"
-        autoPlay
-        muted
-        playsInline
-        onEnded={onComplete}
-        onTimeUpdate={handleTimeUpdate}
-        className="h-full w-full object-cover"
-      />
-      <button
-        type="button"
-        onClick={onComplete}
-        aria-label="Skip introduction"
-        className="absolute right-5 top-5 z-[110] rounded-full bg-ink/20 px-4 py-1.5 text-[0.65rem] font-bold tracking-widest text-white backdrop-blur-md transition-colors hover:bg-ink/40 sm:text-xs"
-      >
-        SKIP
-      </button>
-    </m.div>
-  );
-});
-CinematicSplash.displayName = "CinematicSplash";
-
-/* -------------------------------------------------------------------------- */
 /*                               MAIN COMPONENT                               */
 /* -------------------------------------------------------------------------- */
 function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
   const [isOpening, setIsOpening] = useState(false);
-  const [showVideo, setShowVideo] = useState(true);
 
   const handleOpen = useCallback(() => {
     setIsOpening(true);
     onOpen();
   }, [onOpen]);
-
-  const handleVideoComplete = useCallback(() => {
-    setShowVideo(false);
-  }, []);
 
   return (
     <m.div
@@ -390,20 +334,20 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
       <m.div
         variants={borderFade}
         initial="hidden"
-        animate={!showVideo ? "show" : "hidden"}
+        animate="show"
         className="pointer-events-none absolute inset-3 z-2 rounded-2xl border border-mustard/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] sm:inset-5 md:inset-6"
       />
       <m.div
         variants={borderFade}
         initial="hidden"
-        animate={!showVideo ? "show" : "hidden"}
+        animate="show"
         transition={{ delay: 0.05 }}
         className="pointer-events-none absolute inset-5 z-2 hidden rounded-[1.4rem] border border-dashed border-mustard/20 sm:block sm:inset-7 md:inset-8"
       />
       <m.div
         variants={glowVariant}
         initial="hidden"
-        animate={!showVideo ? "show" : "hidden"}
+        animate="show"
         className="pointer-events-none absolute left-1/2 top-1/2 z-2 h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl xs:h-64 xs:w-64 sm:h-72 sm:w-72 md:h-88 md:w-88 lg:h-104 lg:w-104"
       >
         <div className="h-full w-full rounded-full bg-blush/40" />
@@ -414,7 +358,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           key={v.key}
           variants={vineFade}
           initial="hidden"
-          animate={!showVideo ? "show" : "hidden"}
+          animate="show"
           className={`pointer-events-none z-2 ${v.className} ${v.flip}`}
         >
           <m.div
@@ -437,7 +381,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           key={c.key}
           variants={cornerFade}
           initial="hidden"
-          animate={!showVideo ? "show" : "hidden"}
+          animate="show"
           transition={{ delay: c.fadeDelay }}
           className={`pointer-events-none absolute z-20 h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-48 lg:w-48 ${c.position}`}
         >
@@ -458,7 +402,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
       <m.div
         variants={container}
         initial="hidden"
-        animate={!showVideo ? "show" : "hidden"}
+        animate="show"
         style={{ containerType: "inline-size" }}
         className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 md:max-w-lg md:px-10 lg:max-w-160"
       >
@@ -595,11 +539,6 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           </m.div>
         )}
       </m.div>
-
-      {/* 4. CINEMATIC SPLASH / INTRO VIDEO */}
-      <AnimatePresence>
-        {showVideo && <CinematicSplash onComplete={handleVideoComplete} />}
-      </AnimatePresence>
     </m.div>
   );
 }
