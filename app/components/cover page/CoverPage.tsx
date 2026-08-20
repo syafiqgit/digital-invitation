@@ -39,8 +39,12 @@ const loop = (
 /*                           MOTION VARIANTS (STATIC)                         */
 /* -------------------------------------------------------------------------- */
 const container: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { staggerChildren: 0.1, delayChildren: 0.1, duration: 0.6 },
+  },
 };
 
 const fadeUp: Variants = {
@@ -48,7 +52,7 @@ const fadeUp: Variants = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
@@ -57,7 +61,7 @@ const cornerFade: Variants = {
   show: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.8, ease: "easeOut" },
+    transition: { duration: 0.7, ease: "easeOut" },
   },
 };
 
@@ -65,7 +69,7 @@ const vineFade: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { duration: 1, ease: "easeOut", delay: 0.2 },
+    transition: { duration: 0.8, ease: "easeOut", delay: 0.1 },
   },
 };
 
@@ -73,7 +77,7 @@ const borderFade: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { duration: 1, ease: "easeOut", delay: 0.3 },
+    transition: { duration: 0.8, ease: "easeOut", delay: 0.2 },
   },
 };
 
@@ -81,7 +85,7 @@ const glowVariant: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { duration: 1.2, ease: "easeOut", delay: 0.1 },
+    transition: { duration: 0.9, ease: "easeOut", delay: 0.1 },
   },
 };
 
@@ -91,7 +95,7 @@ const wreathVariant: Variants = {
     opacity: 1,
     scale: 1,
     rotate: 0,
-    transition: { type: "spring", stiffness: 120, damping: 22 },
+    transition: { type: "spring", stiffness: 120, damping: 20 },
   },
 };
 
@@ -282,10 +286,16 @@ FlourishDivider.displayName = "FlourishDivider";
 /* -------------------------------------------------------------------------- */
 const CinematicSplash = memo(({ onComplete }: { onComplete: () => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hasTriggeredRef = useRef(false);
 
   const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current;
-    if (v && v.duration && v.duration - v.currentTime <= 0.4) {
+    if (!v || !v.duration) return;
+
+    // DIPOTONG LEBIH CEPAT: 0.8 detik sebelum habis, video langsung di-cut ke halaman utama
+    // Ini mencegah penampakan frame terakhir video yang pecah/pudar jelek
+    if (v.duration - v.currentTime <= 0.8 && !hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
       onComplete();
     }
   }, [onComplete]);
@@ -293,14 +303,14 @@ const CinematicSplash = memo(({ onComplete }: { onComplete: () => void }) => {
   return (
     <m.div
       key="cinematic-splash"
-      initial={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 1.03 }}
-      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }} // Transisi keluar super cepat dan mulus
       className="absolute inset-0 z-[100] bg-ivory"
     >
       <video
         ref={videoRef}
-        src="/assets/Burgundy_roses_blooming_intro.webm"
+        src="/assets/intro_wedding_garden_4_1080p_202608192133.mp4"
         autoPlay
         muted
         playsInline
@@ -311,7 +321,7 @@ const CinematicSplash = memo(({ onComplete }: { onComplete: () => void }) => {
       <button
         type="button"
         onClick={onComplete}
-        aria-label="Skip cinematic introduction"
+        aria-label="Skip introduction"
         className="absolute right-5 top-5 z-[110] rounded-full bg-ink/20 px-4 py-1.5 text-[0.65rem] font-bold tracking-widest text-white backdrop-blur-md transition-colors hover:bg-ink/40 sm:text-xs"
       >
         SKIP
@@ -339,7 +349,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
 
   return (
     <m.div
-      exit={{ opacity: 0, transition: { duration: 0.4, ease: "easeOut" } }}
+      exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeOut" } }}
       className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-ivory"
       style={{
         paddingTop: "env(safe-area-inset-top)",
@@ -349,7 +359,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
         willChange: "opacity",
       }}
     >
-      {/* 1. BACKGROUND */}
+      {/* 1. BACKGROUND WEB STATIC */}
       <BackgroundPattern className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.16]" />
       <div
         aria-hidden
@@ -380,20 +390,20 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
       <m.div
         variants={borderFade}
         initial="hidden"
-        animate="show"
+        animate={!showVideo ? "show" : "hidden"}
         className="pointer-events-none absolute inset-3 z-2 rounded-2xl border border-mustard/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] sm:inset-5 md:inset-6"
       />
       <m.div
         variants={borderFade}
         initial="hidden"
-        animate="show"
-        transition={{ delay: 0.1 }}
+        animate={!showVideo ? "show" : "hidden"}
+        transition={{ delay: 0.05 }}
         className="pointer-events-none absolute inset-5 z-2 hidden rounded-[1.4rem] border border-dashed border-mustard/20 sm:block sm:inset-7 md:inset-8"
       />
       <m.div
         variants={glowVariant}
         initial="hidden"
-        animate="show"
+        animate={!showVideo ? "show" : "hidden"}
         className="pointer-events-none absolute left-1/2 top-1/2 z-2 h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blush/25 blur-3xl xs:h-64 xs:w-64 sm:h-72 sm:w-72 md:h-88 md:w-88 lg:h-104 lg:w-104"
       >
         <div className="h-full w-full rounded-full bg-blush/40" />
@@ -404,7 +414,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           key={v.key}
           variants={vineFade}
           initial="hidden"
-          animate="show"
+          animate={!showVideo ? "show" : "hidden"}
           className={`pointer-events-none z-2 ${v.className} ${v.flip}`}
         >
           <m.div
@@ -427,7 +437,7 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           key={c.key}
           variants={cornerFade}
           initial="hidden"
-          animate="show"
+          animate={!showVideo ? "show" : "hidden"}
           transition={{ delay: c.fadeDelay }}
           className={`pointer-events-none absolute z-20 h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-48 lg:w-48 ${c.position}`}
         >
@@ -442,14 +452,13 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
         </m.div>
       ))}
 
-      {/* COMPONENT ANIMASI EKSTERNAL */}
       <FloatingDecorations />
 
       {/* 3. MAIN CONTENT CONTAINER */}
       <m.div
         variants={container}
         initial="hidden"
-        animate="show"
+        animate={!showVideo ? "show" : "hidden"}
         style={{ containerType: "inline-size" }}
         className="relative z-20 flex w-full max-w-xs flex-col items-center px-5 text-center xs:max-w-sm sm:max-w-md sm:px-8 md:max-w-lg md:px-10 lg:max-w-160"
       >
@@ -458,12 +467,6 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           className="relative inline-block overflow-hidden rounded-full border border-mustard/60 bg-ivory/95 px-4 py-1.5 text-[0.65rem] font-bold tracking-[0.22em] text-burgundy shadow-sm sm:px-5 sm:text-xs sm:tracking-[0.3em] md:px-6 md:text-[0.8rem]"
         >
           <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.8)]" />
-          <m.div
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1/4 bg-gradient-to-r from-transparent via-white/60 to-transparent"
-            initial={{ x: "-150%" }}
-            animate={{ x: "500%" }}
-            transition={{ duration: 1.1, delay: 0.6, ease: "easeInOut" }}
-          />
           <span className="relative z-20">WEDDING INVITATION</span>
         </m.span>
 
@@ -472,7 +475,6 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           className="relative mt-4 w-[clamp(250px,92cqw,610px)] sm:mt-5 md:mt-6"
         >
           <WreathFrame className="w-full drop-shadow-sm" />
-
           {wreathSparkles.map((s, i) => (
             <m.div
               key={`ws-${i}`}
@@ -484,7 +486,6 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
               <Sparkle className="h-full w-full opacity-90" />
             </m.div>
           ))}
-
           <div
             className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center text-center"
             style={{
@@ -538,11 +539,6 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           variants={fadeUp}
           className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)] sm:mt-4 sm:gap-x-3 sm:px-5 md:mt-5 md:px-6 md:py-3.5"
         >
-          <m.div
-            className="pointer-events-none absolute inset-0 rounded-2xl border border-mustard/60"
-            animate={{ opacity: [0.3, 0.9, 0.3] }}
-            transition={loop(3.2, 1.8)}
-          />
           <div className="shrink-0">
             <MiniFlower className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
@@ -572,18 +568,10 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
           className="relative mt-5 w-full overflow-hidden rounded-2xl border border-mustard/40 bg-ivory/95 px-4 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.06)] sm:mt-6 sm:px-5 md:px-6 md:py-6"
         >
           <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_12px_rgba(255,255,255,0.7)]" />
-          <m.div
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent"
-            initial={{ x: "-120%" }}
-            animate={{ x: "320%" }}
-            transition={{ duration: 1.4, delay: 1.1, ease: "easeInOut" }}
-          />
           <div className="relative z-10">
-            {/* Label dibuat sedikit lebih redup (text-ink/70) agar kontras dengan nama */}
             <p className="text-[0.7rem] font-medium tracking-widest text-ink/70 sm:text-xs sm:tracking-[0.1em] md:text-sm">
               To Our Respected Guest,
             </p>
-            {/* Nama tamu diperbesar, ditebalkan, diubah warna burgundy, dan diberi shadow */}
             <p className="mt-2 wrap-break-word text-xl font-extrabold leading-snug text-burgundy drop-shadow-sm xs:text-2xl sm:text-3xl md:text-4xl">
               {guestName}
             </p>
@@ -595,7 +583,6 @@ function CoverPageInner({ guestName = "Dear Guest", onOpen }: CoverPageProps) {
             variants={fadeUp}
             className="relative mt-8 inline-block sm:mt-10 md:mt-12"
           >
-            <div className="pointer-events-none absolute inset-0 rounded-full bg-burgundy/50 blur-lg" />
             <m.button
               type="button"
               onClick={handleOpen}
